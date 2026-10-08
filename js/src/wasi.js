@@ -1,3 +1,4 @@
+import { safeUrl, BLOCKED_URL } from "./url.js";
 /**
  * WASM-JavaScript Bindings
  * Organized by functional domain
@@ -419,11 +420,6 @@ export class WasmObjectBuilder {
         case "string":
           const strPtr = allocStringFrame(value);
           this.wasm.addStringField(handle, keyPtr, strPtr);
-          break;
-        case "radio":
-          console.log("Radio", value);
-          // const strPtr = allocStringFrame(value);
-          // this.wasm.addStringField(handle, keyPtr, strPtr);
           break;
         case "number":
           if (Number.isInteger(value)) {
@@ -1689,7 +1685,8 @@ export const env = {
   },
 
   setWindowLocationWasm: (urlPtr, urlLen) => {
-    const url = readWasmString(urlPtr, urlLen);
+    const url = safeUrl(readWasmString(urlPtr, urlLen));
+    if (url === BLOCKED_URL) return;
     window.location.href = url;
   },
 

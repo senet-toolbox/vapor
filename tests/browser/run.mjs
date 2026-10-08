@@ -124,6 +124,7 @@ async function launch() {
 // ── test helpers ────────────────────────────────────────────────────────────
 
 function makePage(cdp, origin) {
+  const problems = cdp.problems;
   const evaluate = async (expression) => {
     const r = await cdp.send("Runtime.evaluate", { expression, returnByValue: true, awaitPromise: true });
     if (r.exceptionDetails) throw new Error(`evaluate failed: ${r.exceptionDetails.exception?.description ?? r.exceptionDetails.text}`);
@@ -141,6 +142,15 @@ function makePage(cdp, origin) {
   };
   const text = (id) => evaluate(`document.getElementById(${JSON.stringify(id)})?.textContent ?? null`);
   return {
+    problems,
+    // Drops expected console errors (e.g. the runtime reporting a blocked URL)
+    // so they do not fail the test; returns how many matched.
+    allowErrors(substring) {
+      const keep = problems.filter((m) => !m.includes(substring));
+      const dropped = problems.length - keep.length;
+      problems.splice(0, problems.length, ...keep);
+      return dropped;
+    },
     evaluate,
     waitFor,
     text,
@@ -278,6 +288,52 @@ const tests = {
     await p.waitForText("stored", "int=42 float=2.5 text=zig");
   },
 
+  async "script URLs are blocked in links"(p) {
+    await p.goto("/urls");
+    await p.waitFor(`!!document.getElementById("js-link")`, "urls page");
+    for (const id of ["js-link", "js-link-obfuscated"]) {
+      assertEqual(await p.evaluate(`document.getElementById("${id}").getAttribute("href")`), null, `${id} has no href`);
+    }
+    await p.click("js-link");
+    await p.click("js-link-obfuscated");
+    await sleep(200);
+    assertEqual(await p.evaluate(`window.__pwned ?? null`), null, "script never ran");
+    assertEqual(await p.evaluate(`location.pathname`), "/urls", "clicking a blocked link goes nowhere");
+    // The runtime reports each block with console.error; expected here.
+    assertEqual(p.allowErrors("vapor: blocked a javascript: URL") >= 2, true, "blocks were reported");
+  },
+
+  async "only plain same-origin link clicks are routed client-side"(p) {
+    await p.goto("/urls");
+    await p.waitFor(`!!document.getElementById("external")`, "urls page");
+    // Record whether vapor's handler took over the click, then stop the
+    // navigation ourselves so the test stays on the page.
+    await p.evaluate(`window.addEventListener("click", (e) => {
+      window.__routed = e.defaultPrevented;
+      e.preventDefault();
+    })`);
+    const click = (id, init = "{}") =>
+      p.evaluate(`(document.getElementById("${id}").dispatchEvent(new MouseEvent("click", Object.assign({ bubbles: true, cancelable: true, button: 0 }, ${init}))), window.__routed)`);
+    assertEqual(await click("external"), false, "external link left to the browser");
+    assertEqual(await click("internal", "{ metaKey: true }"), false, "cmd-click left to the browser");
+    assertEqual(await click("internal", "{ ctrlKey: true }"), false, "ctrl-click left to the browser");
+    assertEqual(await click("internal"), true, "plain internal click routed");
+    await p.waitFor(`location.pathname === "/a" && !!document.getElementById("page-a")`, "routed to /a");
+    p.allowErrors("vapor: blocked a javascript: URL"); // the page renders the blocked links too
+  },
+
+  async "a link click adds exactly one history entry"(p) {
+    await p.goto("/a");
+    await p.waitFor(`!!document.getElementById("to-b")`, "page A");
+    const before = await p.evaluate(`history.length`);
+    await p.click("to-b");
+    await p.waitFor(`!!document.getElementById("page-b") && !document.getElementById("page-a")`, "page B");
+    await sleep(100);
+    assertEqual((await p.evaluate(`history.length`)) - before, 1, "history entries added");
+    await p.evaluate(`history.back()`);
+    await p.waitFor(`location.pathname === "/a" && !!document.getElementById("page-a")`, "one back press returns to A");
+  },
+
   async "wasm memory stays flat across many route changes"(p) {
     await p.goto("/a");
     await p.waitFor(`!!document.getElementById("page-a")`, "page A");
@@ -312,6 +368,15 @@ const tests = {
 
 if (!existsSync(join(appDir, "zig-out/bin/vapor.wasm"))) {
   console.error(`missing ${appDir}/zig-out/bin/vapor.wasm; run \`zig build\` in tests/browser/app first`);
+  process.exit(2);
+}
+
+// The app serves the runtime its own build installed. Run directly after
+// editing js/, that copy is stale and the tests would exercise old code.
+const served = readFileSync(join(appDir, "zig-out/bin/bundle.min.js"));
+const current = readFileSync(resolve(appDir, "../../../js/dist/bundle.min.js"));
+if (!served.equals(current)) {
+  console.error("tests/browser/app has a stale bundle.min.js; use `zig build browser-test`, or `zig build` in the app first");
   process.exit(2);
 }
 

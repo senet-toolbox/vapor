@@ -25,6 +25,7 @@ pub export fn init() void {
     Vapor.Page(.{ .route = "/b" }, pageB, null);
     Vapor.Page(.{ .route = "/fetch" }, fetchPage, null);
     Vapor.Page(.{ .route = "/storage" }, storagePage, null);
+    Vapor.Page(.{ .route = "/urls" }, urls, null);
 }
 
 pub const std_options = std.Options{
@@ -213,5 +214,24 @@ fn storagePage() void {
             Vapor.load(f32, "float"),
             Vapor.load([]const u8, "text"),
         }).id("stored").end();
+    });
+}
+
+// ── /urls : script URLs are blocked; other origins are not routed ──────────
+
+fn urls() void {
+    Box().id("urls-page").children({
+        Link(.{ .url = "javascript:window.__pwned = 1" }).id("js-link").children({
+            Text("script link").end();
+        });
+        Link(.{ .url = " JaVa\tScRiPt:window.__pwned = 2" }).id("js-link-obfuscated").children({
+            Text("obfuscated script link").end();
+        });
+        Link(.{ .url = "https://example.com/elsewhere" }).id("external").children({
+            Text("external").end();
+        });
+        Link(.{ .url = "/a" }).id("internal").children({
+            Text("internal").end();
+        });
     });
 }

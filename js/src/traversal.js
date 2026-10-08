@@ -1,3 +1,4 @@
+import { safeUrl, setSafeHref } from "./url.js";
 import {
   wasmInstance,
   readRenderCommand,
@@ -333,6 +334,55 @@ export async function recurseDestroy(el, skipAnimation = false) {
 }
 
 /**
+ * Routes plain clicks on same-origin links client-side. Attached once per
+ * element: links are bound both when created and when hydrated.
+ */
+function bindLinkRouting(element) {
+  if (element.__vaporLink) return;
+  element.__vaporLink = true;
+  element.addEventListener("click", onLinkClick);
+}
+
+function onLinkClick(event) {
+  // Everything but a plain left click on a same-origin link is the browser's:
+  // new-tab/window clicks, other origins (they used to be routed internally to
+  // their path), and target or download links.
+  if (
+    event.defaultPrevented ||
+    event.button !== 0 ||
+    event.metaKey ||
+    event.ctrlKey ||
+    event.shiftKey ||
+    event.altKey
+  ) {
+    return;
+  }
+  const anchor = event.currentTarget;
+  if ((anchor.target && anchor.target !== "_self") || anchor.hasAttribute("download")) {
+    return;
+  }
+  if (!anchor.hasAttribute("href")) return; // blocked or empty: nothing to follow
+  const url = new URL(anchor.href);
+  if (url.origin !== window.location.origin) return;
+  event.preventDefault();
+
+  const path = url.pathname;
+  const samePage = path === window.location.pathname;
+  requestAnimationFrame(() => {
+    // rerenderRoute pushes the history entry for the new path.
+    if (!samePage) rerenderRoute(path);
+    if (!url.hash) return;
+    requestAnimationFrame(() => {
+      const target = document.getElementById(url.hash.substring(1));
+      if (target) target.scrollIntoView({ block: "center" });
+      // One history entry per click: a new page already got one above.
+      if (samePage) window.history.pushState({}, "", path + url.hash);
+      else window.history.replaceState({}, "", path + url.hash);
+    });
+  });
+}
+
+/**
  * Create a link element with route handling
  * @param {Object} renderCmd - The render command
  * @param {HTMLElement} tree_node - The current tree node
@@ -340,13 +390,9 @@ export async function recurseDestroy(el, skipAnimation = false) {
  * @returns {HTMLAnchorElement} - The created link element
  */
 function createLinkElement(element, uinode) {
-  let href =
+  const href =
     uinode.hrefLen > 0 ? readWasmString(uinode.hrefPtr, uinode.hrefLen) : "";
-  if (href === null) {
-    element.href = href;
-  } else {
-    element.href = href;
-  }
+  setSafeHref(element, href);
 
   const label = wasmInstance.getAriaLabel(uinode.offset);
   if (label) {
@@ -354,35 +400,7 @@ function createLinkElement(element, uinode) {
     element.ariaLabel = readWasmString(label, length);
   }
 
-  element.addEventListener("click", function(event) {
-    event.preventDefault();
-
-    const clickedHref = event.currentTarget.href;
-
-    const urlObj = new URL(clickedHref);
-    const path = urlObj.pathname;
-    const currentPath = window.location.pathname;
-    // we push the state and renderCycle the new path
-    requestAnimationFrame(() => {
-      if (currentPath !== path) {
-        rerenderRoute(path);
-      }
-      requestAnimationFrame(() => {
-        const hash = urlObj.hash;
-        if (hash) {
-          const id = hash.substring(1, hash.length);
-          const element = document.getElementById(id);
-          if (element) {
-            // Scroll the element into view with options
-            element.scrollIntoView({
-              block: "center", // Vertically align to the center of the screen
-            });
-          }
-          window.history.pushState({}, "", path + hash);
-        }
-      });
-    });
-  });
+  bindLinkRouting(element);
 
   return element;
 }
@@ -431,36 +449,7 @@ export function attachElementListeners(element, renderCmd) {
       break;
 
     case COMPONENT_TYPES.LINK:
-      element.addEventListener("click", function(event) {
-        event.preventDefault();
-
-        const clickedHref = event.currentTarget.href;
-
-        const urlObj = new URL(clickedHref);
-        const path = urlObj.pathname;
-        const currentPath = window.location.pathname;
-        window.history.pushState({}, "", path);
-        // we push the state and renderCycle the new path
-        requestAnimationFrame(() => {
-          if (currentPath !== path) {
-            rerenderRoute(path);
-          }
-          requestAnimationFrame(() => {
-            const hash = urlObj.hash;
-            if (hash) {
-              const id = hash.substring(1, hash.length);
-              const element = document.getElementById(id);
-              if (element) {
-                // Scroll the element into view with options
-                element.scrollIntoView({
-                  block: "center", // Vertically align to the center of the screen
-                });
-              }
-              window.history.pushState({}, "", path + hash);
-            }
-          });
-        });
-      });
+      bindLinkRouting(element);
       break;
 
     default:
@@ -785,7 +774,7 @@ export function createElementByType(uinode) {
         element.ariaLabel = readWasmString(aria_label, length);
       }
 
-      element.href = readWasmString(uinode.hrefPtr, uinode.hrefLen);
+      setSafeHref(element, readWasmString(uinode.hrefPtr, uinode.hrefLen));
       break;
 
     case COMPONENT_TYPES.EMBEDLINK:
@@ -897,9 +886,7 @@ export function createElementByType(uinode) {
 
     case COMPONENT_TYPES.IFRAME:
       element = document.createElement("iframe");
-      const url = readWasmString(uinode.hrefPtr, uinode.hrefLen);
-      console.log("IFRAME", url);
-      element.src = url;
+      element.src = safeUrl(readWasmString(uinode.hrefPtr, uinode.hrefLen));
       break;
 
     case COMPONENT_TYPES.FIELDSET:
@@ -1045,7 +1032,7 @@ export function updateElement(element, uinode, force = false) {
       uinode.elemType === COMPONENT_TYPES.REDIRECT_LINK
     ) {
       const href = readWasmString(uinode.hrefPtr, uinode.hrefLen);
-      element.setAttribute("href", href);
+      setSafeHref(element, href);
     } else if (uinode.elemType === COMPONENT_TYPES.VIDEO) {
       const offset = wasmInstance.getVideo(uinode.offset);
       const videoView = new DataView(wasmInstance.memory.buffer, offset);
