@@ -916,10 +916,7 @@ pub fn BuilderClose(comptime state_type: types.StateType) type {
         pub fn id(self: *const Self, element_id: []const u8) Self {
             var new_self: Self = self.*;
             new_self._id = element_id;
-            if (new_self._ui_node) |node| {
-                node.refundUnkeyedSlot();
-                node.uuid = element_id;
-            }
+            if (new_self._ui_node) |node| Vapor.assignUserId(node, element_id);
             return new_self;
         }
 

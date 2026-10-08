@@ -1324,22 +1324,15 @@ pub const ComponentBuilder = struct {
     /// move. The value also becomes the element's DOM id.
     pub fn id(self: *const Self, element_id: []const u8) Self {
         var n = self.*;
-        const node = n._ui_node.?;
-        node.refundUnkeyedSlot();
-
         n._id = element_id;
-        node.uuid = element_id;
+        Vapor.assignUserId(n._ui_node.?, element_id);
         return n;
     }
 
     pub fn src(self: *const Self, source_location: std.builtin.SourceLocation) Self {
         var n = self.*;
-        const node = n._ui_node.?;
-
-        node.refundUnkeyedSlot();
-
         n._id = Vapor.frame.fmt("{s}-{d}", .{ source_location.file, source_location.line });
-        node.uuid = n._id.?;
+        Vapor.assignUserId(n._ui_node.?, n._id.?);
         return n;
     }
 

@@ -122,12 +122,12 @@ pub fn getWindowPath() []const u8 {
 pub fn store(key: []const u8, value: anytype) void {
     if (!isWasi) return;
     switch (@typeInfo(@TypeOf(value))) {
-        .int => Wasm.setLocalStorageNumberWasm(key.ptr, key.len, value),
-        // Floats go through the string binding: localStorage holds strings
-        // anyway, and the number binding takes a u32.
-        .float => {
+        // Numbers and bools go through the string binding: localStorage holds
+        // strings anyway, and the number binding takes a u32, so negative,
+        // 64-bit and float values could not round-trip through it.
+        .int, .comptime_int, .float, .comptime_float, .bool => {
             var buf: [64]u8 = undefined;
-            const text = std.fmt.bufPrint(&buf, "{d}", .{value}) catch |err| {
+            const text = std.fmt.bufPrint(&buf, "{}", .{value}) catch |err| {
                 Vapor.printlnErr("store: could not format '{s}': {any}", .{ key, err });
                 return;
             };
@@ -166,15 +166,14 @@ pub fn getStore(comptime T: type, key: []const u8) ?T {
             const stored_value = storage_table.getStr(handle) orelse return null;
             return stored_value;
         },
-        usize => return @intCast(Wasm.getLocalStorageU32Wasm(key.ptr, key.len)),
-        i32 => return Wasm.getLocalStorageI32Wasm(key.ptr, key.len),
-        u32 => return Wasm.getLocalStorageU32Wasm(key.ptr, key.len),
-        f32 => {
-            const string = Wasm.getLocalStorageStringWasm(key.ptr, key.len) orelse return null;
-            return std.fmt.parseFloat(f32, std.mem.span(string)) catch null;
-        },
-        else => {
-            if (@typeInfo(T) == .@"enum") {
+        else => switch (@typeInfo(T)) {
+            // A missing key is null, not 0: the old u32 binding could not
+            // tell "never stored" from "stored zero".
+            .int, .float, .bool => {
+                const string = Wasm.getLocalStorageStringWasm(key.ptr, key.len) orelse return null;
+                return parseStored(T, std.mem.span(string));
+            },
+            else => if (@typeInfo(T) == .@"enum") {
                 const string = Wasm.getLocalStorageStringWasm(key.ptr, key.len) orelse return null;
                 const value = std.mem.span(string);
                 const handle = storage_table.replaceOrAddStr(key, value) catch |err| {
@@ -185,9 +184,29 @@ pub fn getStore(comptime T: type, key: []const u8) ?T {
                 return std.meta.stringToEnum(T, stored_value);
             } else {
                 return null;
-            }
+            },
         },
     }
+}
+
+/// Parses a localStorage value written by `store`. Anything else (a value
+/// another script wrote, a type change between versions) reads as null.
+fn parseStored(comptime T: type, text: []const u8) ?T {
+    return switch (@typeInfo(T)) {
+        .int => std.fmt.parseInt(T, text, 10) catch null,
+        .float => std.fmt.parseFloat(T, text) catch null,
+        .bool => if (std.mem.eql(u8, text, "true")) true else if (std.mem.eql(u8, text, "false")) false else null,
+        else => @compileError("parseStored: unsupported type " ++ @typeName(T)),
+    };
+}
+
+test parseStored {
+    try std.testing.expectEqual(@as(?u32, 42), parseStored(u32, "42"));
+    try std.testing.expectEqual(@as(?i64, -9_000_000_000), parseStored(i64, "-9000000000"));
+    try std.testing.expectEqual(@as(?u8, null), parseStored(u8, "300"));
+    try std.testing.expectEqual(@as(?f32, 2.5), parseStored(f32, "2.5"));
+    try std.testing.expectEqual(@as(?bool, true), parseStored(bool, "true"));
+    try std.testing.expectEqual(@as(?u32, null), parseStored(u32, "zig"));
 }
 
 pub const EventHandler = struct {
@@ -397,9 +416,16 @@ pub fn init(config: VaporConfig) void {
     packed_transitions = std.AutoHashMap(u32, []Types.TransitionProperty).init(allocator);
     packed_transforms = std.AutoHashMap(u32, []Types.TransformType).init(allocator);
     KeyGenerator.initWriter();
-    // Fetch's registries live in the persist arena set up above. Without this,
-    // the first fetch() traps on an undefined hashmap ("null function").
+    // These subsystems keep registries in the persist arena set up above, and
+    // used to need separate init calls that only the docs site knew about.
+    // Without them the first fetch(), and the first removed node (which goes
+    // through the animation removal queue), trap on an undefined container
+    // ("RuntimeError: null function"); animations, edges and polygons were
+    // silently dropped. Calling any of these again later is harmless.
     Fetch.Fetch.init();
+    @import("Animation.zig").new();
+    @import("Edges.zig").new();
+    @import("Polygon.zig").new();
 
     // All this below adds 9kb
     // animations = std.StringHashMap(Animation).init(allocator);
@@ -1917,20 +1943,43 @@ pub var ui_node_layout_info = packed struct {
 };
 
 // Make sure this function is not evaluated at compile time
+/// Parses a CSS hex colour: `#rgb`, `#rgba`, `#rrggbb` or `#rrggbbaa`.
+/// Returns 0-255 channels and alpha in 0-1. Anything else is opaque black,
+/// as before; previously only `#rrggbb` was understood, so `#fff` was black
+/// and alpha digits were ignored.
 pub fn hexToRgba(hex_str: []const u8) [4]f32 {
-    if (hex_str.len < 7 or hex_str[0] != '#') return .{ 0, 0, 0, 1 };
+    const black = [4]f32{ 0, 0, 0, 1 };
+    if (hex_str.len < 1 or hex_str[0] != '#') return black;
+    const digits = hex_str[1..];
 
-    // Parse at runtime instead of compile-time
-    var r: f32 = 0;
-    var g: f32 = 0;
-    var b: f32 = 0;
+    var channels = [4]u8{ 0, 0, 0, 255 };
+    switch (digits.len) {
+        3, 4 => for (digits, 0..) |c, i| {
+            const v = charToHex(c) catch return black;
+            channels[i] = v * 17; // 0xf -> 0xff
+        },
+        6, 8 => for (0..digits.len / 2) |i| {
+            channels[i] = parseHexByte(digits[i * 2 ..][0..2]) catch return black;
+        },
+        else => return black,
+    }
+    return .{
+        @floatFromInt(channels[0]),
+        @floatFromInt(channels[1]),
+        @floatFromInt(channels[2]),
+        @as(f32, @floatFromInt(channels[3])) / 255.0,
+    };
+}
 
-    // Manual hex parsing to avoid compile-time evaluation issues
-    r = @floatFromInt(parseHexByte(hex_str[1..3]) catch 0);
-    g = @floatFromInt(parseHexByte(hex_str[3..5]) catch 0);
-    b = @floatFromInt(parseHexByte(hex_str[5..7]) catch 0);
-
-    return .{ r, g, b, 1 };
+test hexToRgba {
+    const eq = std.testing.expectEqual;
+    try eq([4]f32{ 5, 55, 148, 1 }, hexToRgba("#053794"));
+    try eq([4]f32{ 255, 255, 255, 1 }, hexToRgba("#fff"));
+    try eq([4]f32{ 0, 0, 0, 0.4 }, hexToRgba("#0006"));
+    try eq([4]f32{ 255, 0, 0, 0.5019608 }, hexToRgba("#ff000080"));
+    try eq([4]f32{ 0, 0, 0, 1 }, hexToRgba("#12345")); // invalid length
+    try eq([4]f32{ 0, 0, 0, 1 }, hexToRgba("#zzzzzz")); // invalid digit
+    try eq([4]f32{ 0, 0, 0, 1 }, hexToRgba("fff")); // no '#'
 }
 
 fn parseHexByte(hex: []const u8) !u8 {
@@ -2974,6 +3023,31 @@ pub fn startViewTransition(callback: anytype, args: anytype) void {
     if (isWasi) {
         Wasm.startViewTransitionWasm(callback_id);
     }
+}
+
+/// Gives `node` a caller-chosen id (`.id()`, `.src()`).
+///
+/// Everything keyed by the node's hash has to follow the new id. JS reports a
+/// button click by `node.hash`, and the generated id the node had is handed
+/// back to its parent (`refundUnkeyedSlot`) for the next unkeyed sibling. Left
+/// under the old hash, a button's callback was overwritten by that sibling's,
+/// so every `.id()`'d button in a row ran the last one's handler.
+pub fn assignUserId(node: *UINode, new_id: []const u8) void {
+    const old_hash = node.hash;
+    node.refundUnkeyedSlot();
+    node.uuid = new_id;
+    node.hash = hashKey(new_id);
+    node.prev_style_hash = UIContext.prev_style_hashes.get(node.hash) orelse 0;
+    if (old_hash == node.hash) return;
+    moveEntry(&erased_registry, old_hash, node.hash);
+    moveEntry(&element_registry, old_hash, node.hash);
+}
+
+fn moveEntry(map: anytype, from: u32, to: u32) void {
+    const kv = map.fetchRemove(from) orelse return;
+    map.put(to, kv.value) catch |err| {
+        printlnErr("assignUserId: could not re-register entry, it is lost: {any}", .{err});
+    };
 }
 
 // The JS/WASM side calls back with the id:
