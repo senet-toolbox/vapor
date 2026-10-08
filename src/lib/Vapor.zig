@@ -123,6 +123,10 @@ const EventsModule = @import("Events.zig");
 comptime {
     _ = EventsModule;
 }
+pub const invokeHooksErasedCallback = EventsModule.invokeHooksErasedCallback;
+pub const invokeErasedCallback = EventsModule.invokeErasedCallback;
+pub const dispatchNodeEvent = EventsModule.dispatchNodeEvent;
+pub const dispatchEvent = EventsModule.dispatchEvent;
 pub const ErasedEventCallback = EventsModule.ErasedEventCallback;
 pub const attachEventCtxCallback = EventsModule.attachEventCtxCallback;
 pub const attachEventCallback = EventsModule.attachEventCallback;
@@ -680,6 +684,7 @@ const TimersModule = @import("Timers.zig");
 comptime {
     _ = TimersModule;
 }
+pub const callAnimationFrameCallback = TimersModule.callAnimationFrameCallback;
 pub const loopInterval = TimersModule.loopInterval;
 pub const timeout = TimersModule.timeout;
 pub const cancelTimeout = TimersModule.cancelTimeout;
@@ -1105,6 +1110,39 @@ const ExportsModule = @import("Exports.zig");
 comptime {
     _ = ExportsModule;
 }
+pub const recordState = ExportsModule.recordState;
+pub const getDirtyValue = ExportsModule.getDirtyValue;
+pub const setRouteRenderTree = ExportsModule.setRouteRenderTree;
+pub const resetPacker = ExportsModule.resetPacker;
+pub const resetRerender = ExportsModule.resetRerender;
+pub const hasDirty = ExportsModule.hasDirty;
+pub const rerenderEverything = ExportsModule.rerenderEverything;
+pub const forceRerender = ExportsModule.forceRerender;
+pub const shouldRerender = ExportsModule.shouldRerender;
+pub const getTreeNodeChild = ExportsModule.getTreeNodeChild;
+pub const getTreeNodeChildrenCount = ExportsModule.getTreeNodeChildrenCount;
+pub const getRenderCommandPtr = ExportsModule.getRenderCommandPtr;
+pub const getCSSLen = ExportsModule.getCSSLen;
+pub const getCSS = ExportsModule.getCSS;
+pub const allocateU32 = ExportsModule.allocateU32;
+pub const allocate = ExportsModule.allocate;
+pub const allocUint8Frame = ExportsModule.allocUint8Frame;
+pub const allocUint8 = ExportsModule.allocUint8;
+pub const allocateUINodeLayoutInfo = ExportsModule.allocateUINodeLayoutInfo;
+pub const markCurrentTreeNotDirty = ExportsModule.markCurrentTreeNotDirty;
+pub const getUINodeNextSibling = ExportsModule.getUINodeNextSibling;
+pub const getUINodeFirstChild = ExportsModule.getUINodeFirstChild;
+pub const getUINodeChild = ExportsModule.getUINodeChild;
+pub const getUINodeChildrenCount = ExportsModule.getUINodeChildrenCount;
+pub const getRenderUINodeRootPtr = ExportsModule.getRenderUINodeRootPtr;
+pub const getRenderTreePtr = ExportsModule.getRenderTreePtr;
+pub const renderUI = ExportsModule.renderUI;
+pub const resizeCallback = ExportsModule.resizeCallback;
+pub const callbackCtx = ExportsModule.callbackCtx;
+pub const onPopStateCallback = ExportsModule.onPopStateCallback;
+pub const getVideo = ExportsModule.getVideo;
+pub const onLayoutCallback = ExportsModule.onLayoutCallback;
+pub const hasLayoutFunctions = ExportsModule.hasLayoutFunctions;
 
 // --- Rendering & Tree Management ---
 
