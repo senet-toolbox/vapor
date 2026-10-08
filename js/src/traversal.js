@@ -1,3 +1,4 @@
+import { debug } from "./debug.js";
 import { safeUrl, setSafeHref } from "./url.js";
 import {
   wasmInstance,
@@ -435,9 +436,9 @@ export function attachElementListeners(element, renderCmd) {
       break;
 
     case COMPONENT_TYPES.VIDEO:
-      console.log("Video");
+      debug("Video");
       const offset = wasmInstance.getVideo(renderCmd.nodePtr);
-      console.log("Offset", offset);
+      debug("Offset", offset);
       if (offset === 0) break; // Use break, not return
       const videoView = new DataView(wasmInstance.memory.buffer, offset);
       const srcPtr = videoView.getUint32(0, true);
@@ -668,7 +669,7 @@ export function createElementByType(uinode) {
             element.type = "checkbox";
             break;
           case 4:
-            console.log("Radio", fieldCount);
+            debug("Radio", fieldCount);
             element.type = "radio";
             break;
           case 5:
@@ -684,7 +685,7 @@ export function createElementByType(uinode) {
             element.type = "tel";
             break;
           case 9:
-            console.log("Date");
+            debug("Date");
             element.type = "date";
             break;
         }
@@ -1267,7 +1268,7 @@ export function traverseUINodes(parent, parentUINode) {
       element = document.getElementById(uinode.id);
 
       if (uinode.hooksChanged) {
-        console.log("Hooks Change", uinode.id, uinode.hooksChanged);
+        debug("Hooks Change", uinode.id, uinode.hooksChanged);
         invokedHooks.set(uinode.onCallbacks[0], true);
       }
 
@@ -1380,7 +1381,7 @@ export function traverseUINodes(parent, parentUINode) {
 }
 
 export function traverseRemove(parent, tree_node, layout) {
-  console.log("traverseRemove", parent, tree_node, layout);
+  debug("traverseRemove", parent, tree_node, layout);
   if (!parent) return;
 
   const children_count = wasmInstance.getTreeNodeChildrenCount(tree_node);

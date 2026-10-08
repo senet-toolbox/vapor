@@ -1,3 +1,4 @@
+import { debug } from "./debug.js";
 import { importObject } from "./wasi_env.js";
 import { EventType, setWasiInstance } from "./wasi.js";
 import {
@@ -102,7 +103,7 @@ let uiNodeLayoutInfoPtr;
 const mq = window.matchMedia("(max-width: 767px)");
 
 mq.addEventListener("change", (e) => {
-  console.log("Media query changed. Is mobile:", e.matches);
+  debug("Media query changed. Is mobile:", e.matches);
   if (e.matches) {
     const path = window.location.pathname;
     wasmInstance.rerenderEverything();
@@ -370,7 +371,7 @@ function loadTheme() {
     try {
       wasmInstance.setTheme(1);
     } catch (e) {
-      console.log("Error setting theme", e);
+      console.warn("Error setting theme", e);
     }
   } else {
     const savedTheme = localStorage.getItem("theme");
@@ -503,7 +504,7 @@ function setupWasiInstance() {
       const idPtr = allocStringFrame(JSON.stringify(parsed));
 
       const eventData = { id: elementId };
-      console.log(eventData);
+      debug(eventData);
 
       const eventPtr = allocStringFrame(JSON.stringify(eventData));
       wasmInstance.recordState(idPtr, eventPtr);
@@ -800,7 +801,7 @@ export function handleIntersection() {
   const observer = new IntersectionObserver((entries) => {
     entries.forEach((entry) => {
       if (entry.isIntersecting && !loadedSections.has(entry.target.id)) {
-        console.log("Intersection", entry.target.id);
+        debug("Intersection", entry.target.id);
         loadedSections.add(entry.target.id);
         loadSection(entry.target);
       }
@@ -923,7 +924,7 @@ export async function render() {
         });
       }
     } else {
-      console.log("Grain Rerender");
+      debug("Grain Rerender");
     }
   } catch (error) {
     console.error("An error occurred during the render cycle:", error);
@@ -935,11 +936,11 @@ export function callDestroyFncs() {
   domNodeRegistry.forEach((node, nodeId) => {
     if (!activeNodeIds.has(nodeId)) {
       if (node.destroy_hash === undefined) {
-        console.log("destroy_hash", nodeId, node);
+        debug("destroy_hash", nodeId, node);
       }
       try {
         if (node.destroy_hash > 0) {
-          console.log("destroy_hash", node.destroy_hash);
+          debug("destroy_hash", node.destroy_hash);
           wasmInstance.invokeErasedCallback(node.destroy_hash);
         }
       } catch (e) {
@@ -1343,10 +1344,10 @@ export function checkMemoryGrowth() {
   const currentSize = getWasmMemoryUsage();
   const pages = currentSize / (64 * 1024); // WASM pages are 64KB
 
-  console.log(`Total memory: ${currentSize / 1024 / 1024} MB (${pages} pages)`);
+  debug(`Total memory: ${currentSize / 1024 / 1024} MB (${pages} pages)`);
 
   if (currentSize > lastMemorySize) {
-    console.log(`Memory grew by ${(currentSize - lastMemorySize) / 1024} KB`);
+    debug(`Memory grew by ${(currentSize - lastMemorySize) / 1024} KB`);
   }
   lastMemorySize = currentSize;
   return pages;
@@ -1356,12 +1357,12 @@ export function checkMemoryGrowth() {
 function getDetailedMemoryInfo() {
   if (wasmInstance.get_stack_pointer) {
     const stackPtr = wasmInstance.get_stack_pointer();
-    console.log(`Stack pointer: 0x${stackPtr.toString(16)}`);
+    debug(`Stack pointer: 0x${stackPtr.toString(16)}`);
   }
 
   if (wasmInstance.get_heap_size) {
     const heapSize = wasmInstance.get_heap_size();
-    console.log(`Heap usage: ${heapSize / 1024} KB`);
+    debug(`Heap usage: ${heapSize / 1024} KB`);
   }
 }
 initWasi();

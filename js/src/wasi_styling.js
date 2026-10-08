@@ -375,7 +375,7 @@ export function checkMarkStyling(id, element, styleId, checkmarkstyle) {
       element.classList.add(className);
     } catch (error) {
       console.error("Failed to add CSS rule:", error);
-      console.log("Attempted CSS:", checkedStyle);
+      console.error("Attempted CSS:", checkedStyle);
     }
   }
 }

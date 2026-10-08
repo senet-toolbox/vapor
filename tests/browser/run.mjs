@@ -93,6 +93,7 @@ async function launch() {
   let nextId = 0;
   const pending = new Map();
   const problems = []; // uncaught exceptions and console.error, per test
+  const consoleMessages = []; // every console call, per test
   ws.onmessage = (ev) => {
     const msg = JSON.parse(ev.data);
     if (msg.id && pending.has(msg.id)) {
@@ -101,8 +102,10 @@ async function launch() {
     } else if (msg.method === "Runtime.exceptionThrown") {
       const d = msg.params.exceptionDetails;
       problems.push(`exception: ${d.exception?.description ?? d.text}`);
-    } else if (msg.method === "Runtime.consoleAPICalled" && msg.params.type === "error") {
-      problems.push(`console.error: ${msg.params.args.map((a) => a.value ?? a.description).join(" ")}`);
+    } else if (msg.method === "Runtime.consoleAPICalled") {
+      const text = msg.params.args.map((a) => a.value ?? a.description).join(" ");
+      consoleMessages.push(`console.${msg.params.type}: ${text}`);
+      if (msg.params.type === "error") problems.push(`console.error: ${text}`);
     }
   };
   const send = (method, params = {}) => new Promise((res, rej) => {
@@ -118,13 +121,14 @@ async function launch() {
     proc.kill();
     try { rmSync(profile, { recursive: true, force: true }); } catch {}
   };
-  return { send, problems, close };
+  return { send, problems, consoleMessages, close };
 }
 
 // ── test helpers ────────────────────────────────────────────────────────────
 
 function makePage(cdp, origin) {
   const problems = cdp.problems;
+  const consoleMessages = cdp.consoleMessages;
   const evaluate = async (expression) => {
     const r = await cdp.send("Runtime.evaluate", { expression, returnByValue: true, awaitPromise: true });
     if (r.exceptionDetails) throw new Error(`evaluate failed: ${r.exceptionDetails.exception?.description ?? r.exceptionDetails.text}`);
@@ -143,6 +147,7 @@ function makePage(cdp, origin) {
   const text = (id) => evaluate(`document.getElementById(${JSON.stringify(id)})?.textContent ?? null`);
   return {
     problems,
+    consoleMessages,
     // Drops expected console errors (e.g. the runtime reporting a blocked URL)
     // so they do not fail the test; returns how many matched.
     allowErrors(substring) {
@@ -334,6 +339,29 @@ const tests = {
     await p.waitFor(`location.pathname === "/a" && !!document.getElementById("page-a")`, "one back press returns to A");
   },
 
+  async "an ordinary session leaves the console empty"(p) {
+    // Internal diagnostics go through debug(), silent unless __VAPOR_DEBUG__.
+    await p.goto("/");
+    await p.waitForText("count", "0");
+    await p.click("inc");
+    await p.waitForText("count", "1");
+    await p.goto("/list");
+    await p.waitFor(`!!document.getElementById("item-1")`, "list");
+    await p.click("reverse");
+    await p.click("prepend");
+    await p.click("remove-first");
+    await p.goto("/input");
+    await p.waitFor(`!!document.getElementById("name")`, "input page");
+    await p.type("name", "quiet");
+    await p.waitForText("greeting", "Hello, quiet!");
+    await p.goto("/a");
+    await p.waitFor(`!!document.getElementById("to-b")`, "page A");
+    await p.click("to-b");
+    await p.waitFor(`!!document.getElementById("page-b")`, "page B");
+    await sleep(200);
+    assertEqual(p.consoleMessages, [], "console output");
+  },
+
   async "wasm memory stays flat across many route changes"(p) {
     await p.goto("/a");
     await p.waitFor(`!!document.getElementById("page-a")`, "page A");
@@ -399,6 +427,7 @@ if (selected.length === 0) {
 let failed = 0;
 for (const [name, fn] of selected) {
   cdp.problems.length = 0;
+  cdp.consoleMessages.length = 0;
   try {
     await fn(page);
     if (cdp.problems.length) throw new Error(cdp.problems.join("\n      "));

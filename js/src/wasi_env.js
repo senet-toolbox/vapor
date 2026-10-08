@@ -1,3 +1,4 @@
+import { debug } from "./debug.js";
 import { readWasmString, wasmInstance } from "./wasi_obj.js";
 import { env, requireWasm } from "./wasi.js";
 import { fileBindings } from "./additionals.js";
@@ -113,11 +114,11 @@ export const importObject = {
         true,
       );
       const timeoutMillis = Number(timeoutNanoSeconds / 1000000n);
-      console.log("Timeout duration (ms):", timeoutMillis);
+      debug("Timeout duration (ms):", timeoutMillis);
       new Promise((resolve) => {
-        console.log("Starting", timeoutMillis);
+        debug("Starting", timeoutMillis);
         setTimeout(() => {
-          console.log(`setTimeout resolved after ${timeoutMillis}ms`);
+          debug(`setTimeout resolved after ${timeoutMillis}ms`);
           promiseResolved = true;
           resolve(0);
         }, timeoutMillis);

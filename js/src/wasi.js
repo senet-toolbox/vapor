@@ -1,3 +1,4 @@
+import { debug } from "./debug.js";
 import { safeUrl, BLOCKED_URL } from "./url.js";
 /**
  * WASM-JavaScript Bindings
@@ -743,7 +744,7 @@ export const env = {
     if (!requireWasm()) return;
     const [elementId, element] = getElement(idPtr, idLen);
     if (element === null) {
-      console.log("Could not attach listener element is Null", elementId);
+      debug("Could not attach listener element is Null", elementId);
       return;
     }
 
@@ -759,7 +760,7 @@ export const env = {
       const currentId = element.id;
       const nodeInfo = domNodeRegistry.get(currentId);
       if (nodeInfo === undefined) {
-        console.log("Could Not find domNode", element, currentId);
+        debug("Could Not find domNode", element, currentId);
         return;
       }
 
@@ -1004,7 +1005,7 @@ export const env = {
     );
 
     const elementDetails = { id, elementType, btnId, text };
-    console.log(elementDetails);
+    debug(elementDetails);
   },
 
   removeFromParent: (idPtr, idLen) => {
@@ -1013,7 +1014,7 @@ export const env = {
     const id = new TextDecoder().decode(memory.subarray(idPtr, idPtr + idLen));
     const element = document.getElementById(id);
     if (element === null) {
-      console.log("Is Null");
+      debug("Is Null");
       return;
     }
     const parent = element.parentNode;
@@ -1026,7 +1027,7 @@ export const env = {
     const id = new TextDecoder().decode(memory.subarray(idPtr, idPtr + idLen));
     const element = document.getElementById(id);
     if (element === null) {
-      console.log("Is Null");
+      debug("Is Null");
       return;
     }
     const childId = new TextDecoder().decode(
@@ -1034,7 +1035,7 @@ export const env = {
     );
     const childElement = document.getElementById(childId);
     if (childElement === null) {
-      console.log("Is Null");
+      debug("Is Null");
       return;
     }
     element.appendChild(childElement);
@@ -1146,11 +1147,11 @@ export const env = {
       );
       const element = document.getElementById(id);
       if (element === null) {
-        console.log("Is Null");
+        debug("Is Null");
         return;
       }
 
-      console.log("element", element, attribute, value);
+      debug("element", element, attribute, value);
       if (attribute === "top" || attribute === "left") {
         element.style[attribute] = `${value}px`;
       } else {
@@ -1174,7 +1175,7 @@ export const env = {
 
     const element = document.getElementById(id);
     if (element === null) {
-      console.log("Is Null");
+      debug("Is Null");
       return;
     }
     element.style[attribute] = value;
@@ -1206,7 +1207,7 @@ export const env = {
     const id = new TextDecoder().decode(memory.subarray(idPtr, idPtr + idLen));
     const element = document.getElementById(id);
     if (element === null) {
-      console.log("Is Null");
+      debug("Is Null");
       return;
     }
     const classId = new TextDecoder().decode(
@@ -1221,7 +1222,7 @@ export const env = {
     const id = new TextDecoder().decode(memory.subarray(idPtr, idPtr + idLen));
     const element = document.getElementById(id);
     if (element === null) {
-      console.log("Is Null");
+      debug("Is Null");
       return;
     }
     const classId = new TextDecoder().decode(
@@ -1388,7 +1389,7 @@ export const env = {
         element.focus();
         return;
       }
-      console.log("Element is null, could not add focus", elementId);
+      debug("Element is null, could not add focus", elementId);
     });
   },
 
@@ -1400,7 +1401,7 @@ export const env = {
       const isFocused = document.activeElement === element;
       return isFocused;
     }
-    console.log("Element is null, could not add focus", elementId);
+    debug("Element is null, could not add focus", elementId);
   },
 
   callClickWASM: (idPtr, idLen) => {
@@ -1408,10 +1409,10 @@ export const env = {
     const id = readWasmString(idPtr, idLen);
     const element = document.getElementById(id);
     if (element === null) {
-      console.log("Is Null");
+      debug("Is Null");
       return;
     }
-    console.log(element);
+    debug(element);
     element.click();
   },
 
@@ -1441,7 +1442,7 @@ export const env = {
     const id = readWasmString(idPtr, idLen);
     const element = document.getElementById(id);
     if (element === null) {
-      console.log("Is Null");
+      debug("Is Null");
       return;
     }
     element.setSelectionRange(pos, pos);
@@ -1466,7 +1467,7 @@ export const env = {
     const id = readWasmString(idPtr >>> 0, idLen);
     const element = document.getElementById(id);
     if (element === null) {
-      console.log("Is Null");
+      debug("Is Null");
       return;
     }
     const ptr = wasmInstance.allocateU32(2);
@@ -1489,7 +1490,7 @@ export const env = {
       );
       const dialog = document.getElementById(id);
       if (dialog === null) {
-        console.log("Is Null");
+        debug("Is Null");
         return;
       }
       dialog.showModal();
@@ -1505,7 +1506,7 @@ export const env = {
       );
       const dialog = document.getElementById(id);
       if (dialog === null) {
-        console.log("Is Null");
+        debug("Is Null");
         return;
       }
       dialog.close();
@@ -2393,7 +2394,7 @@ export const env = {
     const id = readWasmString(idPtr, idLen);
     const element = document.getElementById(id);
     if (element === null) {
-      console.log("Element Is Null");
+      debug("Element Is Null");
       return;
     }
     let behavior = "auto";
@@ -2438,7 +2439,7 @@ export const env = {
     const id = readWasmString(idPtr, idLen);
     const element = document.getElementById(id);
     if (element === null) {
-      console.log("Element Is Null");
+      debug("Element Is Null");
       return;
     }
     let behavior = "auto";
@@ -2489,7 +2490,7 @@ export const env = {
     const key = readWasmString(keyPtr, keyLen);
     const element = document.getElementById(id);
     if (element === null) {
-      console.log("Element Is Null");
+      debug("Element Is Null");
       return;
     }
     element.removeAttribute(key);
