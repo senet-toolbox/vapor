@@ -159,7 +159,16 @@ pub fn build(b: *std.Build) void {
     // this checkout, then drives it (tests/browser/run.mjs). Needs Node >= 22
     // and Chrome, so it is its own step rather than part of `test`.
     const browser_step = b.step("browser-test", "Run the browser tests (needs Node >= 22 and Chrome)");
-    const build_app = b.addSystemCommand(&.{ b.graph.zig_exe, "build" });
+    const browser_optimize = b.option(
+        std.builtin.OptimizeMode,
+        "browser-optimize",
+        "Optimize mode for the browser-test app (default Debug; CI also runs ReleaseSmall, what apps ship)",
+    ) orelse .Debug;
+    const build_app = b.addSystemCommand(&.{
+        b.graph.zig_exe,
+        "build",
+        b.fmt("-Doptimize={s}", .{@tagName(browser_optimize)}),
+    });
     build_app.setCwd(b.path("tests/browser/app"));
     build_app.has_side_effects = true;
     const run_browser = b.addSystemCommand(&.{ "node", "tests/browser/run.mjs" });

@@ -55,6 +55,11 @@ jobs:
   # The DOM end to end: builds tests/browser/app against this checkout and
   # drives it in headless Chrome (preinstalled on ubuntu-latest).
   browser:
+    strategy:
+      fail-fast: false
+      matrix:
+        # ReleaseSmall is what apps ship; undefined behaviour shows up there.
+        optimize: [Debug, ReleaseSmall]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -65,4 +70,4 @@ jobs:
         with:
           node-version: 22
       - name: Browser tests
-        run: zig build browser-test
+        run: zig build browser-test -Dbrowser-optimize=${{ matrix.optimize }}
