@@ -60,6 +60,8 @@ jobs:
       matrix:
         # ReleaseSmall is what apps ship; undefined behaviour shows up there.
         optimize: [Debug, ReleaseSmall]
+        # Client-rendered shell, and prerendered pages (the hydration path).
+        static: [false, true]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -70,4 +72,4 @@ jobs:
         with:
           node-version: 22
       - name: Browser tests
-        run: zig build browser-test -Dbrowser-optimize=${{ matrix.optimize }}
+        run: zig build browser-test -Dbrowser-optimize=${{ matrix.optimize }} -Dbrowser-static=${{ matrix.static }}

@@ -175,6 +175,18 @@ export const encodeString = (string) => {
   wasmInstance.setRouteRenderTree(pointer);
 };
 
+// After the first render the page is live: handlers are attached and, for a
+// prerendered page, the server HTML is hydrated. Until then a click on
+// prerendered HTML goes nowhere. Announced once, for apps and test tools:
+//   <html data-vapor-ready>    and    window "vapor:ready" event
+let ready = false;
+function markReady() {
+  if (ready) return;
+  ready = true;
+  document.documentElement.setAttribute("data-vapor-ready", "");
+  window.dispatchEvent(new Event("vapor:ready"));
+}
+
 export const rerenderRoute = (navigatedPath) => {
   currentPath = window.location.pathname;
 
@@ -571,6 +583,7 @@ function setupWasiInstance() {
     sweep();
   }
   state.initial_render = false;
+  markReady();
   // callDestroyFncs();
   removeInactiveNodes();
   wasmInstance.markCurrentTreeNotDirty();
@@ -895,6 +908,7 @@ export async function render() {
         traverseUINodes(root, rootUINode);
 
         state.initial_render = false;
+        markReady();
         removeInactiveNodes();
         wasmInstance.markCurrentTreeNotDirty();
         wasmInstance.resetRerender();

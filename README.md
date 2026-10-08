@@ -235,6 +235,19 @@ req.handle(onAccounts, .{});
 _ = Fetch.fetch("/api/sync", .{ .method = .POST, .key = "account-sync" });
 ```
 
+### Knowing when the page is live
+
+Prerendered pages (`-Dgenerate`) are visible before the wasm has loaded, and a
+click on them before hydration goes nowhere. After the first render the runtime
+marks the page:
+
+```js
+document.documentElement.hasAttribute("data-vapor-ready"); // true once live
+window.addEventListener("vapor:ready", () => { /* ... */ });
+```
+
+End-to-end tests should wait for it before interacting.
+
 ### Authentication
 
 `Vapor.KeyStone` wraps OAuth sign-in, session storage, token refresh and
@@ -262,6 +275,18 @@ zig build          # build, and type-check the whole library
 zig build check    # type-check only, for wasm32-wasi and the host
 zig build test     # run the test suite (also runs check)
 ```
+
+Browser tests drive `tests/browser/app` in headless Chrome (needs Node 22+):
+
+```bash
+zig build browser-test                                   # client-rendered, Debug
+zig build browser-test -Dbrowser-optimize=ReleaseSmall   # what apps ship
+zig build browser-test -Dbrowser-static=true             # prerendered pages, i.e. hydration
+node tests/browser/run.mjs --serve                       # serve the app on :8090 to poke at
+```
+
+Set `globalThis.__VAPOR_DEBUG__ = true` before the runtime loads to see its
+internal diagnostics in the console.
 
 `zig build check` is worth explaining. Zig analyses declarations lazily, so a
 function nothing references is parsed but never type-checked — which means a

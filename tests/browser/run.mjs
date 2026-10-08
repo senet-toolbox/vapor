@@ -15,9 +15,15 @@ import { dirname, extname, join, normalize, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const appDir = resolve(dirname(fileURLToPath(import.meta.url)), "app");
-// Optional argument: run only tests whose name contains it, or `--serve` to
-// just serve the app for poking at in a real browser.
-const only = process.argv[2];
+// Arguments, in any order:
+//   --static   serve the prerendered pages (`zig build -Dgenerate=true` in the
+//              app) the way a static host would, so every test runs against
+//              hydrated HTML instead of a client-rendered shell
+//   --serve    only serve the app, for poking at in a real browser
+//   <text>     run only tests whose name contains it
+const flags = new Set(process.argv.slice(2).filter((a) => a.startsWith("--")));
+const only = process.argv.slice(2).find((a) => !a.startsWith("--"));
+const staticMode = flags.has("--static");
 
 // ── static server ───────────────────────────────────────────────────────────
 
@@ -32,7 +38,14 @@ const mime = {
 function serve(req, res) {
   const url = new URL(req.url, "http://x");
   let path = decodeURIComponent(url.pathname);
-  if (path === "/bundle.min.js") path = "/zig-out/bin/bundle.min.js";
+  if (staticMode) {
+    // A static host: release/ is the site root, plus the wasm the runtime
+    // fetches from /zig-out/bin/.
+    if (!extname(path)) path = path.replace(/\/$/, "") + "/index.html";
+    // Anything not in release/ (the wasm, the /api fixtures) is what the
+    // backend would serve.
+    if (existsSync(join(appDir, "release", path))) path = "/release" + path;
+  } else if (path === "/bundle.min.js") path = "/zig-out/bin/bundle.min.js";
   const file = normalize(join(appDir, path));
   if (!file.startsWith(appDir)) return res.writeHead(400).end();
 
@@ -162,6 +175,8 @@ function makePage(cdp, origin) {
     async goto(path) {
       await cdp.send("Page.navigate", { url: origin + path });
       await waitFor(`document.readyState === "complete"`, "page load");
+      // Prerendered HTML is visible before it is live; wait for hydration.
+      await waitFor(`document.documentElement.hasAttribute("data-vapor-ready")`, "vapor:ready");
     },
     async waitForText(id, expected) {
       await waitFor(
@@ -238,7 +253,7 @@ const tests = {
     await p.waitFor(`!!document.getElementById("stable")`, "cond page");
     await p.evaluate(`document.getElementById("stable").__mark = "kept"`);
     // Unkeyed elements get generated DOM ids, so compare by text.
-    const contents = `[...document.getElementById("cond-page").children].map((c) => c.textContent)`;
+    const contents = `[...document.getElementById("cond-page").children].map((c) => c.textContent.trim())`;
 
     await p.click("toggle");
     await p.waitFor(`!!document.getElementById("banner")`, "banner to appear");
@@ -394,6 +409,10 @@ const tests = {
 
 // ── main ────────────────────────────────────────────────────────────────────
 
+if (staticMode && !existsSync(join(appDir, "release/index.html"))) {
+  console.error("--static needs prerendered pages: run `zig build -Dgenerate=true` in tests/browser/app");
+  process.exit(2);
+}
 if (!existsSync(join(appDir, "zig-out/bin/vapor.wasm"))) {
   console.error(`missing ${appDir}/zig-out/bin/vapor.wasm; run \`zig build\` in tests/browser/app first`);
   process.exit(2);
@@ -409,9 +428,9 @@ if (!served.equals(current)) {
 }
 
 const server = createServer(serve);
-await new Promise((r) => server.listen(only === "--serve" ? 8090 : 0, "127.0.0.1", r));
+await new Promise((r) => server.listen(flags.has("--serve") ? 8090 : 0, "127.0.0.1", r));
 const origin = `http://127.0.0.1:${server.address().port}`;
-if (only === "--serve") {
+if (flags.has("--serve")) {
   console.log(`serving ${appDir} at ${origin}`);
   await new Promise(() => {});
 }
@@ -441,5 +460,5 @@ for (const [name, fn] of selected) {
 
 cdp.close();
 server.close();
-console.log(failed ? `\n${failed} failed` : "\nall passed");
+console.log(`${failed ? `\n${failed} failed` : "\nall passed"}${staticMode ? " (static pages)" : ""}`);
 process.exit(failed ? 1 : 0);

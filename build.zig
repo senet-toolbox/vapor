@@ -164,14 +164,21 @@ pub fn build(b: *std.Build) void {
         "browser-optimize",
         "Optimize mode for the browser-test app (default Debug; CI also runs ReleaseSmall, what apps ship)",
     ) orelse .Debug;
+    const browser_static = b.option(
+        bool,
+        "browser-static",
+        "Run the browser tests against prerendered pages (-Dgenerate), i.e. the hydration path",
+    ) orelse false;
     const build_app = b.addSystemCommand(&.{
         b.graph.zig_exe,
         "build",
         b.fmt("-Doptimize={s}", .{@tagName(browser_optimize)}),
+        b.fmt("-Dgenerate={}", .{browser_static}),
     });
     build_app.setCwd(b.path("tests/browser/app"));
     build_app.has_side_effects = true;
     const run_browser = b.addSystemCommand(&.{ "node", "tests/browser/run.mjs" });
+    if (browser_static) run_browser.addArg("--static");
     run_browser.setCwd(b.path("."));
     run_browser.has_side_effects = true;
     run_browser.step.dependOn(&build_app.step);
