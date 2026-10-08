@@ -4,6 +4,47 @@ All notable changes to this project are documented here. This project follows
 [Semantic Versioning](https://semver.org/): breaking changes bump the major
 version and are listed with a migration note.
 
+## [Unreleased]
+
+### The JS runtime ships with vapor
+
+The runtime that loads the wasm and applies its DOM operations used to live in
+the docs site and reach apps as a frozen copy inside metal, while metal fetched
+vapor's latest commit — so any change to the Zig↔JS boundary broke new apps.
+It now lives in `js/src`, ships prebuilt as `js/dist/bundle.min.js`, and is
+exposed as the named lazy path `runtime`. `zig build test` checks that every
+`extern fn` has a JS implementation (`check-abi`).
+
+**Migration:** install the runtime from the dependency instead of keeping your
+own copy, and serve it as `/bundle.min.js`:
+
+```zig
+b.getInstallStep().dependOn(&b.addInstallBinFile(
+    vapor_dep.namedLazyPath("runtime"),
+    "bundle.min.js",
+).step);
+```
+
+### Fixed
+
+- **`Fetch` without a manual `Fetch.init()` trapped.** `Vapor.init` did not
+  initialize it, so an app's first `fetch()` read an undefined hashmap
+  (`RuntimeError: null function`). `Vapor.init` now does; an extra
+  `Fetch.init()` before any request is harmless.
+- **`Kit.routePush` failed to link.** Its JS side, `routePushWASM`, did not
+  exist; any app reaching it failed to instantiate. Added.
+- **`store`/`load` with `f32`.** `store` passed a float to a `u32` binding (a
+  compile error) and `load` used a binding that did not exist. Both now go
+  through the string binding.
+- The static generator looked for `bundle.min.js` only in the project root and
+  printed `Copy error: error.FileNotFound` for metal-scaffolded apps.
+
+### Breaking changes
+
+| Removed | Why |
+| --- | --- |
+| `Wasm.trackAllocWasm`, `Wasm.runOnAnimationFrameWasm`, `Wasm.tick`, `Wasm.getLocalStorageF32Wasm`, `Wasm.getLocalStorageUIntWasm` | no JS implementation ever existed, so calling any of them made the module fail to load |
+
 ## [2.0.0] — 2026-08-11
 
 A correctness and hardening release. Four memory-safety bugs are fixed, a
