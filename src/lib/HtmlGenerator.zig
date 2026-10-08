@@ -262,31 +262,7 @@ pub fn createInput(ui_node: *UINode) void {
         return;
     };
     switch (params.*) {
-        // .string => |string| {
-        //     var value: []const u8 = "";
-        //     if (string.value_ptr) |ptr| {
-        //         value = ptr[0..string.value_len];
-        //     }
-        //     var default_value: []const u8 = "";
-        //     if (string.default_ptr) |ptr| {
-        //         default_value = ptr[0..string.default_len];
-        //     }
-        //     // writeOptionalProp("value", value);
-        //     writeOptionalProp("placeholder", default_value);
-        // },
-        // .int => |int| {
-        //     // writeOptionalProp("value", Vapor.fmtln("{d}", int.value));
-        //     writeOptionalProp("placeholder", Vapor.fmtln("{d}", int.value));
-        // },
-        // .password => |password| {
-        //     writeOptionalProp("value", password.value);
-        //     writeOptionalProp("placeholder", password.default);
-        // },
         .email => |email| {
-            // var value: []const u8 = "";
-            // if (email.value_ptr) |ptr| {
-            //     value = ptr[0..email.value_len];
-            // }
             var default_value: []const u8 = "";
             if (email.default_ptr) |ptr| {
                 default_value = ptr[0..email.default_len];
@@ -294,18 +270,10 @@ pub fn createInput(ui_node: *UINode) void {
             writeOptionalProp("type", "email");
             writeOptionalProp("placeholder", default_value);
         },
-        // .telephone => |telephone| {
-        //     writeOptionalProp("value", telephone.value);
-        //     writeOptionalProp("placeholder", telephone.default);
-        // },
         .file => |file| {
             _ = file;
             writeOptionalProp("type", "file");
         },
-        // .float => |float| {
-        //     writeOptionalProp("value", float.value);
-        //     writeOptionalProp("placeholder", float.default);
-        // },
         else => {},
     }
     emit("/>");
@@ -501,11 +469,6 @@ pub fn createElementOpen(ui_node: *UINode) void {
 
         .HtmlText => {
             createRawHtml(ui_node);
-            // if (ui_node.text) |text| {
-            //     if (std.mem.find(u8, text, "ZIG")) |_| {
-            //         std.debug.print("ZIG: {s}\n", .{writer.buffer[0..writer.end]});
-            //     }
-            // }
         },
 
         .List => {

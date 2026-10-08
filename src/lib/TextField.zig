@@ -790,22 +790,6 @@ pub fn BuilderClose(comptime state_type: types.StateType) type {
                     text_field_params.int.min_len = text_field_config.min;
                     text_field_params.int.max_len = text_field_config.max;
                 },
-                // .password => |password| {
-                //     password.min_len = config.min_len;
-                //     password.max_len = config.max_len;
-                // },
-                // .email => |email| {
-                //     email.min_len = config.min_len;
-                //     email.max_len = config.max_len;
-                // },
-                // .telephone => |telephone| {
-                //     telephone.min_len = config.min_len;
-                //     telephone.max_len = config.max_len;
-                // },
-                // .file => |file| {
-                //     file.min_len = config.min_len;
-                //     file.max_len = config.max_len;
-                // },
                 else => {},
             }
             new_self._text_field_params = text_field_params;

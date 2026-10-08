@@ -100,78 +100,6 @@ pub fn writeF16(self: *Writer, value: f16) Error!void {
     try self.write(fastFloatToString(value));
 }
 
-var float_buffer_16: [32]u8 = undefined;
-fn fastFloat16ToString(value: f16) []const u8 {
-    // Handle special cases
-    if (std.math.isNan(value)) return "NaN";
-    if (std.math.isInf(value)) return if (value > 0) "Infinity" else "-Infinity";
-    if (value == 0.0) return "0";
-
-    var buf_idx: usize = 0;
-    var n = value;
-
-    // Handle negative numbers
-    if (n < 0) {
-        float_buffer_16[buf_idx] = '-';
-        buf_idx += 1;
-        n = -n;
-    }
-
-    // Split into integer and fractional parts
-    const int_part = @as(u32, @intFromFloat(@floor(n)));
-    const frac_part = n - @floor(n);
-
-    // Convert integer part
-    if (int_part == 0) {
-        float_buffer_16[buf_idx] = '0';
-        buf_idx += 1;
-    } else {
-        const start_idx = buf_idx;
-        var temp = int_part;
-
-        // Get digits in reverse order
-        while (temp > 0) {
-            float_buffer_16[buf_idx] = @as(u8, @intCast(temp % 10)) + '0';
-            buf_idx += 1;
-            temp /= 10;
-        }
-
-        // Reverse the integer part
-        std.mem.reverse(u8, float_buffer_16[start_idx..buf_idx]);
-    }
-
-    // Add decimal point and fractional part if needed
-    if (frac_part > 0.0) {
-        float_buffer_16[buf_idx] = '.';
-        buf_idx += 1;
-
-        var frac = frac_part;
-        var precision: u8 = 0;
-        const max_precision: u8 = 6; // Limit decimal places
-
-        while (frac > 0.0 and precision < max_precision) {
-            frac *= 10.0;
-            const digit = @as(u8, @intFromFloat(@floor(frac)));
-            float_buffer_16[buf_idx] = digit + '0';
-            buf_idx += 1;
-            frac = frac - @floor(frac);
-            precision += 1;
-        }
-
-        // Remove trailing zeros
-        while (buf_idx > 0 and float_buffer_16[buf_idx - 1] == '0') {
-            buf_idx -= 1;
-        }
-
-        // Remove trailing decimal point if no fractional part remains
-        if (buf_idx > 0 and float_buffer_16[buf_idx - 1] == '.') {
-            buf_idx -= 1;
-        }
-    }
-
-    return float_buffer_16[0..buf_idx];
-}
-
 var float_buffer: [32]u8 = undefined;
 fn fastFloatToString(value: f32) []const u8 {
     // Handle special cases
@@ -266,22 +194,6 @@ pub fn writeUsize(self: *Writer, value: usize) Error!void {
 
 var large_int_buffer: [32]u8 = undefined;
 fn fastLargeIntToString(value: anytype) []const u8 {
-    if (value == 0) return "0";
-
-    var buf_idx: usize = large_int_buffer.len;
-    var n = value;
-
-    // Convert digits from right to left
-    while (n > 0) {
-        buf_idx -= 1;
-        large_int_buffer[buf_idx] = @as(u8, @intCast(n % 10)) + '0';
-        n /= 10;
-    }
-
-    return large_int_buffer[buf_idx..];
-}
-
-fn fastLargeF32ToString(value: f32) []const u8 {
     if (value == 0) return "0";
 
     var buf_idx: usize = large_int_buffer.len;

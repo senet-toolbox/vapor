@@ -92,8 +92,6 @@ pub var grain_element_uuid: []const u8 = "";
 pub var current_depth_node_id: []const u8 = "";
 pub var router: Router = undefined;
 
-var serious_error: bool = false;
-
 const Vapor = @This();
 pub const Kit = @import("kit/Kit.zig");
 // pub const Chart = @import("components/charts/Chart.zig");
@@ -256,10 +254,6 @@ pub var on_commit_ctx_funcs: std.array_list.Managed(*Node) = undefined;
 // pub var mounted_ctx_funcs: std.AutoHashMap(u32, *Node) = undefined;
 pub var on_create_node_funcs: std.AutoHashMap(u32, *Node) = undefined;
 pub var hooks_funcs: std.AutoHashMap(u32, *const fn () void) = undefined;
-// pub var mounted_funcs: std.AutoHashMap(u32, *const fn () void) = undefined;
-// pub var created_funcs: std.AutoHashMap(u32, *const fn () void) = undefined;
-// pub var updated_funcs: std.AutoHashMap(u32, *const fn () void) = undefined;
-// pub var destroy_funcs: std.AutoHashMap(u32, *const fn () void) = undefined;
 
 pub var string_table: StringTable = undefined;
 pub var storage_table: StorageTable = undefined;
@@ -271,7 +265,6 @@ pub var packed_transitions: std.AutoHashMap(u32, []Vapor.Types.TransitionPropert
 pub var packed_transforms: std.AutoHashMap(u32, []Vapor.Types.TransformType) = undefined;
 pub var element_registry: std.AutoHashMap(u32, *Binded) = undefined;
 
-const RemovedNode = struct { uuid: []const u8, index: usize };
 pub const ObserverNode = union(enum) {
     type: ElementType,
     uuid: []const u8,
@@ -291,8 +284,6 @@ pub var animations: ?std.StringHashMap(Animation) = null;
 pub var edges_table: ?std.StringHashMap(Edges) = null;
 pub var polygons_table: ?std.StringHashMap(Polygons) = null;
 // Define a type for continuation functions
-var callback_count: u32 = 0;
-const ContinuationFn = *const fn () void;
 
 // Global array to store continuations
 
@@ -427,10 +418,6 @@ pub fn init(config: VaporConfig) void {
     @import("Edges.zig").new();
     @import("Polygon.zig").new();
 
-    // All this below adds 9kb
-    // animations = std.StringHashMap(Animation).init(allocator);
-    // edges_table = std.StringHashMap(Edges).init(allocator);
-    // polygons_table = std.StringHashMap(Polygons).init(allocator);
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     observer_nodes = std.StringHashMap(std.array_list.Managed(ObserverNode)).init(allocator);
     added_nodes = std.array_list.Managed(*UINode).init(allocator);
@@ -465,10 +452,6 @@ fn initCalls(persistent_allocator: std.mem.Allocator) void {
     // mounted_ctx_funcs = std.AutoHashMap(u32, *Node).init(persistent_allocator);
     on_create_node_funcs = std.AutoHashMap(u32, *Node).init(persistent_allocator);
     hooks_funcs = std.AutoHashMap(u32, *const fn () void).init(persistent_allocator);
-    // mounted_funcs = std.AutoHashMap(u32, *const fn () void).init(persistent_allocator);
-    // destroy_funcs = std.AutoHashMap(u32, *const fn () void).init(persistent_allocator);
-    // updated_funcs = std.AutoHashMap(u32, *const fn () void).init(persistent_allocator);
-    // created_funcs = std.AutoHashMap(u32, *const fn () void).init(persistent_allocator);
     route_funcs = std.AutoHashMap(u32, ArrayArena(ErasedCallback)).init(persistent_allocator);
     erased_registry = std.AutoHashMap(u32, ErasedCallback).init(persistent_allocator);
     erased_hooks_registry = std.AutoHashMap(u32, ErasedCallback).init(persistent_allocator);
@@ -628,13 +611,6 @@ pub var current_route: []const u8 = "";
 var previous_route: []const u8 = "";
 var render_page: *const fn () void = undefined;
 pub var generator: CSSGenerator = undefined;
-
-const RenderPhase = enum {
-    generating, // Building VDOM
-    committing, // Running commit hooks
-    applying, // Applying to real DOM
-    idle, // Done
-};
 
 const Status = struct {
     render_cycle: bool = true,
@@ -810,7 +786,6 @@ pub fn createPage(path: []const u8, page: fn () void, page_deinit: ?fn () void) 
 }
 extern fn performance_now() f64; // imported from JS, for example
 
-var animation_frame_callbacks: std.array_list.Managed(*Node) = undefined;
 var animation_frame_callback: ?*Node = null;
 pub fn runOnAnimationFrame(callback: anytype, args: anytype) u32 {
     const Args = @TypeOf(args);
@@ -848,12 +823,6 @@ pub fn runOnAnimationFrame(callback: anytype, args: anytype) u32 {
         return Wasm.requestAnimationFrameWasm(@intFromPtr(animation_frame_callback));
     }
     return 0;
-}
-
-export fn callAnimationFrameCallbacks() void {
-    for (animation_frame_callbacks.items) |item| {
-        @call(.auto, item.data.runFn, .{&item.data});
-    }
 }
 
 export fn callAnimationFrameCallback(callback_ptr: u32) void {
@@ -1005,9 +974,6 @@ pub inline fn destroyElementEventListener(
     const event_type_str = std.enums.tagName(types.EventType, event_type) orelse return null;
     Wasm.removeElementEventListener(element_uuid.ptr, element_uuid.len, event_type_str.ptr, event_type_str.len, @intCast(cb_id));
     Vapor.printlnSrc("Callback id {}", .{cb_id}, @src());
-    // if (events_callbacks.remove(cb_id)) {
-    //     return true;
-    // }
     return false;
 }
 
@@ -2114,15 +2080,6 @@ pub fn printlnErr(
 ) void {
     _ = fmt;
     _ = args;
-    // if (isWasi and build_options.enable_debug) {
-    //     const buf = std.fmt.allocPrint(allocator_global, fmt, args) catch return;
-    //     const buf_with_src = std.fmt.allocPrint(allocator_global, "[%cERROR%c] {s}", .{buf[0..]}) catch return;
-    //     const style_1 = "color: #FF3029;";
-    //     const style_2 = "";
-    //     _ = Wasm.consoleLogColoredWasm(buf_with_src.ptr, buf_with_src.len, style_1[0..].ptr, style_1.len, style_2[0..].ptr, style_2.len);
-    //     allocator_global.free(buf_with_src);
-    //     allocator_global.free(buf);
-    // }
 }
 
 const LogLevel = enum(u32) {
@@ -2178,61 +2135,6 @@ fn printRaw(level: LogLevel, msg: []const u8) void {
     const style = level.color();
     consoleLogWasm(@intFromEnum(level), full.ptr, full.len, style.ptr, style.len);
 }
-// const LogLevel = enum {
-//     err,
-//     warn,
-//     info,
-//     debug,
-//
-//     fn label(self: LogLevel) []const u8 {
-//         return switch (self) {
-//             .err => "ERROR",
-//             .warn => "WARN",
-//             .info => "INFO",
-//             .debug => "DEBUG",
-//         };
-//     }
-//
-//     fn color(self: LogLevel) []const u8 {
-//         return switch (self) {
-//             .err => "color: #FF3029;",
-//             .warn => "color: #FFA629;",
-//             .info => "color: #4229FF;",
-//             .debug => "color: #FF29F4;",
-//         };
-//     }
-//
-//     fn logFn(self: LogLevel) fn ([*]const u8, usize, [*]const u8, usize, [*]const u8, usize) callconv(.c) void {
-//         return switch (self) {
-//             .err => Wasm.consoleLogColoredErrorWasm,
-//             .warn => Wasm.consoleLogColoredWarnWasm,
-//             .info, .debug => Wasm.consoleLogColoredWasm,
-//         };
-//     }
-// };
-//
-// pub fn print(
-//     level: LogLevel,
-//     comptime fmt: []const u8,
-//     args: anytype,
-// ) void {
-//     if (!(isWasi and build_options.enable_debug)) return;
-//     var buf: [1024]u8 = undefined;
-//     const msg = std.fmt.bufPrint(&buf, fmt, args) catch return;
-//     printRaw(level, msg);
-// }
-//
-// // Non-generic — only ONE instance gets compiled
-// fn printRaw(level: LogLevel, msg: []const u8) void {
-//     const style_1 = level.color();
-//     const style_2 = "";
-//     const prefix = level.label();
-//
-//     var full_buf: [2048]u8 = undefined;
-//     const full = std.fmt.bufPrint(&full_buf, "[%c{s}%c] {s}", .{ prefix, msg }) catch return;
-//
-//     _ = level.logFn()(full.ptr, full.len, style_1.ptr, style_1.len, style_2.ptr, style_2.len);
-// }
 
 // Convenience wrappers (optional)
 pub fn printErr(comptime fmt: []const u8, args: anytype) void {
@@ -2274,30 +2176,6 @@ pub fn printlnWithColor(
     _ = args;
     _ = color;
     _ = title;
-    // const buf = std.fmt.allocPrint(allocator_global, fmt, args) catch return;
-    // const color_buf = std.fmt.allocPrint(allocator_global, "color: {s};", .{color}) catch return;
-    // const buf_with_src = std.fmt.allocPrint(allocator_global, "[Vapor] [%c{s}%c] {s}", .{ title, buf[0..] }) catch return;
-    // // const style_2 = "";
-    // // _ = consoleLogColoredWasm(buf_with_src.ptr, buf_with_src.len, color_buf[0..].ptr, color_buf.len, style_2[0..].ptr, style_2.len);
-    // allocator_global.free(buf_with_src);
-    // allocator_global.free(color_buf);
-    // allocator_global.free(buf);
-}
-
-fn convertColorToString(color: Types.Color) []const u8 {
-    return switch (color) {
-        .Literal => |rgba| rgbaToString(rgba),
-        else => "",
-    };
-}
-
-fn rgbaToString(rgba: Types.Rgba) []const u8 {
-    return std.fmt.allocPrint(allocator_global, "rgba({d},{d},{d},{d})", .{
-        rgba.r,
-        rgba.g,
-        rgba.b,
-        rgba.a,
-    }) catch return "";
 }
 
 pub fn printlnColor(
@@ -2308,16 +2186,6 @@ pub fn printlnColor(
     _ = fmt;
     _ = args;
     _ = color;
-    // if (isWasi and build_options.enable_debug) {
-    //     const buf = std.fmt.allocPrint(allocator_global, fmt, args) catch return;
-    //     const color_buf = std.fmt.allocPrint(allocator_global, "color: {s};", .{convertColorToString(color)}) catch return;
-    //     const buf_with_src = std.fmt.allocPrint(allocator_global, "%c{s}%c", .{buf[0..]}) catch return;
-    //     const style_2 = "";
-    //     _ = Wasm.consoleLogColoredWasm(buf_with_src.ptr, buf_with_src.len, color_buf[0..].ptr, color_buf.len, style_2[0..].ptr, style_2.len);
-    //     allocator_global.free(buf_with_src);
-    //     allocator_global.free(color_buf);
-    //     allocator_global.free(buf);
-    // }
 }
 
 pub fn printlnAllocation(
@@ -2326,14 +2194,6 @@ pub fn printlnAllocation(
 ) void {
     _ = fmt;
     _ = args;
-
-    // const buf = std.fmt.allocPrint(allocator_global, fmt, args) catch return;
-    // const buf_with_src = std.fmt.allocPrint(allocator_global, "[Vapor] [%cALLOC%c] {s}", .{buf[0..]}) catch return;
-    // // const style_1 = "color: #744EFF;";
-    // // const style_2 = "";
-    // // _ = consoleLogColoredWasm(buf_with_src.ptr, buf_with_src.len, style_1[0..].ptr, style_1.len, style_2[0..].ptr, style_2.len);
-    // allocator_global.free(buf_with_src);
-    // allocator_global.free(buf);
 }
 
 pub fn printlnSrc(
@@ -2344,31 +2204,7 @@ pub fn printlnSrc(
     _ = fmt;
     _ = args;
     _ = src;
-    // if (isWasi and build_options.enable_debug) {
-    //     const buf = std.fmt.allocPrint(allocator_global, fmt, args) catch return;
-    //     const buf_with_src = std.fmt.allocPrint(allocator_global, "[%c{s}:{d}%c]\n[MSG] {s}", .{ src.file, src.line, buf[0..] }) catch return;
-    //     const style_1 = "color: #3CE98A;";
-    //     const style_2 = "";
-    //     _ = Wasm.consoleLogColoredWasm(buf_with_src.ptr, buf_with_src.len, style_1[0..].ptr, style_1.len, style_2[0..].ptr, style_2.len);
-    //     allocator_global.free(buf_with_src);
-    //     allocator_global.free(buf);
-    // }
 }
-
-// pub fn print(
-//     comptime fmt: []const u8,
-//     args: anytype,
-// ) void {
-//     _ = fmt;
-//     _ = args;
-//     // if (isWasi and build_options.enable_debug) {
-//     //     const buf = std.fmt.allocPrint(allocator_global, fmt, args) catch return;
-//     //     _ = Wasm.consoleLogWasm(buf.ptr, buf.len);
-//     //     allocator_global.free(buf);
-//     // } else if (!isWasi) {
-//     //     std.debug.print(fmt, args);
-//     // }
-// }
 
 pub fn println(
     comptime fmt: []const u8,
@@ -2403,42 +2239,6 @@ pub fn loopInterval(name: []const u8, delay_ms: u32, callback: anytype, args: an
     if (isWasi) {
         Wasm.createInterval(callback_id, delay_ms);
     }
-
-    // const Args = @TypeOf(args);
-    // const Closure = struct {
-    //     arguments: Args,
-    //     run_node: Node = .{ .data = .{ .runFn = runFn, .deinitFn = deinitFn } },
-    //     //
-    //     fn runFn(action: *Action) void {
-    //         const run_node: *Node = @fieldParentPtr("data", action);
-    //         const closure: *@This() = @alignCast(@fieldParentPtr("run_node", run_node));
-    //         @call(.auto, cb, closure.arguments);
-    //     }
-    //     //
-    //     fn deinitFn(node: *Node) void {
-    //         const closure: *@This() = @alignCast(@fieldParentPtr("run_node", node));
-    //         allocator_global.destroy(closure);
-    //     }
-    // };
-    //
-    // const closure = allocator_global.create(Closure) catch |err| {
-    //     println("Error could not create closure {any}\n ", .{err});
-    //     unreachable;
-    // };
-    // closure.* = .{
-    //     .arguments = args,
-    // };
-    //
-    // const callback_id = hashKey(name);
-    // ctx_callback_registry.put(callback_id, &closure.run_node) catch |err| {
-    //     println("Button Function Registry {any}\n", .{err});
-    // };
-    //
-    // if (isWasi) {
-    //     Wasm.createInterval(callback_id, delay_ms);
-    // } else {
-    //     return;
-    // }
 }
 
 pub fn timeout(callback_name: []const u8, ms: u32, cb: anytype, args: anytype) void {
@@ -2568,28 +2368,6 @@ pub fn onMount(callback: anytype, args: anytype) void {
     ui_node.on_callbacks[0] = callback_id;
 }
 
-var mounted_route: ?[]const u8 = null;
-pub export fn callMountFunctions(route_terminated: [*:0]u8) callconv(.c) void {
-    const route = std.mem.span(route_terminated);
-    const callback_id = hashKey(route);
-    if (mounted_route) |_| {
-        if (std.mem.eql(u8, route, mounted_route.?)) {
-            return;
-        }
-    }
-
-    const list = Vapor.route_funcs.get(callback_id) orelse {
-        println("No mount functions found for route {s}\n", .{route});
-        return;
-    };
-
-    for (list.items) |*item| {
-        item.call();
-    }
-
-    mounted_route = route;
-}
-
 pub fn onLayout(callback: anytype, args: anytype) void {
     const Args = @TypeOf(args);
     const Closure = struct {
@@ -2702,39 +2480,12 @@ pub export fn getVideo(uinode: *UINode) callconv(.c) ?*const types.Video {
     return null;
 }
 
-export fn hooksMountedCallbackCtx(id: u32, hook_type: HooksCtxFuncs) void {
-    var hash: u32 = id;
-    const hook_hash = switch (hook_type) {
-        .mounted => utils.hash(Vapor.on_mount_hash),
-        .destroy => utils.hash(Vapor.on_create_hash),
-    };
-    hash +%= hook_hash;
-
-    const kv = erased_registry.fetchRemove(hash) orelse {
-        std.log.err("Mounted Function {d} not found\n", .{id});
-        return;
-    };
-    var erased = kv.value;
-    erased.call();
-}
-
 pub export fn onPopStateCallback() callconv(.c) void {
     const length = Vapor.pop_state_funcs.items.len;
     if (length == 0) return;
     var i: usize = length - 1;
     while (i >= 0) : (i -= 1) {
         const call = Vapor.pop_state_funcs.items[i];
-        @call(.auto, call, .{});
-        if (i == 0) return;
-    }
-}
-
-pub export fn onPushStateCallback() callconv(.c) void {
-    const length = Vapor.push_state_funcs.items.len;
-    if (length == 0) return;
-    var i: usize = length - 1;
-    while (i >= 0) : (i -= 1) {
-        const call = Vapor.push_state_funcs.orderedRemove(i);
         @call(.auto, call, .{});
         if (i == 0) return;
     }
@@ -2813,10 +2564,6 @@ pub export fn getUINodeNextSibling(node_ptr: ?*UINode) callconv(.c) ?*UINode {
     return node.next_sibling;
 }
 
-pub export fn getDirtyNodeCount() callconv(.c) usize {
-    return Vapor.dirty_nodes.items.len;
-}
-
 pub export fn markCurrentTreeNotDirty() callconv(.c) void {
     if (!Vapor.has_context) return;
     const root = Vapor.current_ctx.root orelse return;
@@ -2884,10 +2631,6 @@ pub export fn getTreeNodeChild(tree: *CommandsTree, index: usize) callconv(.c) *
     return child;
 }
 
-pub export fn getRenderCommandSize() callconv(.c) usize {
-    return @sizeOf(RenderCommand);
-}
-
 // --- Removal Handling ---
 pub export fn shouldRerender() callconv(.c) bool {
     return Vapor.global_rerender;
@@ -2928,28 +2671,6 @@ pub export fn resetPacker() callconv(.c) void {
     UIContext.element_style_hash_map.clearRetainingCapacity();
 }
 
-pub export fn callRouteRenderCycle(ptr: [*:0]u8) callconv(.c) u32 {
-    Packer.animations.clearRetainingCapacity();
-    Packer.layouts.clearRetainingCapacity();
-    Packer.positions.clearRetainingCapacity();
-    Packer.margins_paddings.clearRetainingCapacity();
-    Packer.visuals.clearRetainingCapacity();
-    Packer.interactives.clearRetainingCapacity();
-    Packer.transforms.clearRetainingCapacity();
-    UIContext.element_style_hash_map.clearRetainingCapacity();
-    Vapor.renderCycle(ptr) catch |err| {
-        printlnSrcErr("Error while rendering", .{}, @src());
-        switch (err) {
-            error.NoRouteFound => {
-                printlnSrcErr("No Route found", .{}, @src());
-            },
-        }
-        return 0;
-    };
-    Vapor.markChildrenDirty(Vapor.current_ctx.root.?);
-    return 1;
-}
-
 pub export fn setRouteRenderTree(ptr: [*:0]u8) callconv(.c) u32 {
     Vapor.renderCycle(ptr) catch |err| {
         printlnSrcErr("Error while rendering", .{}, @src());
@@ -2961,10 +2682,6 @@ pub export fn setRouteRenderTree(ptr: [*:0]u8) callconv(.c) u32 {
         return 0;
     };
     return 1;
-}
-
-pub export fn setRerenderTrue() callconv(.c) void {
-    Vapor.cycle();
 }
 
 pub export fn getDirtyValue(node: *UINode) callconv(.c) bool {
@@ -3141,10 +2858,6 @@ pub const persist = struct {
         return buf;
     }
 
-    // pub fn HashMap(comptime K: type, comptime V: type) std.AutoHashMap(K, V) {
-    //     return std.AutoHashMap(K, V);
-    // }
-
     pub fn array(comptime T: type) ArrayArena(T) {
         return ArrayArena(T).init(.persist);
     }
@@ -3237,13 +2950,6 @@ pub const view = struct {
     pub fn HashMap(comptime K: type, comptime V: type) std.AutoHashMap(K, V) {
         return std.AutoHashMap(K, V).init(Vapor.view.arena());
     }
-
-    // pub fn array(comptime T: type) std.array_list.Managed(T) {
-    //     var array_list: std.array_list.Managed(T) = undefined;
-    //     const allocator = Vapor.arena(.view);
-    //     array_list = std.array_list.Managed(T).init(allocator);
-    //     return array_list;
-    // }
 
     pub fn array(comptime T: type) ArrayArena(T) {
         return ArrayArena(T).init(.view);

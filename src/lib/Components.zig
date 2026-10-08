@@ -29,7 +29,6 @@ fn assertTakesResizeEntry(comptime f: anytype) void {
     @compileError("function must take a Vapor.Kit.ResizeEntry");
 }
 
-const default_resize_observer_name = "__vapor_default_resize";
 pub const on_resize: []const u8 = "on_resize"; // pick a constant, distinct from on_mount_hash
 
 pub const StringEntry = struct {
@@ -123,9 +122,6 @@ fn createNode(elem_decl: ElementDecl) *UINode {
     };
     return ui_node;
 }
-
-const AnchorSource = struct { id: []const u8 };
-const AnchorTarget = struct { id: []const u8, placement: types.Layout, position: types.Position };
 
 // ============================================================
 // Shared style-merge logic — compiled ONCE, not per generic instantiation
@@ -1307,11 +1303,6 @@ pub const ComponentBuilder = struct {
             @panic("vapor: ONDRAGSTART: Could not attach event callback");
         };
 
-        // Vapor.onEndCtx(struct {
-        //     pub fn attachDraggable(draggable: *Draggable) void {
-        //         draggable.addStartListener();
-        //     }
-        // }.attachDraggable, .{draggable_ptr});
         return self;
     }
 
@@ -1528,19 +1519,6 @@ pub const ComponentBuilder = struct {
         new_self._visual = visual;
         return new_self;
     }
-
-    // pub fn shadow(self: *const Self, value: ?types.Shadow) Self {
-    //     if (value == null) return self.*;
-    //     var n = self.*;
-    //     var v = n._visual orelse types.Visual{};
-    //     if (self._elem_type == .Text or self._elem_type == .TextFmt) {
-    //         v.text_shadow = value;
-    //     } else {
-    //         v.shadow = value;
-    //     }
-    //     n._visual = v;
-    //     return n;
-    // }
 
     pub fn shadow(self: *const Self, value: ?Shadow) Self {
         if (value == null) return self.*;
@@ -2011,19 +1989,6 @@ pub const ComponentBuilder = struct {
         }
 
         var mutable_style = mergeStyles(self.getStyleMergeParams(true, false));
-        // const elem_decl = Vapor.ElementDecl{
-        //     .state_type = _state_type,
-        //     .elem_type = self._elem_type,
-        //     .text = self._text,
-        //     .style = &mutable_style,
-        //     .href = self._href,
-        //     .svg = self._svg,
-        //     .aria_label = self._aria_label,
-        //     .animation_enter = self._animation_enter,
-        //     .animation_exit = self._animation_exit,
-        //     .inlineStyle = inline_style,
-        //     .accessibility = self._accessibility,
-        // };
 
         const elem_decl = self.makeElemDecl(null, &mutable_style, inline_style);
         Vapor.LifeCycle.configure(elem_decl);
@@ -2172,17 +2137,6 @@ pub const ComponentBuilder = struct {
 pub fn Builder(comptime state_type: types.StateType) type {
     _ = state_type;
     return ComponentBuilder;
-    // switch (state_type) {
-    //     .inert => {
-    //         return InertBuilder;
-    //     },
-    //     .pure => {
-    //         return ComponentBuilder;
-    //     },
-    //     else => {
-    //         return ComponentBuilder;
-    //     },
-    // }
 }
 
 pub fn BuilderClose(comptime state_type: types.StateType) type {

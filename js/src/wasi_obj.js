@@ -30,73 +30,6 @@ export let layoutInfo;
 export let UINodelayoutInfo;
 
 let tree_node;
-// const socket = new WebSocket("ws://localhost:3003");
-// const reloadIndicator = document.getElementById("reload-indicator");
-// const reloadTimer = document.getElementById("reload-timer");
-//
-// This fires when the connection is successfully established
-// socket.onopen = function (event) {
-//   console.log("WebSocket connection established!");
-//   // Maybe update UI to show connected status
-// };
-
-// let reloadStartTime = null;
-// let reloadTimerInterval = null;
-//
-// function showReloading() {
-//   reloadStartTime = performance.now();
-//   reloadIndicator.classList.add("visible");
-//
-//   // Update timer every 100ms
-//   reloadTimerInterval = setInterval(() => {
-//     const elapsed = (performance.now() - reloadStartTime) / 1000;
-//     reloadTimer.textContent = elapsed.toFixed(1);
-//   }, 100);
-// }
-//
-// function hideReloading() {
-//   // Show final time briefly before hiding
-//   if (reloadStartTime) {
-//     const elapsed = (performance.now() - reloadStartTime) / 1000;
-//     reloadTimer.textContent = elapsed.toFixed(2);
-//   }
-//
-//   clearInterval(reloadTimerInterval);
-//   reloadTimerInterval = null;
-//   reloadStartTime = null;
-//
-//   // Small delay so you can see the final time
-//   setTimeout(() => {
-//     reloadIndicator.classList.remove("visible");
-//   }, 300);
-// }
-
-// // Handle incoming messages
-// socket.onmessage = async function (event) {
-//   if (event.data === "reloading") {
-//     showReloading();
-//     return;
-//   }
-//
-//   // Your existing reload logic here...
-//   // After WASM loads:
-//   if (event.data === "refresh") {
-//     const rootElement = document.getElementById("contents");
-//     rootElement.innerHTML = "";
-//     window.location.reload();
-//   }
-//   hideReloading();
-// };
-
-// // Handle errors
-// socket.onerror = function (error) {
-//   console.error("WebSocket error:", error);
-// };
-//
-// // Handle disconnection
-// socket.onclose = function (event) {
-//   console.log("WebSocket connection closed:", event.code, event.reason);
-// };
 
 let uiNodeLayoutInfoPtr;
 
@@ -126,7 +59,6 @@ window.addEventListener("popstate", async function(event) {
     wasmInstance.onPopStateCallback();
   });
 });
-
 
 async function loadWasm(path, imports = {}) {
   const response = await fetch(path);
@@ -624,13 +556,6 @@ function setupWasiInstance() {
     });
   });
 
-  // queueMicrotask(() => {
-  //   const toFire = Array.from(invokedHooks.keys());
-  //   invokedHooks.clear();
-  //   for (const key of toFire) {
-  //     wasmInstance.invokeHooksErasedCallback(key);
-  //   }
-  // });
 }
 
 function readAllRenderCommands(baseOffset, count) {
@@ -747,13 +672,6 @@ function readAllRenderCommands(baseOffset, count) {
   return commands;
 }
 
-// function injectCSS(cssString) {
-//   const sheet = new CSSStyleSheet();
-//   sheet.replaceSync(cssString);
-//   document.adoptedStyleSheets = [sheet, ...document.adoptedStyleSheets];
-//   console.log(document.adoptedStyleSheets);
-// }
-
 // Create ONE global stylesheet
 // const styleSheet = new CSSStyleSheet();
 document.adoptedStyleSheets = [...document.adoptedStyleSheets, styleSheet];
@@ -862,27 +780,6 @@ export async function render() {
   const globalRerender = wasmInstance.shouldRerender();
 
   if (!globalRerender) {
-    // queueMicrotask(() => {
-    //   const toFire = Array.from(invokedHooks.keys());
-    //   invokedHooks.clear();
-    //   for (const key of toFire) {
-    //     wasmInstance.invokeHooksErasedCallback(key);
-    //   }
-    //
-    //   // A hook may have dirtied state and scheduled another render.
-    //   // If so, that render is now the "last" pass — let IT call onLayout.
-    //   if (state.isRenderScheduled || wasmInstance.shouldRerender()) {
-    //     return;
-    //   }
-    //
-    //   // Nothing pending: DOM is final. Wait for paint, then measure.
-    //   requestAnimationFrame(() => {
-    //     requestAnimationFrame(() => {
-    //       console.log("Calling onLayoutCallback");
-    //       wasmInstance.onLayoutCallback();
-    //     });
-    //   });
-    // });
     return;
   }
 
@@ -1105,10 +1002,6 @@ export function readRenderCommand(offset, layout) {
       const classname = readWasmString(classnamePtr, classnameLen);
       styleId = classname;
     }
-    // }
-    // if (wasmInstance.hasEctClasses(nodePtr)) {
-    //   wasmInstance.addEctClasses(nodePtr);
-    // }
   }
 
   const stateType = view.getUint32(layoutInfo.renderTypeOffset, true);
@@ -1187,10 +1080,6 @@ export function readUINode(offset) {
       true,
     );
     const id = idPtr ? readWasmString(idPtr, idLen) : "";
-    // const id = Number(
-    //   view.getUint32(offset + UINodelayoutInfo.hashOffset, true),
-    // );
-    // const hash = id;
     return {
       id,
       isDirty: false,
@@ -1355,10 +1244,6 @@ export function readWasmString(ptr, len) {
   const bytes = new Uint8Array(wasmInstance.memory.buffer, ptr, len);
   return textDecoder.decode(bytes);
 }
-// export function readWasmString(ptr, len) {
-//   const bytes = new Uint8Array(wasmInstance.memory.buffer, ptr, len);
-//   return new TextDecoder().decode(bytes);
-// }
 
 // Check if memory is growing over time
 // Get total WASM memory size

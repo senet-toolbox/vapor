@@ -114,54 +114,6 @@ export function clearIntervalsForRoute(path) {
   }
 }
 
-// export async function animateExitRecursive(el, index, toRemoveMap) {
-//   if (!el) return;
-//   el.dataset.removing = "true";
-//
-//   // First, recursively handle children that are in the removal set
-//   const childRemovals = [];
-//   for (const [id, { el: childEl, index: childIndex }] of toRemoveMap) {
-//     if (
-//       childEl !== el &&
-//       el.contains(childEl) &&
-//       childEl.parentElement?.closest(`[data-removing="true"]`) === el
-//     ) {
-//       // Direct child in removal set
-//       childRemovals.push(
-//         animateExitRecursive(childEl, childIndex, toRemoveMap),
-//       );
-//     }
-//   }
-//   await Promise.all(childRemovals);
-//
-//   // Now animate this element
-//   const animPtr = wasmInstance.getRemovalAnimationPtr(index);
-//   if (animPtr > 0) {
-//     const animLen = wasmInstance.getRemovalAnimationLen(index);
-//     const css = readWasmString(animPtr, animLen);
-//     if (css) {
-//       el.style.animation = css;
-//       void el.offsetWidth;
-//       await new Promise((resolve) => {
-//         el.addEventListener("animationend", () => resolve(), { once: true });
-//       });
-//     }
-//   }
-//
-//   // Cleanup
-//   domNodeRegistry.delete(el.id);
-//   pureNodeRegistry.delete(el.id);
-//   loadedSections.delete(el.id);
-//   const eventData = eventHandlers.get(el.id);
-//   if (eventData) {
-//     for (const [eventType, handler] of Object.entries(eventData)) {
-//       el.removeEventListener(eventType, handler);
-//     }
-//     eventHandlers.delete(el.id);
-//   }
-//   el.remove();
-// }
-
 export async function animateExit(el, index = -1, skipAnimation = false) {
   if (!el || el.dataset.removing === "true") return;
   el.dataset.removing = "true";
@@ -230,48 +182,6 @@ function cleanupRegistryEntry(id) {
   elementCache.delete(id);
   activeNodeIds.delete(id);
 }
-
-// export async function animateExit(el, index = -1, skipAnimation = false) {
-//   if (!el) return;
-//   el.dataset.removing = "true";
-//
-//   // Only attempt animation if not skipped AND valid index
-//   if (!skipAnimation && index > -1) {
-//     const animPtr = wasmInstance.getRemovalAnimationPtr(index);
-//     if (animPtr > 0) {
-//       const animLen = wasmInstance.getRemovalAnimationLen(index);
-//       const css = readWasmString(animPtr, animLen);
-//       if (css) {
-//         el.style.animation = css;
-//         void el.offsetWidth;
-//         await new Promise((resolve) => {
-//           el.addEventListener("animationend", resolve, { once: true });
-//         });
-//       }
-//     }
-//   }
-//
-//   // Cleanup children - pass -1 to skip index lookup entirely
-//   for (const child of Array.from(el.children)) {
-//     await animateExit(child, -1, true);
-//   }
-//
-//   // Cleanup registries
-//   domNodeRegistry.delete(el.id);
-//   pureNodeRegistry.delete(el.id);
-//   loadedSections.delete(el.id);
-//   elementCache.delete(el.id);
-//
-//   const eventData = eventHandlers.get(el.id);
-//   if (eventData) {
-//     for (const [eventType, handler] of Object.entries(eventData)) {
-//       el.removeEventListener(eventType, handler);
-//     }
-//     eventHandlers.delete(el.id);
-//   }
-//
-//   el.remove();
-// }
 
 export async function recurseDestroy(el, skipAnimation = false) {
   if (!el) return;
@@ -712,17 +622,6 @@ export function createElementByType(uinode) {
         const length = wasmInstance.getAriaLabelLen();
         element.ariaLabel = readWasmString(label, length);
       }
-      // element.addEventListener("click", async (event) => {
-      //   state.currentDepthNode = uinode.id;
-      //   event.preventDefault();
-      //   event.stopPropagation();
-      //   const idPtr = allocString(uinode.id);
-      //   if (uinode.elemType === COMPONENT_TYPES.BUTTON_CYCLE) {
-      //     wasmInstance.buttonCycleCallback(idPtr);
-      //   } else {
-      //     wasmInstance.buttonCallback(idPtr);
-      //   }
-      // });
       break;
 
     case COMPONENT_TYPES.BUTTON_CTX:
@@ -733,12 +632,6 @@ export function createElementByType(uinode) {
         const length = wasmInstance.getAriaLabelLen();
         element.ariaLabel = readWasmString(label, length);
       }
-      // element.addEventListener("click", (event) => {
-      //   event.preventDefault();
-      //   event.stopPropagation();
-      //   const idPtr = allocString(uinode.id);
-      //   wasmInstance.ctxButtonCallback(idPtr);
-      // });
       break;
 
     case COMPONENT_TYPES.SUBMIT_BUTTON:
@@ -1112,9 +1005,6 @@ export function updateElement(element, uinode, force = false) {
     }
   } else {
     const inlineStylePtr = wasmInstance.getInlineStyle(uinode.offset);
-    // if (inlineStylePtr === 0) {
-    //   element.setAttribute("style", "");
-    // }
   }
 }
 

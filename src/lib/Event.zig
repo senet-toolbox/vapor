@@ -319,11 +319,6 @@ export fn registerAllListenerCallbacks() void {
         const ui_node = entry.value_ptr.*;
         if (ui_node.event_handlers) |handlers| {
             for (handlers.handlers.items) |handler| {
-                // if (handler.event_type == .blur or handler.event_type == .focus or handler.event_type == .input or handler.event_type == .change or handler.event_type == .submit or handler.event_type == .keydown or handler.event_type == .keyup) {
-                //     // Vapor.printlnSrcErr("Event Type: {any} is being ignored\n", .{handler.event_type}, @src());
-                //     continue;
-                // }
-
                 if (handler.event_type == .submit or handler.event_type == .mouseover or handler.event_type == .mouseout) {
                     continue;
                 }

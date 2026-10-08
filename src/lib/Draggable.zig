@@ -234,22 +234,6 @@ pub const Draggable = struct {
         _ = self.element.translate3d(.{ .x = x, .y = y });
     }
 
-    fn revertPosition(self: *Draggable) void {
-        if (self.config.animate_revert) {
-            self.element.transition("transform", "0.3s ease");
-            defer self.element.transition("transform", "none");
-        }
-        self.updatePosition(self.current_x, self.current_y);
-    }
-
-    fn getDropTarget(self: *Draggable, evt: *Vapor.Event) ?*Vapor.Binded {
-        // Get element at pointer position
-        // This would use elementFromPoint or similar
-        _ = self;
-        _ = evt;
-        return null; // TODO: Implement drop target detection
-    }
-
     // Public methods
     pub fn setPosition(self: *Draggable, x: f32, y: f32) void {
         self.current_x = x;

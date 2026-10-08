@@ -499,13 +499,6 @@ export const env = {
   // Console / Debugging
   // ==========================================================================
 
-  // consoleLogWasm: (ptr, len) => {
-  //   if (!requireWasm()) return;
-  //   const memory = new Uint8Array(wasmInstance.memory.buffer);
-  //   const str = new TextDecoder().decode(memory.subarray(ptr, ptr + len));
-  //   console.log(str);
-  // },
-
   consoleLogWasm: (level, msgPtr, msgLen, stylePtr, styleLen) => {
     const consoleMethods = ["error", "warn", "info", "debug"];
     const msg = readWasmString(msgPtr, msgLen);
@@ -690,56 +683,6 @@ export const env = {
     element.releasePointerCapture(event.pointerId);
   },
 
-  // ==========================================================================
-  // Event Handling - Element Level
-  // ==========================================================================
-  // createElementEventListener: (idPtr, idLen, ptr, len, onid) => {
-  //   if (!requireWasm()) return;
-  //
-  //   const [elementId, element] = getElement(idPtr, idLen);
-  //   if (element === null) {
-  //     console.log("Could not attach listener element is Null", elementId);
-  //     return;
-  //   }
-  //
-  //   let event_type = readWasmString(ptr, len);
-  //   if (event_type === "rightclick") {
-  //     event_type = "contextmenu";
-  //   }
-  //
-  //   let eventData = eventHandlers.get(elementId);
-  //
-  //   if (!eventData) {
-  //     eventData = Object.create(null);
-  //     eventHandlers.set(elementId, eventData);
-  //   }
-  //
-  //   if (eventData[event_type]) {
-  //     return;
-  //   }
-  //
-  //   const handler = (event) => {
-  //     const currentId = element.id;
-  //     const nodeInfo = domNodeRegistry.get(currentId);
-  //
-  //     if (nodeInfo === undefined) {
-  //       console.log("Could Not find domNode", element, currentId);
-  //       return;
-  //     }
-  //
-  //     const callback_id = onid >>> 0;
-  //     eventStorage[callback_id] = event;
-  //
-  //     wasmInstance.dispatchNodeEvent(
-  //       nodeInfo.node_ptr,
-  //       EventType[event_type],
-  //       callback_id,
-  //     );
-  //   };
-  //
-  //   eventData[event_type] = handler;
-  //   element.addEventListener(event_type, handler);
-  // },
   createElementEventListener: (idPtr, idLen, ptr, len, onid) => {
     if (!requireWasm()) return;
     const [elementId, element] = getElement(idPtr, idLen);
@@ -781,59 +724,6 @@ export const env = {
       element.addEventListener(event_type, handler);
     }
   },
-
-  // createElementEventListener: (idPtr, idLen, ptr, len, onid) => {
-  //   if (!requireWasm()) return;
-  //   const [elementId, element] = getElement(idPtr, idLen);
-  //   if (element === null) {
-  //     console.log("Could not attach listener element is Null", elementId);
-  //     return;
-  //   }
-  //
-  //   const callback_id = onid >>> 0;
-  //   let event_type = readWasmString(ptr, len);
-  //   const eventData = eventHandlers.get(elementId);
-  //
-  //   if (event_type === "rightclick") {
-  //     event_type = "contextmenu";
-  //     // return;
-  //   }
-  //
-  //   const handler = (event) => {
-  //     if (event_type === "pointerdown") {
-  //       element.setPointerCapture(event.pointerId);
-  //     }
-  //     eventStorage[callback_id] = event;
-  //
-  //     if (event_type === "contextmenu") {
-  //       console.log(event);
-  //       console.log("Right Click", EventType[event_type]);
-  //       console.log(callback_id, elementId);
-  //     }
-  //
-  //     const nodeInfo = domNodeRegistry.get(elementId);
-  //     eventStorage[callback_id] = event;
-  //     wasmInstance.dispatchNodeEvent(
-  //       nodeInfo.node_ptr,
-  //       EventType[event_type],
-  //       callback_id,
-  //     );
-  //     return false;
-  //   };
-  //
-  //   if (eventData === undefined) {
-  //     const newEventData = {};
-  //     newEventData[event_type] = handler;
-  //     element.addEventListener(event_type, handler);
-  //     eventHandlers.set(elementId, newEventData);
-  //   } else {
-  //     if (eventData[event_type] === undefined) {
-  //       eventData[event_type] = handler;
-  //       element.addEventListener(event_type, handler);
-  //       eventHandlers.set(elementId, eventData);
-  //     }
-  //   }
-  // },
 
   requestAnimationFrameWasm: (onid) => {
     if (!requireWasm()) return 0;

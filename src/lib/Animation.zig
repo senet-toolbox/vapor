@@ -3,7 +3,6 @@ const Vapor = @import("Vapor.zig");
 const Allocator = std.mem.Allocator;
 const StyleCompiler = @import("convertStyleCustomWriter.zig");
 const getExitAnimationStyle = StyleCompiler.getExitAnimationStyle;
-const getExitAnimationStyleLen = StyleCompiler.getAnimationsLen;
 const UINode = @import("UITree.zig").UINode;
 const Color = Vapor.Types.Color;
 const Shadow = @import("Shadow.zig");

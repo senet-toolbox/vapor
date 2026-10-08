@@ -1009,41 +1009,6 @@ pub const ResizeObserver = struct {
 
 // 1. This variable will hold our list of names.
 // It is calculated at compile-time but stored in the binary for runtime use.
-const export_names = blk: {
-    const decls = @typeInfo(API).@"struct".decls;
-
-    // We need to count valid exports first to know the array size
-    var count = 0;
-    for (decls) |decl| {
-        // if (std.ascii.startsWithIgnoreCase(decl.name, "export")) {
-        const val = @field(API, decl.name);
-        if (@typeInfo(@TypeOf(val)) == .@"fn") {
-            count += 1;
-        }
-        // }
-    }
-
-    // Create the array with the exact size needed
-    var names: [count][]const u8 = undefined;
-    var i = 0;
-
-    // Fill the array
-    for (decls) |decl| {
-        // if (std.ascii.startsWithIgnoreCase(decl.name, "export")) {
-        const val = @field(API, decl.name);
-        if (@typeInfo(@TypeOf(val)) == .@"fn") {
-            names[i] = decl.name;
-            i += 1;
-
-            // Do the actual export here too!
-            // @export(val, .{ .name = decl.name });
-        }
-        // }
-    }
-
-    // Return the final array to be stored in 'export_names'
-    break :blk names;
-};
 
 const WssOptions = struct {
     key: []const u8,

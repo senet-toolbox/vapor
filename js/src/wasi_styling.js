@@ -255,17 +255,7 @@ export function setRuleStyle(specified_className, element) {
     className = specified_className;
   }
   if (element.localName === "svg") {
-    // Add new rule
-    // const newIndex = styleSheet.cssRules.length;
-    // styleSheet.insertRule(`.${className} { ${styleString} }`, newIndex);
-    // styleRuleCache.set(className, newIndex);
 
-    // 2. Conditionally hide the scrollbar in WebKit if showScrollBar() === 0
-    // if (wasmInstance.showScrollBar(nodePtr) === 0) {
-    //   const webkitRule = `.${className}::-webkit-scrollbar {  display: none; }`;
-    //   styleSheet.insertRule(webkitRule, styleSheet.cssRules.length);
-    // }
-    // element.className = className;
     element.setAttribute("class", className);
     // element.classList.add(className);
     return;
@@ -293,16 +283,7 @@ export function setRuleStyle(specified_className, element) {
     element.className.length === 0 &&
     specified_className.length === 0
   ) {
-    // Add new rule
-    // const newIndex = styleSheet.cssRules.length;
-    // styleSheet.insertRule(`.${className} { ${styleString} }`, newIndex);
-    // styleRuleCache.set(className, newIndex);
 
-    // 2. Conditionally hide the scrollbar in WebKit if showScrollBar() === 0
-    // if (wasmInstance.showScrollBar(nodePtr) === 0) {
-    //   const webkitRule = `.${className}::-webkit-scrollbar {  display: none; }`;
-    //   styleSheet.insertRule(webkitRule, styleSheet.cssRules.length);
-    // }
     element.className = className;
   } else if (specified_className.length > 0 && element.localName !== "i") {
     if (specified_className.includes("-gk")) {
@@ -310,22 +291,10 @@ export function setRuleStyle(specified_className, element) {
     } else {
       className = specified_className;
     }
-    // element.class = className;
-    // element.style = styleString;
-    // const newIndex = styleSheet.cssRules.length;
-    // styleSheet.insertRule(`.${className} { ${styleString} }`, newIndex);
-    // styleRuleCache.set(className, newIndex);
     element.className = specified_className;
   } else {
     // This is for icons
     className = element.className;
-    // element.style = styleString;
-    // const newIndex = styleSheet.cssRules.length;
-    // styleSheet.insertRule(
-    //   `.${className.split(" ").pop()} { ${styleString} }`,
-    //   newIndex,
-    // );
-    // styleRuleCache.set(className, newIndex);
   }
 
   // Apply class to element

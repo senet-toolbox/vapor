@@ -163,16 +163,6 @@ const MinMax = packed struct {
     }
 };
 
-const Clamp = packed struct {
-    min: f32 = 0,
-    max: f32 = 0,
-    preferred: f32 = 0,
-
-    pub fn eql(self: MinMax, other: MinMax) bool {
-        return self.min == other.min and self.max == other.max;
-    }
-};
-
 const Tag = enum {
     minmax,
     clamp,
@@ -1589,11 +1579,6 @@ pub const KeyFrame = struct {
     from: Transform = .{},
     to: Transform = .{},
 };
-const AnimDir = enum {
-    normal,
-    reverse,
-    forwards,
-};
 
 const Iteration = struct {
     iter_count: u32 = 1,
@@ -2049,13 +2034,6 @@ pub const Visual = struct {
             return visual_false;
         }
     }
-
-    // pub fn button(background: Background, border: BorderGrouped) Visual {
-    //     return .{
-    //         .background = background,
-    //         .border = border,
-    //     };
-    // }
 };
 
 pub const Interactive = struct {
@@ -2065,40 +2043,6 @@ pub const Interactive = struct {
     focus: ?Visual = null,
     focus_within: ?Visual = null,
     cursor: ?Cursor = null,
-
-    // pub fn hover_scale() Interactive {
-    //     return .{
-    //         .hover = .{ .transform = .scale() },
-    //     };
-    // }
-
-    // pub fn hoverScaleTextBackground(color: Color, background: Background) Interactive {
-    //     return .{
-    //         .hover = .{ .transform = .scale(), .background = background, .text_color = color },
-    //     };
-    // }
-    // pub fn hover_text(color: Color) Interactive {
-    //     return .{
-    //         .hover = .{ .text_color = color },
-    //     };
-    // }
-};
-
-const PackedPosType = enum(u8) {
-    fit = 0,
-    grow = 1,
-    percent = 2,
-    fixed = 3,
-    elastic = 4,
-    elastic_percent = 5,
-    clamp_px = 6,
-    clamp_percent = 7,
-    none = 8,
-};
-
-const PackedSizeType = packed struct {
-    type: SizingType = .fit,
-    value: f32 = 0,
 };
 
 pub const AspectRatio = enum(u8) {
@@ -2500,17 +2444,6 @@ pub const Style = struct {
     /// // Result: font_size = 18, padding = .all(8)
     /// ```
     pub fn merge(base: *const Style, override: Style) Style {
-        // var result = base.*;
-        // inline for (@typeInfo(Style).@"struct".fields) |field| {
-        //     const field_value = @field(override, field.name);
-        //     const default_value = @field(default, field.name);
-        //
-        //     // Only override if the field is not the default value
-        //     if (!std.meta.eql(field_value, default_value)) {
-        //         @field(result, field.name) = field_value;
-        //     }
-        // }
-
         var result = base.*;
 
         if (override.id != null) result.id = override.id;
@@ -2619,17 +2552,6 @@ pub const HooksIds = struct {
     destroy_id: u32 = 0,
 };
 
-const InputType = enum(u8) {
-    text = 0,
-    number = 1,
-    password = 2,
-    radio = 3,
-    checkbox = 4,
-    email = 5,
-    search = 6,
-    telephone = 7,
-    date = 8,
-};
 const Callback = *const fn (*Event) void;
 pub const InputParamsStr = struct {
     default: ?[]const u8 = null,
@@ -2710,15 +2632,6 @@ pub const InputParamsRadio = struct {
     value_ptr: ?[*]const u8 = null,
     value_len: usize = 0,
     required: ?bool = null,
-};
-
-const InputParamsCheckBox = struct {
-    tag: ?[]const u8 = null,
-    checked: bool = false,
-    required: ?bool = null,
-    alt: ?[]const u8 = null,
-    disabled: ?bool = null,
-    checkmark: ?Style = null,
 };
 
 pub const InputParamsFile = struct {

@@ -52,11 +52,6 @@ const Selection = struct {
     end: u32,
 };
 
-const AttributeType = union(enum) {
-    string: []const u8,
-    number: f32,
-};
-
 pub const Element = struct {
 
     // Size and position related
@@ -845,46 +840,4 @@ pub fn mutateDomElementStyleString(
         }
         // No-op in non-WASM environments
     }
-}
-
-pub export fn getOnFocusCallback(self: *Element) u32 {
-    const uuid = self._get_id() orelse {
-        Vapor.printlnSrcErr("Id is null", .{}, @src());
-        @panic("vapor: Id is null");
-    };
-    var onid = hashKey(uuid);
-    onid +%= hashKey(Vapor.on_focus_hash);
-    return onid;
-}
-
-pub export fn getOnHoverCallback(self: *Element) u32 {
-    const uuid = self._get_id() orelse {
-        Vapor.printlnSrcErr("Id is null", .{}, @src());
-        @panic("vapor: Id is null");
-    };
-    if (self.on_hover == null) return 0;
-    var onid = hashKey(uuid);
-    onid +%= hashKey(Vapor.on_hover_hash);
-    return onid;
-}
-
-pub export fn getOnChangeCallback(self: *Element) u32 {
-    const uuid = self._get_id() orelse {
-        Vapor.printlnSrcErr("Id is null", .{}, @src());
-        @panic("vapor: Id is null");
-    };
-    if (self.on_change == null) return 0;
-    var onid = hashKey(uuid);
-    onid +%= hashKey(Vapor.on_change_hash);
-    return onid;
-}
-
-pub export fn getOnBlurCallback(self: *Element) u32 {
-    const uuid = self._get_id() orelse {
-        Vapor.printlnSrcErr("Id is null", .{}, @src());
-        @panic("vapor: Id is null");
-    };
-    var onid = hashKey(uuid);
-    onid +%= hashKey(Vapor.on_blur_hash);
-    return onid;
 }

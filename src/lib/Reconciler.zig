@@ -18,17 +18,6 @@ pub fn reconcile(old_ctx: *UIContext, new_ctx: *UIContext) void {
 
 // --- Child Iteration Helpers ---
 
-/// Count children in a linked list
-fn countChildren(node: *UINode) usize {
-    var count: usize = 0;
-    var child = node.first_child;
-    while (child) |c| {
-        count += 1;
-        child = c.next_sibling;
-    }
-    return count;
-}
-
 /// Get child at index (O(n))
 fn childAt(node: *UINode, index: usize) ?*UINode {
     var i: usize = 0;
@@ -66,18 +55,6 @@ fn addAllChildren(new_node: *UINode) void {
         child = node.next_sibling;
     }
     Vapor.has_dirty = true;
-}
-
-/// Case: Both lists have the same number of children.
-fn reconcileSameLength(old_node: *UINode, new_node: *UINode) void {
-    var old_child = old_node.first_child;
-    var new_child = new_node.first_child;
-
-    while (old_child != null and new_child != null) {
-        traverseNodes(old_child.?, new_child.?);
-        old_child = old_child.?.next_sibling;
-        new_child = new_child.?.next_sibling;
-    }
 }
 
 /// Build arrays from linked lists for keyed diffing

@@ -296,7 +296,6 @@ const direction_map = [_][]const u8{ "column", "row" };
 const alignment_map = [_][]const u8{ "none", "center", "flex-start", "flex-end", "flex-start", "flex-end", "space-between", "space-evenly", "flex-start", "anchor-start", "anchor-end", "anchor-center" };
 const text_alignment_map = [_][]const u8{ "none", "center", "", "", "left", "right", "", "", "", "", "", "" };
 const position_type_map = [_][]const u8{ "none", "relative", "absolute", "fixed", "sticky" };
-const float_type_map = [_][]const u8{ "top", "bottom", "left", "right" };
 const transform_origin_map = [_][]const u8{ "default", "top", "bottom", "right", "left", "top center", "bottom center", "right center", "left center" };
 // Indexed by @intFromEnum(Types.TextDecorationType) in writeMappedString, which
 // does not bounds-check. Keep in lockstep with that enum.
@@ -305,7 +304,6 @@ const text_decoration_style_map = [_][]const u8{ "default", "solid", "double", "
 const appearance_map = [_][]const u8{ "none", "auto", "button", "textfield", "menulist", "searchfield", "textarea", "checkbox", "radio", "inherit", "initial", "revert", "unset" };
 const outline_map = [_][]const u8{ "default", "none", "auto", "dotted", "dashed", "solid", "double", "groove", "ridge", "inset", "outset", "inherit", "initial", "revert", "unset" };
 const cursor_map = [_][]const u8{ "default", "pointer", "help", "grab", "zoom-in", "zoom-out", "ew-resize", "ns-resize", "col-resize", "row-resize", "all-scroll", "crosshair", "grabbing" };
-const box_sizing_map = [_][]const u8{ "content-box", "border-box", "padding-box", "inherit", "initial", "revert", "unset" };
 const list_style_map = [_][]const u8{ "default", "none", "disc", "circle", "square", "decimal", "decimal-leading-zero", "lower-roman", "upper-roman", "lower-alpha", "upper-alpha", "lower-greek", "armenian", "georgian", "inherit", "initial", "revert", "unset" };
 const flex_wrap_map = [_][]const u8{ "none", "nowrap", "wrap", "wrap-reverse", "inherit", "initial", "revert", "unset" };
 const white_space_map = [_][]const u8{ "default", "normal", "nowrap", "pre", "pre-wrap", "pre-line", "break-spaces", "inherit", "initial", "revert", "unset" };
@@ -317,8 +315,6 @@ const flex_type_map = [_][]const u8{
     "inline-block",
     "none",
 };
-const timing_function_map = [_][]const u8{ "ease", "linear", "ease-in", "ease-out", "ease-in-out", "bounce", "elastic" };
-const animation_direction_map = [_][]const u8{ "normal ", "reverse ", "forwards ", "alternate " };
 const font_style_map = [_][]const u8{ "default", "normal", "italic" };
 const aspect_ratio_map = [_][]const u8{ "none", "1 / 1", "3 / 4", "16 / 9" };
 const caret_map = [_][]const u8{ "none", "block", "line" };
@@ -353,10 +349,6 @@ fn positionTypeToCSS(pos_type: PositionType, writer: writer_t) !void {
 
 fn fontStyleToCSS(font_style: Types.FontStyle, writer: writer_t) !void {
     try writeMappedString(Types.FontStyle, font_style, &font_style_map, writer);
-}
-
-fn floatTypeToCSS(float_type: FloatType) []const u8 {
-    return float_type_map[@intFromEnum(float_type)];
 }
 
 fn transformOriginToCSS(origin: TransformOrigin, writer: anytype) !void {
@@ -760,38 +752,6 @@ fn transitionStyleToCSS(style: PackedTransition, writer: writer_t) void {
     const properties = Vapor.packed_transitions.get(style.properties_ptr) orelse return;
     for (properties, 0..) |p, i| {
         switch (p) {
-            // .transform => {
-            //     const tag_name = @tagName(p);
-            //     writer.write(tag_name) catch return;
-            //     writer.write(" ") catch return;
-            //     writer.writeU32(style.duration) catch return;
-            //     writer.write("ms ") catch return;
-            //     try writeMappedString(TimingFunction, style.timing, &timing_function_map, writer);
-            // },
-            // .scale => {
-            //     const tag_name = @tagName(p);
-            //     writer.write(tag_name) catch return;
-            //     writer.write(" ") catch return;
-            //     writer.writeU32(style.duration) catch return;
-            //     writer.write("ms ") catch return;
-            //     try writeMappedString(TimingFunction, style.timing, &timing_function_map, writer);
-            // },
-            // .linear => {
-            //     const tag_name = @tagName(p);
-            //     writer.write(tag_name) catch return;
-            //     writer.write(" ") catch return;
-            //     writer.writeU32(style.duration) catch return;
-            //     writer.write("ms ") catch return;
-            //     try writeMappedString(TimingFunction, style.timing, &timing_function_map, writer);
-            // },
-            // .opacity => {
-            //     const tag_name = @tagName(p);
-            //     writer.write(tag_name) catch return;
-            //     writer.write(" ") catch return;
-            //     writer.writeU32(style.duration) catch return;
-            //     writer.write("ms ") catch return;
-            //     try writeMappedString(TimingFunction, style.timing, &timing_function_map, writer);
-            // },
             .none => {
                 writer.writeU32(style.duration) catch return;
                 writer.write("ms ") catch return;
@@ -799,48 +759,6 @@ fn transitionStyleToCSS(style: PackedTransition, writer: writer_t) void {
                 const css = style.timing.toCss();
                 writer.write(css) catch return;
             },
-            // .top => {
-            //     writer.write("top ") catch return;
-            //     writer.writeU32(style.duration) catch return;
-            //     writer.write("ms ") catch return;
-            //     try writeMappedString(TimingFunction, style.timing, &timing_function_map, writer);
-            // },
-            // .bottom => {
-            //     writer.write("bottom ") catch return;
-            //     writer.writeU32(style.duration) catch return;
-            //     writer.write("ms ") catch return;
-            //     try writeMappedString(TimingFunction, style.timing, &timing_function_map, writer);
-            // },
-            // .height => {
-            //     writer.write("height ") catch return;
-            //     writer.writeU32(style.duration) catch return;
-            //     writer.write("ms ") catch return;
-            //     try writeMappedString(TimingFunction, style.timing, &timing_function_map, writer);
-            // },
-            // .width => {
-            //     writer.write("width ") catch return;
-            //     writer.writeU32(style.duration) catch return;
-            //     writer.write("ms ") catch return;
-            //     try writeMappedString(TimingFunction, style.timing, &timing_function_map, writer);
-            // },
-            // .cx => {
-            //     writer.write("cx ") catch return;
-            //     writer.writeU32(style.duration) catch return;
-            //     writer.write("ms ") catch return;
-            //     try writeMappedString(TimingFunction, style.timing, &timing_function_map, writer);
-            // },
-            // .cy => {
-            //     writer.write("cy ") catch return;
-            //     writer.writeU32(style.duration) catch return;
-            //     writer.write("ms ") catch return;
-            //     try writeMappedString(TimingFunction, style.timing, &timing_function_map, writer);
-            // },
-            // .d => {
-            //     writer.write("d ") catch return;
-            //     writer.writeU32(style.duration) catch return;
-            //     writer.write("ms ") catch return;
-            //     try writeMappedString(TimingFunction, style.timing, &timing_function_map, writer);
-            // },
             else => {
                 const tag_name = @tagName(p);
                 writer.write(tag_name) catch return;
@@ -1071,22 +989,6 @@ pub fn generateVisual(visual: *const Types.PackedVisual, writer: writer_t) void 
     //     writePropValue("box-shadow", .{ .tag = .shadow, .data = .{ .shadow = visual.shadow } }, writer);
     // }
 
-    // if (visual.text_shadow.blur > 0 or visual.text_shadow.spread > 0 or
-    //     visual.text_shadow.top != 0 or visual.text_shadow.left != 0)
-    // {
-    //     writePropValue("text-shadow", .{ .tag = .shadow, .data = .{ .shadow = visual.text_shadow } }, writer);
-    //     // const shadow = visual.text_shadow;
-    //     // writer.write("text-shadow:") catch {};
-    //     // writer.writeI16(shadow.left) catch {};
-    //     // writer.write("px ") catch {};
-    //     // writer.writeI16(shadow.top) catch {};
-    //     // writer.write("px ") catch {};
-    //     // writer.writeU8Num(shadow.blur) catch {};
-    //     // writer.write("px ") catch {};
-    //     // colorToCSS(shadow.color, writer) catch {};
-    //     // writer.write(";\n") catch {};
-    // }
-
     if (visual.text_shadow > 0) blk: {
         const shadow = Vapor.shadows.get(visual.text_shadow) orelse {
             std.log.err("Could not aqurie shadow", .{});
@@ -1182,7 +1084,6 @@ pub fn generateVisual(visual: *const Types.PackedVisual, writer: writer_t) void 
 
 // Export this function to be called from JavaScript to get the CSS representation
 pub var style_style: []const u8 = "";
-var global_len: usize = 0;
 var show_scrollbar: bool = true;
 // 61.8kb before this function
 // adds 20kb
@@ -1653,9 +1554,6 @@ pub export fn getStyle(ptr: ?*UINode) ?[*]const u8 {
     return style_style.ptr;
 }
 
-pub export fn getGlobalStyle() ?[*]const u8 {
-    return style_style.ptr;
-}
 pub const Catalog = struct {
     themes: []const Types.ThemeDefinition,
 };
@@ -2329,48 +2227,6 @@ fn writeStandaloneProperty(writer: *Writer, prop: Animation.Property, value_type
 }
 pub export fn getAnimationsLen() usize {
     return animations_str.len;
-}
-
-var hover_style: []const u8 = "";
-export fn getInheritedStyles(node: *UINode) ?[*]const u8 {
-    var writer: Writer = undefined;
-    var buffer: [4096]u8 = undefined;
-    writer.init(&buffer);
-
-    if (node.packed_field_ptrs) |packed_field_ptrs| {
-        if (packed_field_ptrs.interactive_ptr) |interactive_ptr| {
-            if (interactive_ptr.has_hover) {
-                const hover = interactive_ptr.hover;
-
-                // We write the inherited styles for the children
-                if (node.children_count > 0) {
-                    writer.writeByte('.') catch {};
-                    writer.write(node.class.?) catch {};
-                    writer.write(":hover") catch {};
-                    var children = node.children();
-                    while (children.next()) |child| {
-                        if (child.hover_style_fields) |fields| {
-                            if (child.class) |class| {
-                                writer.writeByte(' ') catch {};
-                                writer.writeByte('.') catch {};
-                                writer.write(class) catch {};
-
-                                writer.write("{\n") catch {};
-                                for (fields.*) |field| {
-                                    writeStyleField(field, &hover, &writer);
-                                }
-                                writer.writeByte('}') catch {};
-                                writer.writeByte('\n') catch {};
-                                Vapor.println("Write hover {s}", .{writer.buffer[0..writer.pos]});
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-    hover_style = writer.buffer[0..writer.pos];
-    return hover_style.ptr;
 }
 
 export fn getInlineStyle(node_ptr: ?*UINode) ?[*]const u8 {

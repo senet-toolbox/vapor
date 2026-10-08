@@ -228,10 +228,6 @@ fn appendIndent(result: *std.array_list.Managed(u8), level: usize, indent_str: [
 //     @fieldParentPtr(field, field_ptr: *T)
 // }
 
-fn isJsonSerializable(comptime T: type) bool {
-    return comptime isJsonSerializableImpl(T, 0);
-}
-
 fn isJsonSerializableImpl(comptime T: type, comptime depth: usize) bool {
     if (depth > 32) return false;
 

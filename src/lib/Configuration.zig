@@ -28,22 +28,6 @@ const buildClassString = @import("UITree.zig").buildClassString;
 
 const Accessibility = @import("Accessibility.zig");
 
-fn hashPacked(comptime T: type, value: *const T) u32 {
-    const is_wasm = @import("builtin").target.cpu.arch == .wasm32;
-    if (!is_wasm) {
-        // Native: fast path, hash raw bytes
-        return std.hash.XxHash32.hash(0, std.mem.asBytes(value));
-    }
-    // WASM: hash each field individually
-    var hasher = std.hash.XxHash32.init(0);
-    inline for (std.meta.fields(T)) |field| {
-        const field_value = @field(value.*, field.name);
-        const bytes = std.mem.asBytes(&field_value);
-        hasher.update(bytes);
-    }
-    return hasher.final();
-}
-
 /// Helper to pack a color union (`.Literal` or `.Thematic`) into a PackedColor struct.
 fn packColor(source_color: types.Color, packed_color: *types.PackedColor) void {
     switch (source_color) {
@@ -758,7 +742,6 @@ fn configureInteractive(ui_node: *UINode, style: *const Vapor.Style) u32 {
 }
 
 var hash_id: bool = false;
-const style_hash_null: u32 = 2316552965;
 pub fn configure(ui_ctx: *UIContext, elem_decl: ElemDecl) *UINode {
     hash_id = false;
     const stack = ui_ctx.stack orelse @panic("vapor: a component was created outside a render function");

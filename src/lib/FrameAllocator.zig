@@ -246,51 +246,6 @@ pub fn getStats(self: *FrameAllocator) ?Stats {
     return null;
 }
 
-pub fn printPrevStats(_: *FrameAllocator) void {
-    // var buffer: [4096]u8 = undefined;
-    // var writer = std.io.Writer.fixed(&buffer);
-    //
-    // const stats = self.getStats();
-    //
-    // const color_buf = std.fmt.allocPrint(Vapor.allocator_global, "color: {s};", .{convertColorToString(.hex("#4800FF"))}) catch return;
-    // writer.print("%c", .{}) catch return;
-    // writer.print("╔══════════════════════════════╗\n", .{}) catch return;
-    // writer.print("║       Prev Frame Stats       ║\n", .{}) catch return;
-    // writer.print("╠══════════════════════════════╣\n", .{}) catch return;
-    // writer.print("║ Nodes allocated    : {d: >7} ║\n", .{stats.nodes_allocated}) catch return;
-    // writer.print("║ Commands allocated : {d: >7} ║\n", .{stats.commands_allocated}) catch return;
-    // writer.print("║ Bytes used         : {d: >7} ║\n", .{stats.bytes_used}) catch return;
-    // writer.print("╚══════════════════════════════╝\n", .{}) catch return;
-    // writer.print("%c", .{}) catch return;
-    // const style_2 = "";
-    // if (isWasi) {
-    //     _ = Wasm.consoleLogColoredWasm(buffer[0..writer.end].ptr, buffer[0..writer.end].len, color_buf[0..].ptr, color_buf.len, style_2[0..].ptr, style_2.len);
-    // } else {
-    //     // std.debug.print("{s}\n", .{buffer[0..writer.end]});
-    // }
-}
+pub fn printPrevStats(_: *FrameAllocator) void {}
 
-pub fn printStats(_: *FrameAllocator) void {
-    // var buffer: [4096]u8 = undefined;
-    // var writer = std.io.Writer.fixed(&buffer);
-    //
-    // const stats = self.getStats();
-    //
-    // const color_buf = std.fmt.allocPrint(Vapor.allocator_global, "color: {s};", .{convertColorToString(.hex("#4800FF"))}) catch return;
-    // writer.print("%c", .{}) catch return;
-    // writer.print("╔══════════════════════════════╗\n", .{}) catch return;
-    // writer.print("║    Frame Allocator Stats     ║\n", .{}) catch return;
-    // writer.print("╠══════════════════════════════╣\n", .{}) catch return;
-    // writer.print("║ Max Node count     : {d: >7} ║\n", .{Vapor.page_node_count}) catch return;
-    // writer.print("║ Nodes allocated    : {d: >7} ║\n", .{stats.nodes_allocated}) catch return;
-    // writer.print("║ Commands allocated : {d: >7} ║\n", .{stats.commands_allocated}) catch return;
-    // writer.print("║ Bytes used         : {d: >7} ║\n", .{stats.bytes_used}) catch return;
-    // writer.print("╚══════════════════════════════╝\n", .{}) catch return;
-    // writer.print("%c", .{}) catch return;
-    // const style_2 = "";
-    // if (isWasi) {
-    //     _ = Wasm.consoleLogColoredWasm(buffer[0..writer.end].ptr, buffer[0..writer.end].len, color_buf[0..].ptr, color_buf.len, style_2[0..].ptr, style_2.len);
-    // } else {
-    //     // std.debug.print("{s}\n", .{buffer[0..writer.end]});
-    // }
-}
+pub fn printStats(_: *FrameAllocator) void {}
