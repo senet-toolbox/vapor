@@ -1,7 +1,7 @@
 .{
     .name = .vapor,
 
-    .version = "2.0.1",
+    .version = "2.1.0",
 
     .fingerprint = 0x3bb57d3c750d6a54, // Changing this has security and trust implications.
 

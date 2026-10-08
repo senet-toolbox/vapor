@@ -4,7 +4,66 @@ All notable changes to this project are documented here. This project follows
 [Semantic Versioning](https://semver.org/): breaking changes bump the major
 version and are listed with a migration note.
 
-## [Unreleased]
+## [2.1.0] — unreleased
+
+A correctness release, driven by new end-to-end tests that run apps in
+headless Chrome (`zig build browser-test`), in Debug and ReleaseSmall, both
+client-rendered and from prerendered pages.
+
+### Security
+
+- **`javascript:` URLs ran.** Link hrefs, iframe sources and
+  `setWindowLocation` used app strings as-is, so a link built from user input
+  could run script in the app's origin. `javascript:`/`vbscript:` URLs are now
+  blocked (case and embedded whitespace normalised as browsers do); a blocked
+  link has no href and is reported with `console.error`.
+
+### Fixed
+
+- **Buttons with `.id()` all ran the last button's handler.** `.id()` gave the
+  node a new uuid but kept the hash JS reports clicks by, and handed the old
+  uuid to the next sibling, which overwrote the callback. An `.id()`'d
+  TextField threw in JS for the same reason.
+- **Removing any node trapped unless the app called `Animation.new()`**, so
+  keyed-list changes and navigation failed with `RuntimeError: null function`.
+  `Vapor.init` now creates the Animation, Edges and Polygons registries;
+  calling `Animation.new()` and friends yourself is harmless but unnecessary.
+- **Links:** every click was routed internally, so links to other sites could
+  not leave the app and cmd/ctrl-click could not open a tab. Only plain clicks
+  on same-origin links are routed now, and each adds exactly one history entry.
+- **Router:** `/users/:id/edit` could not be registered next to `/users/:id`;
+  `/users/new` was routed to `/users/:id`. Fixed, see below.
+- **`load(u32, key)` on a missing key returned 0** instead of null; negative,
+  64-bit and float values could not round-trip. All numbers and bools now go
+  through the string binding.
+- **`.hex("#fff")` was black** and alpha digits were ignored: only `#rrggbb`
+  was parsed. `#rgb`, `#rgba` and `#rrggbbaa` work.
+- `minWidth`/`maxWidth`/`minHeight`/`maxHeight` with an unsupported sizing, and
+  `.animationEnter` with an unregistered name, were undefined behaviour in
+  release builds; they are now logged and ignored. 105 other `unreachable`s on
+  error paths are `@panic`s with a message, so release builds fail the same
+  way Debug does.
+- Static generation wrote dynamic routes to literal `release/users/:id/`
+  directories. They are skipped, and `release/app.html` is written as the
+  client-rendered fallback for static hosts.
+- The runtime no longer logs internal debugging to production consoles.
+
+### Added
+
+- `Vapor.routeParam("id")`: the value of a dynamic segment during render.
+- `<html data-vapor-ready>` and a `vapor:ready` window event once the first
+  render (or hydration) is done.
+- `globalThis.__VAPOR_DEBUG__ = true` shows the runtime's diagnostics.
+
+### Behaviour changes
+
+| Before | After |
+| --- | --- |
+| `/users` rendered the `/users/:id` page with no id | it renders `/error`, unless `/users` is registered |
+| `load(u32, missing)` returned `0` | returns `null` |
+| values stored with `store(int)` were written by a `u32` binding | written as decimal text; old values still parse |
+
+## [2.0.2] — 2026-10-08
 
 ### The JS runtime ships with vapor
 
