@@ -1408,12 +1408,21 @@ pub fn generate() void {
         generatorFatal("building the assets/ path", err, release_dir);
     copyDirRecursive(io, cwd, "assets", assets_dest);
 
-    // Copy bundle.min.js from project root to release/
+    // Copy the JS runtime into release/. Projects keep it either at the root
+    // or, as metal scaffolds them, under static/; a release/ that already has
+    // one (metal writes it at create time) needs nothing.
     var dest_dir = cwd.openDir(io, release_dir, .{}) catch return;
     defer dest_dir.close(io);
-    cwd.copyFile("bundle.min.js", dest_dir, "bundle.min.js", io, .{}) catch |err| {
-        std.debug.print("Copy error: {any}\n", .{err});
-    };
+    const bundle_sources = [_][]const u8{ "bundle.min.js", "static/bundle.min.js" };
+    const copied = for (bundle_sources) |src| {
+        cwd.copyFile(src, dest_dir, "bundle.min.js", io, .{}) catch continue;
+        break true;
+    } else false;
+    if (!copied) {
+        if (dest_dir.access(io, "bundle.min.js", .{})) |_| {} else |_| {
+            std.debug.print("warning: no bundle.min.js found (looked in ./ and static/); {s}/ will not load\n", .{release_dir});
+        }
+    }
 
     generating = false;
 }
