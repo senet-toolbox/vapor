@@ -11,8 +11,13 @@ pub const Json = @import("JSON.zig");
 
 // The HTTP layer moved into Fetch.zig; these keep `Kit.Fetch` / `Kit.Response`
 // working for callers such as KeyStone.
-pub const Fetch = @import("../Fetch.zig").Fetch;
-pub const Response = @import("../Fetch.zig").Result;
+// HTTP types moved to Fetch.zig; these names are kept so existing code builds.
+const FetchModule = @import("../Fetch.zig");
+pub const Response = FetchModule.Result;
+pub const HttpReq = FetchModule.Options;
+pub const Headers = FetchModule.Headers;
+pub const HttpHeader = FetchModule.Header;
+pub const Methods = FetchModule.Method;
 
 pub const Kit = @This();
 
@@ -212,66 +217,6 @@ pub fn fastJson(comptime T: type, data: T, writer: *String) !void {
     writer.append_str("}");
 }
 
-/// Build the request JSON into the given allocator, returning an owned slice.
-/// All intermediate allocations happen in the same allocator.
-pub fn buildRequestJson(allocator: std.mem.Allocator, req: HttpReq) ![]u8 {
-    var io_writer = std.Io.Writer.Allocating.init(allocator);
-    errdefer io_writer.deinit();
-    const w = &io_writer.writer;
-
-    try w.writeAll("{\"method\":\"");
-    try w.writeAll(@tagName(req.method));
-    try w.writeAll("\"");
-
-    const has_static_headers = req.headers != null;
-    const has_extra = req.extra_headers.len > 0;
-    if (has_static_headers or has_extra) {
-        try w.writeAll(",\"headers\":{");
-        var first = true;
-        if (req.headers) |hs| {
-            try writeStaticHeaders(hs, &first, w);
-        }
-        for (req.extra_headers) |h| {
-            try writeHeaderPair(h.name, h.value, &first, w);
-        }
-        try w.writeAll("}");
-    }
-
-    if (req.credentials) |c| {
-        try w.writeAll(",\"credentials\":\"");
-        try w.writeAll(c);
-        try w.writeAll("\"");
-    }
-
-    if (req.body) |body| {
-        try w.writeAll(",\"body\":");
-        switch (req.body_type) {
-            .string => try std.json.Stringify.encodeJsonString(body, .{}, w),
-            .json => try w.writeAll(body),
-        }
-    }
-
-    try w.writeAll("}");
-    return io_writer.toOwnedSlice();
-}
-
-fn writeHeaderPair(name: []const u8, value: []const u8, first: *bool, w: *std.Io.Writer) !void {
-    if (!first.*) try w.writeAll(",");
-    first.* = false;
-    try w.writeAll("\"");
-    try w.writeAll(name);
-    try w.writeAll("\":\"");
-    try w.writeAll(value);
-    try w.writeAll("\"");
-}
-
-fn writeStaticHeaders(headers: Headers, first: *bool, w: *std.Io.Writer) !void {
-    try writeHeaderPair("Content-Type", headers.content_type, first, w);
-    if (headers.user_agent) |v| try writeHeaderPair("User-Agent", v, first, w);
-    if (headers.authorization) |v| try writeHeaderPair("Authorization", v, first, w);
-    if (headers.accept) |v| try writeHeaderPair("Accept", v, first, w);
-}
-
 var last_time: i64 = 0;
 pub fn throttle(delay: i64) bool {
     const current_time = milliTimestamp();
@@ -438,129 +383,6 @@ pub fn parseParams(url: []const u8, allocator: std.mem.Allocator) !?std.StringHa
 
     return params;
 }
-
-pub const HttpReqOffset = struct {
-    method_ptr: [*]const u8 = undefined,
-    method_len: usize = 0,
-    content_type_ptr: ?[*]const u8 = null,
-    content_type_len: ?usize = null,
-    authorization_ptr: ?[*]const u8 = null,
-    authorization_len: ?usize = null,
-    accept_ptr: ?[*]const u8 = null,
-    accept_len: ?usize = null,
-    user_agent_ptr: ?[*]const u8 = null,
-    user_agent_len: ?usize = null,
-    body_ptr: ?[*]const u8 = null,
-    body_len: ?usize = null,
-    extra_headers_ptr: ?[*]const HttpHeader = null,
-    extra_headers_len: ?usize = null,
-    mode_ptr: ?[*]const u8 = null,
-    mode_len: ?usize = null,
-    redirect_ptr: ?[*]const u8 = null,
-    redirect_len: ?usize = null,
-    referrer_policy_ptr: ?[*]const u8 = null,
-    referrer_policy_len: ?usize = null,
-    integrity_ptr: ?[*]const u8 = null,
-    integrity_len: ?usize = null,
-    use_credentials: bool = false,
-};
-
-pub const HttpHeader = struct {
-    name: []const u8,
-    value: []const u8,
-};
-
-pub const Headers = struct {
-    const Self = @This();
-
-    content_type: []const u8 = "text/html",
-    authorization: ?[]const u8 = null,
-    accept: ?[]const u8 = null,
-    user_agent: ?[]const u8 = null,
-
-    pub const Field = struct {
-        name: []const u8, // "Content-Type"
-        value: []const u8,
-    };
-
-    pub fn iterator(self: *const Self) Iterator {
-        return .{ .headers = self };
-    }
-
-    pub const Iterator = struct {
-        headers: *const Self,
-        idx: usize = 0,
-
-        pub fn next(it: *Iterator) ?Field {
-            const fields = std.meta.fields(Self);
-            while (it.idx < fields.len) {
-                const i = it.idx;
-                it.idx += 1;
-                inline for (fields, 0..) |f, j| {
-                    if (i == j) {
-                        // non-optional []const u8 coerces to ?[]const u8,
-                        // so this one line handles both kinds of field
-                        const opt: ?[]const u8 = @field(it.headers, f.name);
-                        if (opt) |v| return .{
-                            .name = comptime headerName(f.name),
-                            .value = v,
-                        };
-                    }
-                }
-            }
-            return null;
-        }
-    };
-};
-
-/// content_type -> Content-Type, user_agent -> User-Agent
-fn headerName(comptime field: []const u8) []const u8 {
-    comptime {
-        var out: []const u8 = "";
-        var upper = true;
-        for (field) |c| {
-            if (c == '_') {
-                out = out ++ "-";
-                upper = true;
-            } else if (upper) {
-                out = out ++ [_]u8{std.ascii.toUpper(c)};
-                upper = false;
-            } else {
-                out = out ++ [_]u8{c};
-            }
-        }
-        return out;
-    }
-}
-
-const BodyType = enum {
-    string,
-    json,
-};
-
-pub const Methods = enum {
-    GET,
-    POST,
-    PATCH,
-    DELETE,
-    PUT,
-    OPTIONS,
-};
-
-pub const HttpReq = struct {
-    method: Methods,
-    headers: ?Headers = null,
-    body: ?[]const u8 = null,
-    body_type: BodyType = .string,
-    mode: ?[]const u8 = null,
-    redirect: ?[]const u8 = null,
-    referrer_policy: ?[]const u8 = null,
-    integrity: ?[]const u8 = null,
-    use_credentials: bool = false,
-    credentials: ?[]const u8 = null,
-    extra_headers: []const HttpHeader = &.{},
-    key: ?[]const u8 = null,
-};
 
 const Param = struct {
     key: []const u8,

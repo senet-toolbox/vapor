@@ -2,6 +2,7 @@
 const std = @import("std");
 const Vapor = @import("../Vapor.zig");
 const Kit = Vapor.Kit;
+const Fetch = @import("../Fetch.zig");
 const JWT = @import("JWT.zig");
 
 pub const Provider = enum {
@@ -255,7 +256,7 @@ pub fn maybeHandleAuthExchange() bool {
 pub fn bootstrap() void {
     setAuthState(.{ .state = .loading, .session = auth_snapshot.session });
     const url = Vapor.frame.fmt("{s}/auth/session/bootstrap", .{keystone.backend_url});
-    Kit.Fetch.fetch(url, .{
+    Fetch.fetch(url, .{
         .method = .POST,
         .credentials = "include",
     }).handle(handleAuthSessionResponse, .{});
@@ -267,7 +268,7 @@ pub fn restoreSession() void {
 
 pub fn refreshSession() void {
     const url = Vapor.frame.fmt("{s}/auth/session/refresh", .{keystone.backend_url});
-    Kit.Fetch.fetch(url, .{
+    Fetch.fetch(url, .{
         .method = .POST,
         .credentials = "include",
     }).handle(handleAuthSessionResponse, .{});
@@ -340,7 +341,7 @@ pub fn signOutWithOptions(options: SignOutOptions) void {
     if (!options.notify_backend) return;
     const body = if (options.revoke_remote) "revoke_remote=true" else "revoke_remote=false";
     const url = Vapor.frame.fmt("{s}/auth/session/signout", .{keystone.backend_url});
-    Kit.Fetch.fetch(url, .{
+    Fetch.fetch(url, .{
         .method = .POST,
         .body = body,
         .credentials = "include",
@@ -358,7 +359,7 @@ pub fn validateSession(provider: Provider, cb: fn (Kit.Response) void) void {
     const token = getAccessToken() orelse return;
     const url = Vapor.frame.fmt("{s}/auth/validate/{s}/session", .{ keystone.backend_url, @tagName(provider) });
     const auth_header = Vapor.frame.fmt("Bearer {s}", .{token});
-    Kit.Fetch.fetch(url, .{
+    Fetch.fetch(url, .{
         .method = .POST,
         .credentials = "include",
         .headers = .{ .authorization = auth_header },
@@ -398,7 +399,7 @@ pub fn authFetchWithOptions(
             handleAuthSessionResponse(resp);
             if (resp == .ok and auth_snapshot.state == .signed_in and getAccessToken() != null) {
                 const retried_req = withAuthHeader(ctx.req, getAccessToken());
-                Kit.Fetch.fetch(ctx.url, retried_req).handle(callback, .{});
+                Fetch.fetch(ctx.url, retried_req).handle(callback, .{});
                 return;
             }
             callback(resp);
@@ -600,7 +601,7 @@ fn exchangeCode(provider: Provider, code: []const u8) void {
     const nonce = Vapor.getStore([]const u8, keystone.oauth_nonce_storage_key) orelse "";
     const body = Vapor.frame.fmt("auth-code={s}&state={s}&nonce={s}", .{ code, state, nonce });
     const url = Vapor.frame.fmt("{s}/exchange/{s}/token", .{ keystone.backend_url, @tagName(provider) });
-    Kit.Fetch.fetch(url, .{
+    Fetch.fetch(url, .{
         .method = .POST,
         .body = body,
         .credentials = "include",

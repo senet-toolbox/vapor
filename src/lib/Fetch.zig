@@ -1,4 +1,22 @@
-const Kit = @import("kit/Kit.zig");
+//! HTTP requests from the browser.
+//!
+//!     const users = Vapor.fetch("/api/users", .{});        // GET by default
+//!     users.handle(onUsers, .{});
+//!
+//!     fn onUsers(result: Vapor.Fetch.Result) void {
+//!         switch (result) {
+//!             .ok => |response| ... response.body ...,
+//!             .err => |err| ... err.message ...,
+//!         }
+//!     }
+//!
+//!     // in render, the same handle reports progress:
+//!     switch (users.state()) { .idle, .loading => ..., .ok => ..., .err => ... }
+//!
+//! `fetch` returns a `*Request`; see "Pointer lifetime model" below for how
+//! long it stays valid. GET/OPTIONS requests to the same URL share one
+//! Request, so several components can ask for the same data.
+
 const Vapor = @import("Vapor.zig");
 const std = @import("std");
 
@@ -38,7 +56,7 @@ pub const Result = union(enum) {
 pub const Response = struct {
     status: u16,
     body: []const u8,
-    headers: ?Kit.Headers,
+    headers: ?Headers,
     url: []const u8,
     content_type: []const u8,
     content_length: usize,
@@ -115,7 +133,7 @@ fn parseErrorKind(s: []const u8) ErrorKind {
     return .unknown;
 }
 
-fn wireHeaders(value: ?std.json.Value) ?Kit.Headers {
+fn wireHeaders(value: ?std.json.Value) ?Headers {
     _ = value;
     // Implement when/if response headers are needed by users.
     return null;
@@ -131,13 +149,220 @@ pub const ErasedFetchCallback = struct {
     /// Snapshot of entry generation at registration time. Used to detect
     /// stale callbacks BEFORE touching ctx (which may be in freed arena memory).
     generation: u32,
-    entry_ptr: *Fetch.RequestEntry,
+    entry_ptr: *Request.RequestEntry,
 
     pub fn call(self: ErasedFetchCallback, result: Result) void {
         if (self.generation != self.entry_ptr.generation) return;
         self.callFn(self.ctx, result);
     }
 };
+
+// =============================================================================
+// Options
+// =============================================================================
+
+pub const Method = enum { GET, POST, PATCH, DELETE, PUT, OPTIONS };
+
+/// A header outside the common set `Headers` names.
+pub const Header = struct {
+    name: []const u8,
+    value: []const u8,
+};
+
+/// Common request headers. Unset ones are not sent.
+pub const Headers = struct {
+    const Self = @This();
+
+    content_type: []const u8 = "text/html",
+    authorization: ?[]const u8 = null,
+    accept: ?[]const u8 = null,
+    user_agent: ?[]const u8 = null,
+
+    pub const Field = struct {
+        name: []const u8, // "Content-Type"
+        value: []const u8,
+    };
+
+    pub fn iterator(self: *const Self) Iterator {
+        return .{ .headers = self };
+    }
+
+    pub const Iterator = struct {
+        headers: *const Self,
+        idx: usize = 0,
+
+        pub fn next(it: *Iterator) ?Field {
+            const fields = std.meta.fields(Self);
+            while (it.idx < fields.len) {
+                const i = it.idx;
+                it.idx += 1;
+                inline for (fields, 0..) |f, j| {
+                    if (i == j) {
+                        // non-optional []const u8 coerces to ?[]const u8,
+                        // so this one line handles both kinds of field
+                        const opt: ?[]const u8 = @field(it.headers, f.name);
+                        if (opt) |v| return .{
+                            .name = comptime headerName(f.name),
+                            .value = v,
+                        };
+                    }
+                }
+            }
+            return null;
+        }
+    };
+};
+
+/// content_type -> Content-Type, user_agent -> User-Agent
+fn headerName(comptime field: []const u8) []const u8 {
+    comptime {
+        var out: []const u8 = "";
+        var upper = true;
+        for (field) |c| {
+            if (c == '_') {
+                out = out ++ "-";
+                upper = true;
+            } else if (upper) {
+                out = out ++ [_]u8{std.ascii.toUpper(c)};
+                upper = false;
+            } else {
+                out = out ++ [_]u8{c};
+            }
+        }
+        return out;
+    }
+}
+
+pub const BodyType = enum {
+    /// Sent as-is.
+    string,
+    /// Already-serialized JSON, sent as-is with the request.
+    json,
+};
+
+/// Options for `fetch`. The string fields mirror the browser's RequestInit.
+pub const Options = struct {
+    method: Method = .GET,
+    headers: ?Headers = null,
+    extra_headers: []const Header = &.{},
+    body: ?[]const u8 = null,
+    body_type: BodyType = .string,
+    /// "same-origin" (browser default), "include" or "omit".
+    credentials: ?[]const u8 = null,
+    /// Shorthand for `.credentials = "include"`.
+    use_credentials: bool = false,
+    mode: ?[]const u8 = null,
+    redirect: ?[]const u8 = null,
+    referrer_policy: ?[]const u8 = null,
+    integrity: ?[]const u8 = null,
+    /// Gives a mutation a stable, shared Request; see the lifetime model.
+    key: ?[]const u8 = null,
+};
+
+/// Serializes `options` as the RequestInit object the runtime hands to the
+/// browser's fetch(). Every string is JSON-escaped.
+pub fn requestJson(allocator: std.mem.Allocator, options: Options) ![]u8 {
+    var out = std.Io.Writer.Allocating.init(allocator);
+    errdefer out.deinit();
+    const w = &out.writer;
+    const str = struct {
+        fn write(writer: *std.Io.Writer, value: []const u8) !void {
+            try std.json.Stringify.encodeJsonString(value, .{}, writer);
+        }
+    }.write;
+
+    try w.writeAll("{\"method\":");
+    try str(w, @tagName(options.method));
+
+    if (options.headers != null or options.extra_headers.len > 0) {
+        try w.writeAll(",\"headers\":{");
+        var first = true;
+        if (options.headers) |headers| {
+            var it = headers.iterator();
+            while (it.next()) |field| {
+                if (!first) try w.writeAll(",");
+                first = false;
+                try str(w, field.name);
+                try w.writeAll(":");
+                try str(w, field.value);
+            }
+        }
+        for (options.extra_headers) |header| {
+            if (!first) try w.writeAll(",");
+            first = false;
+            try str(w, header.name);
+            try w.writeAll(":");
+            try str(w, header.value);
+        }
+        try w.writeAll("}");
+    }
+
+    const credentials: ?[]const u8 = options.credentials orelse if (options.use_credentials) "include" else null;
+    const optional_strings = [_]struct { []const u8, ?[]const u8 }{
+        .{ "credentials", credentials },
+        .{ "mode", options.mode },
+        .{ "redirect", options.redirect },
+        .{ "referrerPolicy", options.referrer_policy },
+        .{ "integrity", options.integrity },
+    };
+    for (optional_strings) |pair| {
+        const value = pair[1] orelse continue;
+        try w.writeAll(",");
+        try str(w, pair[0]);
+        try w.writeAll(":");
+        try str(w, value);
+    }
+
+    if (options.body) |body| {
+        try w.writeAll(",\"body\":");
+        // The runtime stringifies a JSON body again before sending, so both
+        // kinds reach the network as the text given here.
+        switch (options.body_type) {
+            .string => try str(w, body),
+            .json => try w.writeAll(body),
+        }
+    }
+
+    try w.writeAll("}");
+    return out.toOwnedSlice();
+}
+
+test requestJson {
+    const gpa = std.testing.allocator;
+
+    const minimal = try requestJson(gpa, .{});
+    defer gpa.free(minimal);
+    try std.testing.expectEqualStrings("{\"method\":\"GET\"}", minimal);
+
+    const full = try requestJson(gpa, .{
+        .method = .POST,
+        .headers = .{ .content_type = "application/json", .authorization = "Bearer \"x\"" },
+        .extra_headers = &.{.{ .name = "X-Trace", .value = "a\nb" }},
+        .body = "{\"n\":1}",
+        .body_type = .json,
+        .use_credentials = true,
+        .referrer_policy = "no-referrer",
+    });
+    defer gpa.free(full);
+    try std.testing.expectEqualStrings(
+        "{\"method\":\"POST\",\"headers\":{\"Content-Type\":\"application/json\"," ++
+            "\"Authorization\":\"Bearer \\\"x\\\"\",\"X-Trace\":\"a\\nb\"}," ++
+            "\"credentials\":\"include\",\"referrerPolicy\":\"no-referrer\",\"body\":{\"n\":1}}",
+        full,
+    );
+    // Valid JSON, whatever the header values contained.
+    const parsed = try std.json.parseFromSlice(std.json.Value, gpa, full, .{});
+    parsed.deinit();
+}
+
+/// Starts (or joins) a request; call `.handle` on the result to send it.
+pub fn fetch(url: []const u8, options: Options) *Request {
+    return Request.fetch(url, options);
+}
+
+/// Deprecated: `Vapor.Fetch.Fetch` is now `Vapor.Fetch.Request`, and requests
+/// start with `Vapor.fetch(url, .{})`. Kept so existing code compiles.
+pub const Fetch = Request;
 
 // =============================================================================
 // Module-level state
@@ -153,7 +378,7 @@ var lru_tick: u64 = 0;
 // Pointer lifetime model
 // =============================================================================
 //
-// fetch() returns a raw *Fetch. How long that pointer stays valid depends on
+// fetch() returns a raw *Request. How long that pointer stays valid depends on
 // how the request is keyed:
 //
 //   - GET / OPTIONS, or ANY method given an explicit `key`: REGISTERED. Lives in
@@ -178,8 +403,8 @@ var lru_tick: u64 = 0;
 const POOL_SIZE = 64;
 
 const Slot = struct {
-    fetch: Fetch,
-    entry: Fetch.RequestEntry,
+    fetch: Request,
+    entry: Request.RequestEntry,
     last_used: u64 = 0,
 };
 
@@ -239,7 +464,7 @@ fn popSlotIndex() ?u16 {
 }
 
 // =============================================================================
-// Fetch
+// Request
 // =============================================================================
 
 /// Mock control — single tagged union replaces force_error / forced_error_response /
@@ -257,8 +482,8 @@ const Delay = union(enum) {
     secs: f32,
 };
 
-pub const Fetch = struct {
-    http_req: Kit.HttpReq,
+pub const Request = struct {
+    http_req: Options,
     url: []const u8,
     debug: bool = false,
     mock: Mock = .none,
@@ -269,7 +494,7 @@ pub const Fetch = struct {
 
     pub const RequestKey = struct {
         url: []const u8,
-        method: Kit.Methods,
+        method: Method,
         /// Dedup discriminator. "" for GET/OPTIONS coalescing; the explicit
         /// HttpReq.key when one is supplied. Keyless mutations never enter the
         /// registry, so they never produce a RequestKey.
@@ -329,7 +554,7 @@ pub const Fetch = struct {
 
     pub var fetch_registry: std.HashMap(
         RequestKey,
-        *Fetch,
+        *Request,
         RequestKeyContext,
         80,
     ) = undefined;
@@ -339,7 +564,7 @@ pub const Fetch = struct {
     pub fn init() void {
         request_registry = std.HashMap(RequestKey, *RequestEntry, RequestKeyContext, 80)
             .init(Vapor.arena(.persist));
-        fetch_registry = std.HashMap(RequestKey, *Fetch, RequestKeyContext, 80)
+        fetch_registry = std.HashMap(RequestKey, *Request, RequestKeyContext, 80)
             .init(Vapor.arena(.persist));
         fetch_callback_registry = std.AutoHashMap(u32, ErasedFetchCallback)
             .init(Vapor.arena(.persist));
@@ -348,14 +573,14 @@ pub const Fetch = struct {
 
     /// Methods whose requests are safe to coalesce by (url, method). Reads share
     /// a single source of truth; writes are discrete actions and get their own slot.
-    fn isSharedMethod(m: Kit.Methods) bool {
+    fn isSharedMethod(m: Method) bool {
         return switch (m) {
             .GET, .OPTIONS => true,
             else => false,
         };
     }
 
-    pub fn fetch(url: []const u8, http_req: Kit.HttpReq) *Fetch {
+    pub fn fetch(url: []const u8, http_req: Options) *Request {
         const shared = isSharedMethod(http_req.method);
         const has_key = http_req.key != null;
 
@@ -369,7 +594,7 @@ pub const Fetch = struct {
         return fetchPooled(url, http_req);
     }
 
-    fn fetchRegistered(url: []const u8, http_req: Kit.HttpReq) *Fetch {
+    fn fetchRegistered(url: []const u8, http_req: Options) *Request {
         const persist = Vapor.allocator_global;
         const tag: []const u8 = http_req.key orelse "";
         const key = RequestKey{ .url = url, .method = http_req.method, .tag = tag };
@@ -377,9 +602,9 @@ pub const Fetch = struct {
         const f = if (fetch_registry.get(key)) |existing|
             existing
         else blk: {
-            const new = Vapor.arena(.persist).create(Fetch) catch |err| {
+            const new = Vapor.arena(.persist).create(Request) catch |err| {
                 Vapor.printlnErr("fetch: allocation failed: {any}", .{err});
-                @panic("vapor: out of memory creating a Fetch");
+                @panic("vapor: out of memory creating a request");
             };
             const owned_key = RequestKey{
                 .url = persist.dupe(u8, url) catch "",
@@ -403,7 +628,7 @@ pub const Fetch = struct {
         return f;
     }
 
-    fn fetchPooled(url: []const u8, http_req: Kit.HttpReq) *Fetch {
+    fn fetchPooled(url: []const u8, http_req: Options) *Request {
         if (popSlotIndex()) |idx| {
             const s = &slots[idx];
             // Slot is clean (reclaimSlot/init reset it). Wire the fetch to the
@@ -427,9 +652,9 @@ pub const Fetch = struct {
             @panic("vapor: out of memory creating a request entry");
         };
         entry.* = .{ .arena = std.heap.ArenaAllocator.init(persist) };
-        const f = persist.create(Fetch) catch |err| {
+        const f = persist.create(Request) catch |err| {
             Vapor.printlnErr("fetch: allocation failed: {any}", .{err});
-            @panic("vapor: out of memory creating a Fetch");
+            @panic("vapor: out of memory creating a request");
         };
         f.* = .{
             .http_req = http_req,
@@ -463,9 +688,9 @@ pub const Fetch = struct {
 
     /// Register a callback and dispatch. Args is a tuple; the framework prepends
     /// the Result. Example: `.handle(myFn, .{&state, "extra"})` calls
-    /// `myFn(result, &state, "extra")`. Store the *Fetch returned by fetch() and
+    /// `myFn(result, &state, "extra")`. Store the *Request returned by fetch() and
     /// read .state()/.response() from it; see the lifetime model up top.
-    pub fn handle(self: *Fetch, comptime cb: anytype, args: anytype) void {
+    pub fn handle(self: *Request, comptime cb: anytype, args: anytype) void {
         const entry = self.entry;
 
         // Drop any in-flight registration before resetting the arena.
@@ -555,7 +780,7 @@ pub const Fetch = struct {
         entry.in_flight_id = id;
 
         // ---- Build request and dispatch ----
-        const json = Kit.buildRequestJson(arena_alloc, self.http_req) catch {
+        const json = requestJson(arena_alloc, self.http_req) catch {
             entry.state = .err;
             cleanupCallback(id);
             entry.in_flight_id = null;
@@ -582,16 +807,16 @@ pub const Fetch = struct {
         }
     }
 
-    pub fn cancel(self: *Fetch) void {
+    pub fn cancel(self: *Request) void {
         self.entry.cancelInFlight();
         self.entry.state = .idle;
     }
 
-    pub fn state(self: *const Fetch) State {
+    pub fn state(self: *const Request) State {
         return self.entry.state;
     }
 
-    pub fn response(self: *const Fetch) ?Result {
+    pub fn response(self: *const Request) ?Result {
         return self.entry.last_result;
     }
 
@@ -600,7 +825,7 @@ pub const Fetch = struct {
     /// string table during reconcile). No-op for registered/overflow requests.
     /// Reclamation also happens lazily on pool exhaustion, so calling this is an
     /// optimization, never a requirement.
-    pub fn release(self: *Fetch) void {
+    pub fn release(self: *Request) void {
         if (self.pool_slot) |idx| {
             if (self.entry.state == .loading) return; // don't reclaim in-flight
             reclaimSlot(idx);

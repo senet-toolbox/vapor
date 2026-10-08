@@ -422,7 +422,7 @@ pub fn init(config: VaporConfig) void {
     // through the animation removal queue), trap on an undefined container
     // ("RuntimeError: null function"); animations, edges and polygons were
     // silently dropped. Calling any of these again later is harmless.
-    Fetch.Fetch.init();
+    Fetch.Request.init();
     @import("Animation.zig").new();
     @import("Edges.zig").new();
     @import("Polygon.zig").new();

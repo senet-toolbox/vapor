@@ -12,7 +12,6 @@ const Text = Vapor.Text;
 const TextFmt = Vapor.TextFmt;
 const TextField = Vapor.TextField;
 const Link = Vapor.Link;
-const Fetch = Vapor.Fetch.Fetch;
 
 pub export fn init() void {
     Vapor.init(.{});
@@ -175,7 +174,7 @@ fn pageB() void {
 
 // ── /fetch : a request's lifecycle reaches the DOM ─────────────────────────
 
-var request: ?*Fetch = null;
+var request: ?*Vapor.Fetch.Request = null;
 var fetched: []const u8 = "";
 
 fn onFetched(result: Vapor.Fetch.Result) void {
@@ -187,7 +186,7 @@ fn onFetched(result: Vapor.Fetch.Result) void {
 
 fn fetchPage() void {
     if (request == null) {
-        const req = Fetch.fetch("/api/greeting.txt", .{ .method = .GET });
+        const req = Vapor.fetch("/api/greeting.txt", .{});
         req.handle(onFetched, .{});
         request = req;
     }

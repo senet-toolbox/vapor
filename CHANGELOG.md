@@ -48,6 +48,21 @@ client-rendered and from prerendered pages.
   client-rendered fallback for static hosts.
 - The runtime no longer logs internal debugging to production consoles.
 
+### Fetch API
+
+`Vapor.fetch(url, .{})` starts a request (GET unless `.method` says
+otherwise); `Vapor.Fetch` holds the types: `Request` (was `Fetch.Fetch`),
+`Result`, `Response`, `Options` (was `Kit.HttpReq`), `Headers`, `Method`
+(was `Kit.Methods`), `State`. The old names still compile as deprecated
+aliases.
+
+Requests are now serialized with JSON escaping (a header value containing a
+quote produced invalid JSON and the request failed), and `mode`, `redirect`,
+`referrer_policy`, `integrity` and `use_credentials`, which were accepted but
+never sent, now reach the browser's fetch. Removed the unused
+`fetchWithAbortWasm`, `abortFetchWasm`, `fetchWithProgressWasm` and
+`fetchJsonWasm` bindings (1.3 KB of runtime).
+
 ### Added
 
 - `Vapor.routeParam("id")`: the value of a dynamic segment during render.

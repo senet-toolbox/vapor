@@ -13,7 +13,10 @@ pub const Binded = @import("lib/Element.zig").Element;
 pub const Draggable = @import("lib/Draggable.zig").Draggable;
 pub const KeyStone = @import("lib/keystone/KeyStone.zig");
 pub const utils = @import("lib/utils.zig");
+/// `Vapor.fetch(url, .{})` starts a request; `Vapor.Fetch` holds its types
+/// (`Request`, `Result`, `Response`, `Options`, `State`).
 pub const Fetch = @import("lib/Fetch.zig");
+pub const fetch = Fetch.fetch;
 
 // vapor.zig
 pub const ArrayArena = @import("lib/Array.zig").Array;
@@ -192,4 +195,5 @@ test {
     _ = types.NewShadow;
     _ = @import("lib/keystone/JWT.zig");
     _ = @import("lib/Router.zig");
+    _ = Fetch;
 }

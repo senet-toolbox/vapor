@@ -232,17 +232,49 @@ const name  = Vapor.dupe(user.name, .persist);        // survives navigation
 
 ### Data fetching
 
-`Fetch` coalesces requests so several components can ask for the same resource
-without duplicating it. `GET` and `OPTIONS` coalesce by URL; other methods get
-their own slot unless you give them an explicit `key`.
+```zig
+var users: ?*Vapor.Fetch.Request = null;
+
+fn load() void {
+    const req = Vapor.fetch("/api/users", .{}); // GET unless .method says otherwise
+    req.handle(onUsers, .{});
+    users = req;
+}
+
+fn onUsers(result: Vapor.Fetch.Result) void {
+    switch (result) {
+        .ok => |response| std.log.info("{d}: {s}", .{ response.status, response.body }),
+        .err => |err| std.log.err("{s}", .{err.message}),
+    }
+}
+
+fn render() void {
+    switch (users.?.state()) {
+        .idle, .loading => Vapor.Text("Loading...").end(),
+        .ok => Vapor.Text("Loaded").end(),
+        .err => Vapor.Text("Failed").end(),
+    }
+}
+```
+
+`handle(cb, args)` calls `cb(result, args...)`. Requests coalesce, so several
+components can ask for the same resource: `GET` and `OPTIONS` share one
+`Request` per URL; other methods get their own unless you give them a `key`.
 
 ```zig
-const req = Fetch.fetch("/api/accounts", .{ .method = .GET });
-req.handle(onAccounts, .{});
-
-// Two mutations with the same key coalesce; without one they stay separate.
-_ = Fetch.fetch("/api/sync", .{ .method = .POST, .key = "account-sync" });
+_ = Vapor.fetch("/api/sync", .{
+    .method = .POST,
+    .key = "account-sync", // two POSTs with this key share one Request
+    .headers = .{ .content_type = "application/json" },
+    .body = "{\"full\":true}",
+    .body_type = .json,
+    .use_credentials = true, // send cookies cross-origin
+});
 ```
+
+`Vapor.Fetch` holds the types: `Request`, `Result`, `Response`,
+`ErrorResponse`, `Options`, `Headers`, `Method`, `State`. The old spelling,
+`Vapor.Fetch.Fetch.fetch`, still compiles but is deprecated.
 
 ### Knowing when the page is live
 

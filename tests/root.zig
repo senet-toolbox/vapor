@@ -1,7 +1,7 @@
 const std = @import("std");
 const Vapor = @import("vapor");
 
-const Fetch = Vapor.Fetch.Fetch;
+const Request = Vapor.Fetch.Request;
 
 fn noop() void {}
 
@@ -18,6 +18,9 @@ test "public API surface used by docs examples compiles" {
         _ = Vapor.view;
         _ = Vapor.frame;
         _ = Vapor.arena;
+        _ = Vapor.Fetch.Request;
+        _ = Vapor.fetch;
+        // Deprecated spelling, kept for existing apps.
         _ = Vapor.Fetch.Fetch;
         _ = Vapor.Kit.HttpReq;
         _ = Vapor.TextField;
@@ -40,7 +43,7 @@ test "public API surface used by docs examples compiles" {
 fn withFetchRuntime(backing_allocator: std.mem.Allocator) void {
     Vapor.lib.allocator_global = backing_allocator;
     Vapor.lib.frame_arena = @TypeOf(Vapor.lib.frame_arena).init(backing_allocator);
-    Fetch.init();
+    Request.init();
 }
 
 test "fetch coalesces shared requests and separates keyless mutations" {
@@ -49,13 +52,13 @@ test "fetch coalesces shared requests and separates keyless mutations" {
     withFetchRuntime(arena.allocator());
     defer Vapor.lib.frame_arena.deinit();
 
-    const get_a = Fetch.fetch("/api/accounts", .{ .method = .GET });
-    const get_b = Fetch.fetch("/api/accounts", .{ .method = .GET });
+    const get_a = Vapor.fetch("/api/accounts", .{});
+    const get_b = Vapor.fetch("/api/accounts", .{});
     try std.testing.expectEqual(@intFromPtr(get_a), @intFromPtr(get_b));
     try std.testing.expectEqual(@as(?u16, null), get_a.pool_slot);
 
-    const post_a = Fetch.fetch("/api/accounts", .{ .method = .POST });
-    const post_b = Fetch.fetch("/api/accounts", .{ .method = .POST });
+    const post_a = Vapor.fetch("/api/accounts", .{ .method = .POST });
+    const post_b = Vapor.fetch("/api/accounts", .{ .method = .POST });
     try std.testing.expect(@intFromPtr(post_a) != @intFromPtr(post_b));
     try std.testing.expect(post_a.pool_slot != null);
     try std.testing.expect(post_b.pool_slot != null);
@@ -67,9 +70,9 @@ test "fetch coalesces keyed mutations by explicit key" {
     withFetchRuntime(arena.allocator());
     defer Vapor.lib.frame_arena.deinit();
 
-    const keyed_a = Fetch.fetch("/api/sync", .{ .method = .POST, .key = "account-sync" });
-    const keyed_b = Fetch.fetch("/api/sync", .{ .method = .POST, .key = "account-sync" });
-    const keyed_c = Fetch.fetch("/api/sync", .{ .method = .POST, .key = "other-sync" });
+    const keyed_a = Vapor.fetch("/api/sync", .{ .method = .POST, .key = "account-sync" });
+    const keyed_b = Vapor.fetch("/api/sync", .{ .method = .POST, .key = "account-sync" });
+    const keyed_c = Vapor.fetch("/api/sync", .{ .method = .POST, .key = "other-sync" });
 
     try std.testing.expectEqual(@intFromPtr(keyed_a), @intFromPtr(keyed_b));
     try std.testing.expect(@intFromPtr(keyed_a) != @intFromPtr(keyed_c));
@@ -92,7 +95,7 @@ test "fetch mock ok response stores result and invokes callback" {
     withFetchRuntime(arena.allocator());
     defer Vapor.lib.frame_arena.deinit();
 
-    const fetch = Fetch.fetch("/api/health", .{ .method = .GET });
+    const fetch = Vapor.fetch("/api/health", .{});
     fetch.mock = .{ .ok_response = .{
         .status = 200,
         .body = "{\"ok\":true}",
@@ -119,7 +122,7 @@ test "fetch async callback stores parsed response and clears registry" {
     withFetchRuntime(arena.allocator());
     defer Vapor.lib.frame_arena.deinit();
 
-    const fetch = Fetch.fetch("/api/profile", .{ .method = .GET });
+    const fetch = Vapor.fetch("/api/profile", .{});
     var state = CallbackState{};
     fetch.handle(captureFetchResult, .{&state});
 
@@ -493,13 +496,13 @@ fn renderApp(route: []const u8) !*UINode {
     return Vapor.lib.getUINodeChild(root, 0) orelse error.MissingAppNode;
 }
 
-// Apps call Fetch.fetch from a page's init() with nothing but Vapor.init
+// Apps call Vapor.fetch from a page's init() with nothing but Vapor.init
 // before it. Fetch.init used to be a separate, undocumented call, and without
 // it the first fetch() hit an undefined hashmap.
 test "Vapor.init alone makes Fetch usable" {
     Vapor.init(.{});
-    const a = Fetch.fetch("/api/after-init", .{ .method = .GET });
-    const b = Fetch.fetch("/api/after-init", .{ .method = .GET });
+    const a = Vapor.fetch("/api/after-init", .{});
+    const b = Vapor.fetch("/api/after-init", .{});
     try std.testing.expectEqual(@intFromPtr(a), @intFromPtr(b));
 }
 
@@ -849,8 +852,9 @@ test "README examples type-check against the real API" {
         _ = Vapor.dupe;
 
         // "Data fetching"
-        _ = Fetch.fetch;
-        _ = @TypeOf(Fetch.fetch);
+        _ = Vapor.fetch;
+        _ = Vapor.Fetch.Request.handle;
+        _ = Vapor.Fetch.Options;
 
         // "Authentication"
         _ = Vapor.KeyStone.signIn;

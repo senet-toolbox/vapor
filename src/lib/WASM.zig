@@ -1147,41 +1147,6 @@ pub extern fn disconnectMutationObserverWasm(handle: u32) void;
 pub extern fn destroyMutationObserverWasm(handle: u32) void;
 
 // =============================================================================
-// FETCH ENHANCEMENTS
-// =============================================================================
-
-/// Performs a fetch with abort capability. Returns handle for abort.
-pub extern fn fetchWithAbortWasm(
-    url_ptr: [*]const u8,
-    url_len: usize,
-    callback_id: u32,
-    http_ptr: [*]const u8,
-    http_len: usize,
-) u32;
-
-/// Aborts a fetch request.
-pub extern fn abortFetchWasm(handle: u32) u32;
-
-/// Performs a fetch with progress reporting.
-pub extern fn fetchWithProgressWasm(
-    url_ptr: [*]const u8,
-    url_len: usize,
-    callback_id: u32,
-    progress_callback_id: u32,
-    http_ptr: [*]const u8,
-    http_len: usize,
-) void;
-
-/// Performs a fetch and parses response as JSON.
-pub extern fn fetchJsonWasm(
-    url_ptr: [*]const u8,
-    url_len: usize,
-    callback_id: u32,
-    http_ptr: [*]const u8,
-    http_len: usize,
-) void;
-
-// =============================================================================
 // PERFORMANCE TIMING
 // =============================================================================
 
