@@ -1,233 +1,100 @@
-//     e - l - l - o
-//   /
-// h - a - t
-//       \
-//        v - e
+//! Route table: maps a URL path to the page registered for it.
+//!
+//! A trie over path segments. Each node has static children keyed by segment
+//! text and at most one dynamic child (`:name`). Matching tries static
+//! children first and falls back to the dynamic one, backtracking if a static
+//! branch dead-ends, so `/users/new` beats `/users/:id`, and `/users/:id/edit`
+//! can sit beside `/users/:id`. Matched dynamic values are returned as params.
+//!
+//! Paths are registered and looked up with vapor's `/root` prefix.
+
 const std = @import("std");
 const UITree = @import("UITree.zig");
-const Vapor = @import("Vapor.zig");
-const mem = std.mem;
-const FrameAllocator = @import("FrameAllocator.zig").FrameAllocator;
 const RouteFrameArena = @import("FrameAllocator.zig").RouteFrameArena;
 
-const RadixError = error{
-    FailedToInitRadix,
-    FailedToCreateNode,
-};
-
 const Radix = @This();
+
 allocator: std.mem.Allocator,
 root: *Node,
+// The last match's pattern and params live here, so a lookup allocates
+// nothing; Route slices into them stay valid until the next searchRoute.
+pattern_buf: [512]u8 = undefined,
+params_buf: [max_params]Param = undefined,
 
-fn findCommonPrefix(a: []const u8, b: []const u8) usize {
-    var i: usize = 0;
-    while (i < a.len and i < b.len and a[i] == b[i]) : (i += 1) {}
-    return i;
-}
+const max_params = 16;
 
 pub const Node = struct {
-    prefix: []const u8,
-    tree: ?*UITree,
-    query_param: []const u8,
-    is_dynamic: bool,
     children: std.StringHashMap(*Node),
-    param_child: ?*Node,
-    is_end: bool,
+    param_child: ?*Node = null,
+    /// A dynamic segment (`:name`); `param_name` is the part after ':'.
+    is_param: bool = false,
+    param_name: []const u8 = "",
+    is_end: bool = false,
+    tree: ?*UITree = null,
+    page: *const fn () void = undefined,
+    route_arena: *RouteFrameArena = undefined,
+};
+
+pub const Param = struct {
+    name: []const u8,
+    value: []const u8,
+};
+
+pub const Route = struct {
+    ui_tree: *UITree,
     page: *const fn () void,
-    sub_path: []const u8,
+    is_dynamic: bool,
+    /// The registered pattern, e.g. `/root/users/:id`. updateRouteTree takes it.
+    path: []const u8,
     route_arena: *RouteFrameArena,
+    /// Values of the pattern's dynamic segments, in the frame arena.
+    params: []const Param,
+};
 
-    fn findChildWithCommonPrefix(node: *Node, prefix: []const u8) ?*Node {
-        var children_itr = node.children.iterator();
-        var best_match: ?*Node = null;
-        var max_common_len: usize = 0;
+/// Segments of a path, stopping at the query string or fragment.
+const SegmentIterator = struct {
+    rest: []const u8,
 
-        while (children_itr.next()) |c| {
-            const child_prefix = c.value_ptr.*.prefix;
-            const common_len = findCommonPrefix(child_prefix, prefix);
-            if (common_len > max_common_len) {
-                max_common_len = common_len;
-                best_match = c.value_ptr.*;
-            }
-        }
-        return best_match;
+    fn init(path: []const u8) SegmentIterator {
+        const end = std.mem.indexOfAny(u8, path, "?# \x00") orelse path.len;
+        return .{ .rest = path[0..end] };
     }
 
-    // hello is the node and i is 4 since we passed hell
-    fn splitNode(
-        self: *Node,
-        at: usize,
-        allocator: std.mem.Allocator,
-    ) !*Node {
-        // We take the current node and set it as the child,
-        // so now we move everything from current to child
-        // current = handleUsers -> child = handleUsers while now current = treeUser
-        // since we split the node
-        // we create a new node of o
-        const new_node = try allocator.create(Node);
-        new_node.* = Node{
-            .prefix = self.prefix[at..],
-            .tree = self.tree,
-            .query_param = self.query_param,
-            .is_dynamic = self.is_dynamic,
-            .children = self.children,
-            .param_child = self.param_child,
-            .is_end = self.is_end, // ← Keep original is_end
-            .page = self.page, // ← Keep original page!
-            .sub_path = self.sub_path[at..],
-            .route_arena = self.route_arena,
-        };
-
-        self.prefix = self.prefix[0..at];
-        self.sub_path = self.sub_path[0..at];
-        self.is_end = false; // ← The split point is NOT an endpoint (unless a route ends here)
-        self.children = std.StringHashMap(*Node).init(allocator);
-
-        // store the new_node o in the hell node
-        try self.children.put(new_node.prefix, new_node);
-
-        return new_node;
+    fn next(self: *SegmentIterator) ?[]const u8 {
+        while (self.rest.len > 0 and self.rest[0] == '/') self.rest = self.rest[1..];
+        if (self.rest.len == 0) return null;
+        const end = std.mem.indexOfScalar(u8, self.rest, '/') orelse self.rest.len;
+        const segment = self.rest[0..end];
+        self.rest = self.rest[end..];
+        return segment;
     }
 };
 
+fn createNode(allocator: std.mem.Allocator) !*Node {
+    const node = try allocator.create(Node);
+    node.* = .{ .children = std.StringHashMap(*Node).init(allocator) };
+    return node;
+}
+
 pub fn init(target: *Radix, allocator: std.mem.Allocator) !void {
-    const root_node = try allocator.create(Node);
-    root_node.* = Node{
-        .prefix = "",
-        .tree = null,
-        .query_param = "",
-        .is_dynamic = false,
-        .children = std.StringHashMap(*Node).init(allocator),
-        .param_child = null,
-        .is_end = false,
-        .page = undefined,
-        .sub_path = "",
-        .route_arena = undefined,
-    };
-    target.* = .{
-        .root = root_node,
-        .allocator = allocator,
-    };
+    target.* = .{ .root = try createNode(allocator), .allocator = allocator };
 }
 
 pub fn deinit(radix: *Radix) void {
-    // radix.allocator.destroy(radix.root);
-    radix.recurseDestroy(radix.root);
+    radix.destroyNode(radix.root);
 }
 
-// Recursively process all children
-fn recurseDestroy(radix: *Radix, node: *Node) void {
-    var children_itr = node.children.iterator();
-    while (children_itr.next()) |child| {
-        radix.recurseDestroy(child.value_ptr.*);
-    }
+fn destroyNode(radix: *Radix, node: *Node) void {
+    var it = node.children.valueIterator();
+    while (it.next()) |child| radix.destroyNode(child.*);
+    if (node.param_child) |child| radix.destroyNode(child);
     node.children.deinit();
     radix.allocator.destroy(node);
 }
 
-fn newNode(
-    radix: *Radix,
-    prefix: []const u8,
-    tree: *UITree,
-    query_param: []const u8,
-    is_end: bool,
-    page: *const fn () void,
-    sub_path: []const u8,
-    route_arena: *RouteFrameArena,
-) !*Node {
-    const node = try radix.allocator.create(Node);
-    node.* = Node{
-        .prefix = prefix, // Initialize the prefix field
-        .tree = tree,
-        .query_param = query_param,
-        .is_dynamic = false,
-        .children = std.StringHashMap(*Node).init(radix.allocator),
-        .param_child = null,
-        .is_end = is_end,
-        .page = page,
-        .sub_path = sub_path,
-        .route_arena = route_arena,
-    };
-    return node;
-}
-
-fn findSegmentEndIdx(path: []const u8) usize {
-    var idx: usize = 0;
-    while (idx < path.len and path[idx] != '/') : (idx += 1) {
-        if (path[idx] == 0) return idx;
-    }
-    return idx;
-}
-
-// /api/test
-const Route = struct {
-    ui_tree: *UITree = undefined,
-    page: *const fn () void = undefined,
-    is_dynamic: bool = false,
-    path: []const u8,
-    route_arena: *RouteFrameArena,
-};
-pub fn searchRoute(radix: *const Radix, path: []const u8) ?Route {
-    var node_path: std.array_list.Managed(u8) = std.array_list.Managed(u8).init(Vapor.arena(.frame));
-    // var param_args: ?*std.array_list.Managed(ParamInfo) = null;
-    var node = radix.root;
-    var start: usize = 1;
-
-    // Manually parse path segments to avoid iterator overhead
-    while (start < path.len) : (start += 1) {
-        if (path[start] == '/') continue;
-        if (path[start] == '#') break;
-        if (path[start] == ' ') break;
-        if (path[start] == 0) break;
-        // api/test
-        // Skip leading slashes
-        if (start >= path.len) break;
-        const end = findSegmentEndIdx(path[start..]) + start;
-        const segment = path[start..end];
-        start = end;
-
-        node_path.append('/') catch return null; // ← Add '/' once per segment HERE
-
-        var remaining = segment;
-        while (remaining.len > 0) {
-            const match = node.findChildWithCommonPrefix(remaining) orelse return null;
-
-            const common_len = findCommonPrefix(match.prefix, remaining);
-
-            if (common_len != match.prefix.len) return null;
-            remaining = remaining[common_len..];
-            node = match;
-            node_path.appendSlice(match.sub_path) catch return null; // Don't add '/' here
-        }
-
-        // Handle dynamic parameters
-        if (node.param_child) |dynamic_child| {
-            // Look ahead for next segment
-            var param_start = start;
-            while (param_start < path.len and path[param_start] == '/') : (param_start += 1) {}
-            if (param_start >= path.len) break;
-
-            const param_end = std.mem.indexOfScalarPos(u8, path, param_start, '/') orelse path.len;
-            _ = path[param_start..param_end];
-            start = param_end + 1;
-            node = dynamic_child;
-            node_path.append('/') catch return null;
-            node_path.appendSlice(dynamic_child.sub_path) catch return null;
-        }
-    }
-
-    if (node.is_end) {
-        return Route{
-            .ui_tree = node.tree.?,
-            .page = node.page,
-            .is_dynamic = node.is_dynamic,
-            .path = node_path.toOwnedSlice() catch return null,
-            .route_arena = node.route_arena,
-        };
-    }
-    return null;
-}
-
+/// Registers `page` for `path`. Registering the same pattern again replaces
+/// it. Two dynamic segments with different names at the same position
+/// (`/u/:id` and `/u/:name`) are `error.ConflictDynamicRoute`.
 pub fn addRoute(
     radix: *Radix,
     path: []const u8,
@@ -235,153 +102,169 @@ pub fn addRoute(
     page: *const fn () void,
     route_arena: *RouteFrameArena,
 ) !void {
-    var path_iter = mem.tokenizeScalar(u8, path, '/');
-    try radix.insert(&path_iter, tree, page, route_arena);
-}
-
-fn insert(
-    radix: *Radix,
-    segments: *mem.TokenIterator(u8, .scalar),
-    tree: *UITree,
-    page: *const fn () void,
-    route_arena: *RouteFrameArena,
-) !void {
     var node = radix.root;
+    var segments = SegmentIterator.init(path);
     while (segments.next()) |segment| {
-        var segement_remaining = segment;
-        const is_dynamic = segment[0] == ':';
-        if (is_dynamic) {
-            const param = segment[1..];
-            if (node.param_child) |_| return error.ConflictDynamicRoute;
-            const dynamic_node = try radix.newNode(":dynamic", tree, param, true, page, segment, route_arena);
-            node.param_child = dynamic_node;
-            node.is_end = true;
-            return;
-        }
-
-        // Inside the insertion loop:
-        while (segement_remaining.len > 0) {
-            // hell is common with hello, hell
-            // this finds is there is a child with hell prefix
-            const matching_child = node.findChildWithCommonPrefix(segement_remaining);
-            if (matching_child) |child| {
-                var i: usize = 0;
-                // The word_remingin is hello
-                // Find length of common prefix which is hell for hello which is 4
-                while (i < child.prefix.len and i < segement_remaining.len and child.prefix[i] == segement_remaining[i]) : (i += 1) {}
-
-                if (i < child.prefix.len) {
-                    _ = try child.splitNode(i, radix.allocator);
-                    // Once we splitt the node we need to set the current to the correct route func
-                    child.tree = tree;
-                    child.prefix = segement_remaining[0..i];
-                    child.sub_path = segement_remaining[0..i];
-                    child.param_child = null;
-                    node = child;
-                    // Focus on the PARENT (the split node, now "hell")
-                } else {
-                    node = child;
-                }
-                // Advance the word remianing
-                segement_remaining = segement_remaining[i..];
+        if (segment[0] == ':') {
+            const name = segment[1..];
+            if (node.param_child) |child| {
+                if (!std.mem.eql(u8, child.param_name, name)) return error.ConflictDynamicRoute;
+                node = child;
             } else {
-                // const param = if (is_dynamic) segment[1..] else "";
-                // create a new RouteFunc
-                // check the current node hello startwith hell
-                const new_node = try radix.newNode(
-                    segement_remaining,
-                    tree,
-                    "",
-                    false,
-                    page,
-                    segement_remaining,
-                    route_arena,
-                );
-                try node.children.put(segement_remaining, new_node);
-                node = new_node;
-                break;
+                const child = try createNode(radix.allocator);
+                child.is_param = true;
+                child.param_name = name;
+                node.param_child = child;
+                node = child;
             }
+        } else {
+            const entry = try node.children.getOrPut(segment);
+            if (!entry.found_existing) entry.value_ptr.* = try createNode(radix.allocator);
+            node = entry.value_ptr.*;
         }
     }
     node.is_end = true;
-    node.tree = tree; // Add this
-    node.page = page; // Add this
+    node.tree = tree;
+    node.page = page;
+    node.route_arena = route_arena;
 }
 
-/// Update the UITree for a specific route path
-/// Returns true if the route was found and updated, false otherwise
-pub fn updateRouteTree(radix: *Radix, path: []const u8, new_tree: *UITree) bool {
-    var node = radix.root;
-    var start: usize = 1;
+const max_segments = 64;
 
-    // Parse path segments similar to searchRoute
-    while (start < path.len) : (start += 1) {
-        if (path[start] == '/') continue;
-        if (path[start] == '#') break;
-        if (path[start] == ' ') break;
-        if (path[start] == 0) break;
+pub fn searchRoute(radix: *Radix, path: []const u8) ?Route {
+    var segments_buf: [max_segments][]const u8 = undefined;
+    var count: usize = 0;
+    var it = SegmentIterator.init(path);
+    while (it.next()) |segment| {
+        if (count == segments_buf.len) return null;
+        segments_buf[count] = segment;
+        count += 1;
+    }
+    const segments = segments_buf[0..count];
 
-        if (start >= path.len) break;
-        const end = findSegmentEndIdx(path[start..]) + start;
-        const segment = path[start..end];
-        start = end;
+    // chosen[i] is the node that matched segments[i].
+    var chosen: [max_segments]*Node = undefined;
+    const node = match(radix.root, segments, &chosen, 0) orelse return null;
 
-        var remaining = segment;
-        while (remaining.len > 0) {
-            const match = node.findChildWithCommonPrefix(remaining) orelse return false;
-            const common_len = findCommonPrefix(match.prefix, remaining);
-
-            if (common_len != match.prefix.len) return false;
-            remaining = remaining[common_len..];
-            node = match;
-        }
-
-        // Handle dynamic parameters
-        if (node.param_child) |dynamic_child| {
-            var param_start = start;
-            while (param_start < path.len and path[param_start] == '/') : (param_start += 1) {}
-            if (param_start >= path.len) break;
-
-            const param_end = std.mem.indexOfScalarPos(u8, path, param_start, '/') orelse path.len;
-            start = param_end + 1;
-            node = dynamic_child;
+    var pattern = std.Io.Writer.fixed(&radix.pattern_buf);
+    var param_count: usize = 0;
+    for (segments, chosen[0..segments.len]) |segment, n| {
+        if (n.is_param) {
+            if (param_count == max_params) return null;
+            pattern.print("/:{s}", .{n.param_name}) catch return null;
+            radix.params_buf[param_count] = .{ .name = n.param_name, .value = segment };
+            param_count += 1;
+        } else {
+            pattern.print("/{s}", .{segment}) catch return null;
         }
     }
 
-    // Update the tree if this is an end node
-    if (node.is_end) {
-        node.tree = new_tree;
-        return true;
-    }
-    return false;
+    return Route{
+        .ui_tree = node.tree.?,
+        .page = node.page,
+        .is_dynamic = param_count > 0,
+        .path = pattern.buffered(),
+        .route_arena = node.route_arena,
+        .params = radix.params_buf[0..param_count],
+    };
 }
 
-pub fn printTree(radix: *const Radix) !void {
-    var buffer = std.array_list.Managed(u8).init(radix.allocator);
-    defer buffer.deinit();
-    // Start traversal from the root's children (root itself has no prefix)
-    try printNode(radix.root, &buffer);
-}
-
-fn printNode(node: *const Node, buffer: *std.array_list.Managed(u8)) !void {
-    // Save current buffer length to backtrack later
-    const original_len = buffer.items.len;
-
-    // Append this node's prefix to the buffer
-    try buffer.appendSlice(node.prefix);
-
-    // Recursively process all children
-    var children_itr = node.children.iterator();
-    while (children_itr.next()) |child| {
-        try printNode(child.value_ptr.*, buffer);
+/// Finds the end node for `segments`: static children before the dynamic one,
+/// backtracking when a branch dead-ends. Records each step in `chosen`.
+fn match(node: *Node, segments: []const []const u8, chosen: *[max_segments]*Node, depth: usize) ?*Node {
+    if (depth == segments.len) return if (node.is_end) node else null;
+    if (node.children.get(segments[depth])) |child| {
+        chosen[depth] = child;
+        if (match(child, segments, chosen, depth + 1)) |found| return found;
     }
-
     if (node.param_child) |child| {
-        if (child.is_end) {
-            try buffer.appendSlice(child.prefix);
-        }
+        chosen[depth] = child;
+        if (match(child, segments, chosen, depth + 1)) |found| return found;
+    }
+    return null;
+}
+
+/// Replaces the UI tree of the route registered as `pattern` (Route.path).
+pub fn updateRouteTree(radix: *Radix, pattern: []const u8, new_tree: *UITree) bool {
+    var node = radix.root;
+    var segments = SegmentIterator.init(pattern);
+    while (segments.next()) |segment| {
+        node = if (segment[0] == ':')
+            node.param_child orelse return false
+        else
+            node.children.get(segment) orelse return false;
+    }
+    if (!node.is_end) return false;
+    node.tree = new_tree;
+    return true;
+}
+
+// ── tests ───────────────────────────────────────────────────────────────────
+
+fn testPage() void {}
+
+const TestTable = struct {
+    radix: Radix,
+    // The router never dereferences these; distinct addresses are enough.
+    trees: [8]u64 = undefined,
+
+    fn tree(self: *TestTable, i: usize) *UITree {
+        return @ptrCast(@alignCast(&self.trees[i]));
     }
 
-    // Backtrack: remove this node's prefix to prepare for sibling paths
-    buffer.shrinkRetainingCapacity(original_len);
+    fn add(self: *TestTable, path: []const u8, i: usize) !void {
+        try self.radix.addRoute(path, self.tree(i), testPage, undefined);
+    }
+
+    fn find(self: *TestTable, path: []const u8) ?usize {
+        const route = self.radix.searchRoute(path) orelse return null;
+        for (0..self.trees.len) |i| if (route.ui_tree == self.tree(i)) return i;
+        return null;
+    }
+};
+
+fn testTable() !TestTable {
+    var t = TestTable{ .radix = undefined };
+    try Radix.init(&t.radix, std.testing.allocator);
+    return t;
+}
+
+test "static, dynamic and nested dynamic routes" {
+    var t = try testTable();
+    defer t.radix.deinit();
+    try t.add("/root", 0);
+    try t.add("/root/users/:id", 1);
+    try t.add("/root/users/:id/edit", 2);
+    try t.add("/root/users/new", 3);
+    try t.add("/root/about", 4);
+
+    try std.testing.expectEqual(@as(?usize, 0), t.find("/root"));
+    try std.testing.expectEqual(@as(?usize, 1), t.find("/root/users/42"));
+    try std.testing.expectEqual(@as(?usize, 2), t.find("/root/users/42/edit"));
+    // Static beats dynamic at the same position.
+    try std.testing.expectEqual(@as(?usize, 3), t.find("/root/users/new"));
+    try std.testing.expectEqual(@as(?usize, 4), t.find("/root/about/"));
+    try std.testing.expectEqual(@as(?usize, 4), t.find("/root/about?tab=1#top"));
+    // Not routes: a registered route's prefix, a longer path, a near miss.
+    try std.testing.expectEqual(@as(?usize, null), t.find("/root/users"));
+    try std.testing.expectEqual(@as(?usize, null), t.find("/root/users/42/edit/more"));
+    try std.testing.expectEqual(@as(?usize, null), t.find("/root/abou"));
+    try std.testing.expectEqual(@as(?usize, null), t.find("/root/aboutx"));
+
+    const route = t.radix.searchRoute("/root/users/42/edit").?;
+    try std.testing.expectEqualStrings("/root/users/:id/edit", route.path);
+    try std.testing.expectEqual(@as(usize, 1), route.params.len);
+    try std.testing.expectEqualStrings("id", route.params[0].name);
+    try std.testing.expectEqualStrings("42", route.params[0].value);
+    try std.testing.expect(route.is_dynamic);
+
+    // A static branch that dead-ends falls back to the dynamic one.
+    try t.add("/root/files/new/draft", 5);
+    try t.add("/root/files/:name", 6);
+    try std.testing.expectEqual(@as(?usize, 6), t.find("/root/files/new"));
+
+    try std.testing.expect(t.radix.updateRouteTree("/root/users/:id/edit", t.tree(7)));
+    try std.testing.expectEqual(@as(?usize, 7), t.find("/root/users/9/edit"));
+
+    try std.testing.expectError(error.ConflictDynamicRoute, t.add("/root/users/:name", 0));
 }

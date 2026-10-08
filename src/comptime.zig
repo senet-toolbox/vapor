@@ -28,6 +28,7 @@ pub const ElementDecl = @import("lib/Vapor.zig").ElementDecl;
 pub const StateType = @import("lib/Vapor.zig").StateType;
 pub const Kit = @import("lib/kit/Kit.zig");
 pub const Page = lib.Page;
+pub const routeParam = lib.routeParam;
 pub const println = lib.println;
 pub const printlnSrc = lib.printlnSrc;
 pub const transparentizeHex = types.Color.transparentize;
@@ -190,4 +191,5 @@ test {
     _ = Animation;
     _ = types.NewShadow;
     _ = @import("lib/keystone/JWT.zig");
+    _ = @import("lib/Router.zig");
 }

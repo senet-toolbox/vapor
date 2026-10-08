@@ -41,7 +41,12 @@ function serve(req, res) {
   if (staticMode) {
     // A static host: release/ is the site root, plus the wasm the runtime
     // fetches from /zig-out/bin/.
-    if (!extname(path)) path = path.replace(/\/$/, "") + "/index.html";
+    if (!extname(path)) {
+      // A prerendered page if there is one, else the host's fallback to the
+      // client-rendered shell (dynamic routes, unknown paths).
+      const page = path.replace(/\/$/, "") + "/index.html";
+      path = existsSync(join(appDir, "release", page)) ? page : "/app.html";
+    }
     // Anything not in release/ (the wasm, the /api fixtures) is what the
     // backend would serve.
     if (existsSync(join(appDir, "release", path))) path = "/release" + path;
@@ -375,6 +380,21 @@ const tests = {
     await p.waitFor(`!!document.getElementById("page-b")`, "page B");
     await sleep(200);
     assertEqual(p.consoleMessages, [], "console output");
+  },
+
+  async "dynamic segments: params, nesting, static precedence, 404"(p) {
+    await p.goto("/users/42");
+    await p.waitForText("user-id", "user=42");
+    await p.click("to-edit");
+    await p.waitForText("user-edit-id", "editing=42");
+    await p.goto("/users/7/edit");
+    await p.waitForText("user-edit-id", "editing=7");
+    await p.goto("/users/new");
+    await p.waitFor(`!!document.getElementById("new-user")`, "/users/new beats /users/:id");
+    for (const path of ["/users", "/users/42/edit/more", "/nope"]) {
+      await p.goto(path);
+      await p.waitFor(`!!document.getElementById("not-found")`, `${path} renders the /error page`);
+    }
   },
 
   async "wasm memory stays flat across many route changes"(p) {

@@ -197,6 +197,15 @@ document.
 ```zig
 Vapor.Page(.{ .route = "/docs" }, DocsPage, null);
 
+// Dynamic segments. Static routes win over dynamic ones at the same position
+// (/users/new before /users/:id), and routes can nest under a dynamic segment.
+Vapor.Page(.{ .route = "/users/:id" }, UserPage, null);
+Vapor.Page(.{ .route = "/users/:id/edit" }, EditUserPage, null);
+// in UserPage's render: Vapor.routeParam("id") -> "42" on /users/42
+
+// Rendered for any path no page matches.
+Vapor.Page(.{ .route = "/error" }, NotFoundPage, null);
+
 // Wrap a route subtree in shared chrome.
 try Vapor.registerLayout("/docs", docsLayout, .{ .reset = true });
 
@@ -253,6 +262,15 @@ End-to-end tests should wait for it before interacting.
 `Vapor.KeyStone` wraps OAuth sign-in, session storage, token refresh and
 authenticated fetch for Google, GitHub, Apple and Azure. It expects a backend
 that exchanges the OAuth code — tokens are never minted in the browser.
+
+## Static generation
+
+`zig build -Dgenerate=true` prerenders every static route to
+`release/<route>/index.html`. Dynamic routes cannot be prerendered without
+their values, so they render on the client from `release/app.html`, a copy of
+`template.html`. Configure the host to serve `app.html` for paths with no
+file (e.g. Netlify `/* /app.html 200`); unknown paths then render your
+`/error` page.
 
 ## Build options
 

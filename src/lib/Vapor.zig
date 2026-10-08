@@ -677,9 +677,11 @@ pub fn renderCycle(route_ptr: [*:0]u8) !void {
 
     if (old_route_op) |old_route| {
         render_page = old_route.page;
+        route_params = old_route.params;
         frame_arena.setCurrentRoute(old_route.route_arena);
     } else {
         render_page = DefaultPage;
+        route_params = &.{};
     }
 
     frame_arena.beginFrame(); // For double-buffered approach
@@ -945,6 +947,19 @@ const LayoutOptions = struct {
 
 pub const PageFn = *const fn () void;
 pub const LayoutFn = fn (*const fn () void) void;
+/// Dynamic segment values of the route being rendered.
+var route_params: []const Router.Param = &.{};
+
+/// The value of a dynamic segment of the current route, e.g. for a page
+/// registered as `/users/:id`, `routeParam("id")` is "42" on /users/42.
+/// Valid during render; copy it (Vapor.dupe) to keep it longer.
+pub fn routeParam(name: []const u8) ?[]const u8 {
+    for (route_params) |param| {
+        if (std.mem.eql(u8, param.name, name)) return param.value;
+    }
+    return null;
+}
+
 pub fn registerLayout(path: []const u8, layout: LayoutFn, options: LayoutOptions) !void {
     if (std.mem.eql(u8, path, "/root")) return error.CannotRegisterRootPath;
     if (std.mem.eql(u8, path, "/")) {
@@ -1407,10 +1422,26 @@ pub fn generate() void {
     css_variables.writePositionalAll(io, StyleCompiler.global_style, 0) catch |err|
         generatorFatal("writing file", err, css_vars_path);
 
+    // The client-rendered shell, for paths no prerendered page covers:
+    // dynamic routes and unknown paths (which render the /error page). Point
+    // the host's fallback for unmatched paths at it.
+    const shell_path = std.fmt.allocPrint(allocator_global, "{s}/app.html", .{release_dir}) catch |err|
+        generatorFatal("building the app.html path", err, release_dir);
+    cwd.copyFile("template.html", cwd, shell_path, io, .{}) catch |err|
+        generatorFatal("copying template.html to", err, shell_path);
+
     var page_itr = page_map.iterator();
     while (page_itr.next()) |entry| {
         writer = std.Io.Writer.fixed(&buffer);
         const route = entry.key_ptr.*;
+
+        // A dynamic route has no single page to prerender; it renders on the
+        // client from app.html. (Writing it out produced literal `:id`
+        // directories that no URL maps to.)
+        if (std.mem.indexOf(u8, route, "/:") != null) {
+            std.debug.print("client-rendered only (dynamic): {s}\n", .{route[@min(route.len, 5)..]});
+            continue;
+        }
 
         // Strip "/root" — "/root/components" becomes "/components"
         const stripped = if (route.len > 5) route[5..] else "/";
@@ -1501,8 +1532,10 @@ pub fn generateHtml(route: []const u8, dir: []const u8) void {
     };
     if (old_route_op) |old_route| {
         render_page = old_route.page;
+        route_params = old_route.params;
     } else {
         render_page = DefaultPage;
+        route_params = &.{};
     }
 
     const old_ctx = current_ctx;
@@ -1615,6 +1648,7 @@ pub fn printUIRouteTree(route: []const u8) void {
         return;
     };
     render_page = old_route.page;
+    route_params = old_route.params;
     const old_ctx = current_ctx;
     // Create new context
     const new_ctx: *UIContext = allocator_global.create(UIContext) catch {

@@ -26,6 +26,10 @@ pub export fn init() void {
     Vapor.Page(.{ .route = "/fetch" }, fetchPage, null);
     Vapor.Page(.{ .route = "/storage" }, storagePage, null);
     Vapor.Page(.{ .route = "/urls" }, urls, null);
+    Vapor.Page(.{ .route = "/users/:id" }, userPage, null);
+    Vapor.Page(.{ .route = "/users/:id/edit" }, userEditPage, null);
+    Vapor.Page(.{ .route = "/users/new" }, newUserPage, null);
+    Vapor.Page(.{ .route = "/error" }, notFound, null);
 }
 
 pub const std_options = std.Options{
@@ -234,4 +238,30 @@ fn urls() void {
             Text("internal").end();
         });
     });
+}
+
+// ── /users/:id : dynamic segments ──────────────────────────────────────────
+
+fn userPage() void {
+    Box().id("user-page").children({
+        TextFmt("user={?s}", .{Vapor.routeParam("id")}).id("user-id").end();
+        Link(.{ .url = "/users/42/edit" }).id("to-edit").children({
+            Text("Edit").end();
+        });
+    });
+}
+
+fn userEditPage() void {
+    Box().id("user-edit-page").children({
+        TextFmt("editing={?s}", .{Vapor.routeParam("id")}).id("user-edit-id").end();
+    });
+}
+
+fn newUserPage() void {
+    Text("New user form").id("new-user").end();
+}
+
+// Registered as /error: what vapor renders for a path no page matches.
+fn notFound() void {
+    Text("Not found").id("not-found").end();
 }
