@@ -21,6 +21,16 @@ never sent, now reach the browser's fetch. Removed the unused
 `fetchWithAbortWasm`, `abortFetchWasm`, `fetchWithProgressWasm` and
 `fetchJsonWasm` bindings (1.3 KB of runtime).
 
+### Internal cleanup (no API change)
+
+- Removed ~2,250 lines: dead private declarations, exports no runtime called,
+  and commented-out code (an old Transition implementation alone was 354).
+- `Vapor.zig` (3,082 lines) is split by responsibility into Storage, Log,
+  Hex, Query, Memory, Timers, Events, Hooks, Exports and StaticGenerator;
+  `types.zig` (2,859) into `types/` (color, sizing, box, background, packed,
+  input, style). Both re-export everything they moved: every previously
+  public name still resolves at its old path (checked mechanically).
+
 ### Browser APIs load on demand, and work
 
 Bindings for canvas, audio, geolocation, IndexedDB, websockets, drag and drop,
