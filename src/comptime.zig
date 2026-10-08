@@ -199,4 +199,5 @@ test {
     _ = @import("lib/keystone/JWT.zig");
     _ = @import("lib/Router.zig");
     _ = Fetch;
+    _ = @import("lib/Storage.zig");
 }
