@@ -1,7 +1,7 @@
 import { debug } from "./debug.js";
 import { readWasmString, wasmInstance } from "./wasi_obj.js";
 import { env, requireWasm } from "./wasi.js";
-import { fileBindings } from "./additionals.js";
+import { fileBindings } from "./file.js";
 // import { cacheEnv } from "./cachebindings.js";
 
 export const importObject = {

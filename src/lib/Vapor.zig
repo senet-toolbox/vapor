@@ -1486,6 +1486,9 @@ pub fn generate() void {
     // matches the wasm; the other locations are for projects that predate it.
     var dest_dir = cwd.openDir(io, release_dir, .{}) catch return;
     defer dest_dir.close(io);
+    // browser.min.js (optional browser-API bindings) is loaded from beside the
+    // core bundle, so it goes along when the build installed it.
+    cwd.copyFile("zig-out/bin/browser.min.js", dest_dir, "browser.min.js", io, .{}) catch {};
     const bundle_sources = [_][]const u8{ "zig-out/bin/bundle.min.js", "bundle.min.js", "static/bundle.min.js" };
     const copied = for (bundle_sources) |src| {
         cwd.copyFile(src, dest_dir, "bundle.min.js", io, .{}) catch continue;

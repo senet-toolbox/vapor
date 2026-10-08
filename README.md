@@ -78,7 +78,17 @@ b.getInstallStep().dependOn(&b.addInstallBinFile(
 ```
 
 and load it from your HTML with `<script type="module" src="/bundle.min.js">`
-(served from `zig-out/bin/`). `metal vapor create` sets all of this up.
+(served from `zig-out/bin/`). Install `browser.min.js` beside it as well; the
+runtime fetches it only for apps that use a browser API (see below):
+
+```zig
+b.getInstallStep().dependOn(&b.addInstallBinFile(
+    vapor_dep.namedLazyPath("runtime-browser"),
+    "browser.min.js",
+).step);
+```
+
+`metal vapor create` sets all of this up.
 
 The two modules are small:
 
@@ -275,6 +285,21 @@ _ = Vapor.fetch("/api/sync", .{
 `Vapor.Fetch` holds the types: `Request`, `Result`, `Response`,
 `ErrorResponse`, `Options`, `Headers`, `Method`, `State`. The old spelling,
 `Vapor.Fetch.Fetch.fetch`, still compiles but is deprecated.
+
+### Browser APIs
+
+`Vapor.Browser` binds browser APIs beyond rendering: canvas, audio,
+geolocation, IndexedDB, websockets, drag and drop, session storage,
+notifications, fullscreen, selection, mutation observers, performance timing,
+pointer lock, vibration, screen orientation, battery and Web Share.
+
+```zig
+if (Vapor.Browser.geolocationAvailableWasm() == 1) { ... }
+```
+
+Their JavaScript is not in the main runtime. When an app's wasm imports any of
+them, the runtime fetches `browser.min.js` first; apps that use none never
+download it.
 
 ### Knowing when the page is live
 

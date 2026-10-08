@@ -15,6 +15,8 @@ import { dirname, extname, join, normalize, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const appDir = resolve(dirname(fileURLToPath(import.meta.url)), "app");
+// An app whose wasm imports every binding vapor declares; see its main.zig.
+const bindingsDir = resolve(dirname(fileURLToPath(import.meta.url)), "bindings");
 // Arguments, in any order:
 //   --static   serve the prerendered pages (`zig build -Dgenerate=true` in the
 //              app) the way a static host would, so every test runs against
@@ -35,9 +37,17 @@ const mime = {
   ".json": "application/json",
 };
 
-function serve(req, res) {
+// Paths each server was asked for, so tests can assert what a page loaded.
+const requested = { app: [], bindings: [] };
+
+function makeServer(dir, log, staticSite) {
+  return createServer((req, res) => serve(dir, log, staticSite, req, res));
+}
+
+function serve(appDir, log, staticMode, req, res) {
   const url = new URL(req.url, "http://x");
   let path = decodeURIComponent(url.pathname);
+  log.push(path);
   if (staticMode) {
     // A static host: release/ is the site root, plus the wasm the runtime
     // fetches from /zig-out/bin/.
@@ -50,7 +60,7 @@ function serve(req, res) {
     // Anything not in release/ (the wasm, the /api fixtures) is what the
     // backend would serve.
     if (existsSync(join(appDir, "release", path))) path = "/release" + path;
-  } else if (path === "/bundle.min.js") path = "/zig-out/bin/bundle.min.js";
+  } else if (path === "/bundle.min.js" || path === "/browser.min.js") path = "/zig-out/bin" + path;
   const file = normalize(join(appDir, path));
   if (!file.startsWith(appDir)) return res.writeHead(400).end();
 
@@ -178,7 +188,7 @@ function makePage(cdp, origin) {
     waitFor,
     text,
     async goto(path) {
-      await cdp.send("Page.navigate", { url: origin + path });
+      await cdp.send("Page.navigate", { url: path.startsWith("http") ? path : origin + path });
       await waitFor(`document.readyState === "complete"`, "page load");
       // Prerendered HTML is visible before it is live; wait for hydration.
       await waitFor(`document.documentElement.hasAttribute("data-vapor-ready")`, "vapor:ready");
@@ -397,6 +407,23 @@ const tests = {
     }
   },
 
+  async "every declared binding is wired into the runtime"(p) {
+    // The bindings app imports all of Vapor.Wasm and Vapor.Browser. One
+    // missing import and the browser refuses to instantiate it (LinkError),
+    // so it never becomes ready.
+    p.requested.bindings.length = 0;
+    await p.goto(p.bindingsOrigin + "/");
+    const text = await p.text("count");
+    if (!/^\d+ bindings$/.test(text ?? "") || parseInt(text) < 200) throw new Error(`unexpected: ${text}`);
+    assertEqual(p.requested.bindings.includes("/browser.min.js"), true, "browser.min.js loaded for browser APIs");
+  },
+
+  async "apps that use no browser API never download browser.min.js"(p) {
+    p.requested.app.length = 0;
+    for (const path of ["/", "/list", "/input", "/fetch", "/storage", "/a"]) await p.goto(path);
+    assertEqual(p.requested.app.includes("/browser.min.js"), false, "browser.min.js requested");
+  },
+
   async "wasm memory stays flat across many route changes"(p) {
     await p.goto("/a");
     await p.waitFor(`!!document.getElementById("page-a")`, "page A");
@@ -433,21 +460,28 @@ if (staticMode && !existsSync(join(appDir, "release/index.html"))) {
   console.error("--static needs prerendered pages: run `zig build -Dgenerate=true` in tests/browser/app");
   process.exit(2);
 }
-if (!existsSync(join(appDir, "zig-out/bin/vapor.wasm"))) {
-  console.error(`missing ${appDir}/zig-out/bin/vapor.wasm; run \`zig build\` in tests/browser/app first`);
-  process.exit(2);
-}
 
 // The app serves the runtime its own build installed. Run directly after
 // editing js/, that copy is stale and the tests would exercise old code.
-const served = readFileSync(join(appDir, "zig-out/bin/bundle.min.js"));
-const current = readFileSync(resolve(appDir, "../../../js/dist/bundle.min.js"));
-if (!served.equals(current)) {
-  console.error("tests/browser/app has a stale bundle.min.js; use `zig build browser-test`, or `zig build` in the app first");
-  process.exit(2);
+for (const dir of [appDir, bindingsDir]) {
+  if (!existsSync(join(dir, "zig-out/bin/vapor.wasm"))) {
+    console.error(`missing ${dir}/zig-out/bin/vapor.wasm; use \`zig build browser-test\``);
+    process.exit(2);
+  }
+  const stale = ["bundle.min.js", "browser.min.js"].some((f) => {
+    const served = join(dir, "zig-out/bin", f);
+    return !existsSync(served) || !readFileSync(served).equals(readFileSync(resolve(dir, "../../../js/dist", f)));
+  });
+  if (stale) {
+    console.error(`${dir} has a stale runtime; use \`zig build browser-test\`, or \`zig build\` in it first`);
+    process.exit(2);
+  }
 }
 
-const server = createServer(serve);
+const server = makeServer(appDir, requested.app, staticMode);
+const bindingsServer = makeServer(bindingsDir, requested.bindings, false);
+await new Promise((r) => bindingsServer.listen(0, "127.0.0.1", r));
+const bindingsOrigin = `http://127.0.0.1:${bindingsServer.address().port}`;
 await new Promise((r) => server.listen(flags.has("--serve") ? 8090 : 0, "127.0.0.1", r));
 const origin = `http://127.0.0.1:${server.address().port}`;
 if (flags.has("--serve")) {
@@ -456,6 +490,8 @@ if (flags.has("--serve")) {
 }
 const cdp = await launch();
 const page = makePage(cdp, origin);
+page.bindingsOrigin = bindingsOrigin;
+page.requested = requested;
 
 const selected = Object.entries(tests).filter(([name]) => !only || name.toLowerCase().includes(only.toLowerCase()));
 if (selected.length === 0) {
@@ -480,5 +516,6 @@ for (const [name, fn] of selected) {
 
 cdp.close();
 server.close();
+bindingsServer.close();
 console.log(`${failed ? `\n${failed} failed` : "\nall passed"}${staticMode ? " (static pages)" : ""}`);
 process.exit(failed ? 1 : 0);

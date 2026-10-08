@@ -62,6 +62,7 @@ const modules = .{
     @import("lib/UITree.zig"),
     @import("lib/Vapor.zig"),
     @import("lib/WASM.zig"),
+    @import("lib/Browser.zig"),
     @import("lib/Writer.zig"),
     @import("lib/constants/Color.zig"),
     @import("lib/convertStyleCustomWriter.zig"),

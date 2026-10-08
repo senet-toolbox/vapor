@@ -4,7 +4,55 @@ All notable changes to this project are documented here. This project follows
 [Semantic Versioning](https://semver.org/): breaking changes bump the major
 version and are listed with a migration note.
 
-## [2.1.0] — unreleased
+## [2.2.0] — unreleased
+
+### Fetch API
+
+`Vapor.fetch(url, .{})` starts a request (GET unless `.method` says
+otherwise); `Vapor.Fetch` holds the types: `Request` (was `Fetch.Fetch`),
+`Result`, `Response`, `Options` (was `Kit.HttpReq`), `Headers`, `Method`
+(was `Kit.Methods`), `State`. The old names still compile as deprecated
+aliases.
+
+Requests are now serialized with JSON escaping (a header value containing a
+quote produced invalid JSON and the request failed), and `mode`, `redirect`,
+`referrer_policy`, `integrity` and `use_credentials`, which were accepted but
+never sent, now reach the browser's fetch. Removed the unused
+`fetchWithAbortWasm`, `abortFetchWasm`, `fetchWithProgressWasm` and
+`fetchJsonWasm` bindings (1.3 KB of runtime).
+
+### Browser APIs load on demand, and work
+
+Bindings for canvas, audio, geolocation, IndexedDB, websockets, drag and drop,
+session storage, notifications, fullscreen, selection, mutation observers,
+performance timing, pointer lock, vibration, screen orientation, battery and
+Web Share were implemented in the runtime but never added to the wasm's
+import object, so an app calling any of them failed to load with a LinkError.
+
+They now live in a second runtime file, `browser.min.js`, which the core
+runtime fetches from beside itself only when the app's wasm imports one of
+them. Apps that use none never download it; the core runtime is 23% smaller
+(78.8 KB to 60.5 KB). On the Zig side they moved from `Vapor.Wasm` to
+`Vapor.Browser`.
+
+**Migration:** call them as `Vapor.Browser.audioPlayWasm(...)` etc., and
+install the second file next to the first:
+
+```zig
+b.getInstallStep().dependOn(&b.addInstallBinFile(
+    vapor_dep.namedLazyPath("runtime-browser"),
+    "browser.min.js",
+).step);
+```
+
+The runtime bundles are ES modules now (load them with
+`<script type="module">`, as metal's template always has).
+
+A browser test loads an app that imports every binding vapor declares, so a
+binding that exists in the runtime but is not wired in fails CI; the text
+check `check-abi` could not catch that.
+
+## [2.1.0] — 2026-10-08
 
 A correctness release, driven by new end-to-end tests that run apps in
 headless Chrome (`zig build browser-test`), in Debug and ReleaseSmall, both
@@ -47,21 +95,6 @@ client-rendered and from prerendered pages.
   directories. They are skipped, and `release/app.html` is written as the
   client-rendered fallback for static hosts.
 - The runtime no longer logs internal debugging to production consoles.
-
-### Fetch API
-
-`Vapor.fetch(url, .{})` starts a request (GET unless `.method` says
-otherwise); `Vapor.Fetch` holds the types: `Request` (was `Fetch.Fetch`),
-`Result`, `Response`, `Options` (was `Kit.HttpReq`), `Headers`, `Method`
-(was `Kit.Methods`), `State`. The old names still compile as deprecated
-aliases.
-
-Requests are now serialized with JSON escaping (a header value containing a
-quote produced invalid JSON and the request failed), and `mode`, `redirect`,
-`referrer_policy`, `integrity` and `use_credentials`, which were accepted but
-never sent, now reach the browser's fetch. Removed the unused
-`fetchWithAbortWasm`, `abortFetchWasm`, `fetchWithProgressWasm` and
-`fetchJsonWasm` bindings (1.3 KB of runtime).
 
 ### Added
 

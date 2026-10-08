@@ -6,7 +6,7 @@
 //! just the one that calls it. Zig cannot see the JS side, so nothing else
 //! catches the drift.
 //!
-//! Usage: check_abi <src dir> <bundle.min.js>
+//! Usage: check_abi <src dir> <bundle.js>...   (core runtime, then optional ones)
 //!
 //! The check is textual: an import counts as provided if its name appears in
 //! the bundle as an identifier. Object keys survive minification, so this is
@@ -22,11 +22,21 @@ pub fn main(init: std.process.Init) !void {
     defer args.deinit();
     _ = args.next();
     const src_path = args.next() orelse return usage();
-    const bundle_path = args.next() orelse return usage();
 
     const cwd = std.Io.Dir.cwd();
-    const bundle = try cwd.readFileAlloc(io, bundle_path, gpa, .limited(16 * 1024 * 1024));
-    defer gpa.free(bundle);
+    var bundle_text: std.ArrayList(u8) = .empty;
+    defer bundle_text.deinit(gpa);
+    var bundle_count: usize = 0;
+    while (args.next()) |bundle_path| {
+        const text = try cwd.readFileAlloc(io, bundle_path, gpa, .limited(16 * 1024 * 1024));
+        defer gpa.free(text);
+        try bundle_text.appendSlice(gpa, text);
+        try bundle_text.append(gpa, '\n');
+        bundle_count += 1;
+    }
+    if (bundle_count == 0) return usage();
+    const bundle = bundle_text.items;
+    const bundle_path = "the JS runtime";
 
     var src_dir = try cwd.openDir(io, src_path, .{ .iterate = true });
     defer src_dir.close(io);
@@ -63,7 +73,7 @@ pub fn main(init: std.process.Init) !void {
 }
 
 fn usage() error{InvalidArguments} {
-    std.debug.print("usage: check_abi <src dir> <bundle.min.js>\n", .{});
+    std.debug.print("usage: check_abi <src dir> <bundle.js>...\n", .{});
     return error.InvalidArguments;
 }
 

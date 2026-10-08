@@ -5,6 +5,9 @@ pub const lib = @import("lib/Vapor.zig");
 pub const IconTokens = @import("config").IconTokens;
 pub const init = lib.init;
 pub const Wasm = lib.Wasm;
+/// Browser APIs beyond rendering (canvas, audio, geolocation, ...); their JS
+/// loads on demand. See lib/Browser.zig.
+pub const Browser = @import("lib/Browser.zig");
 pub const Arena = lib.Arena;
 pub const IconType = IconTokens;
 pub const Bounds = lib.Bounds;

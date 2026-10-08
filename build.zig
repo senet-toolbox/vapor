@@ -51,18 +51,32 @@ pub fn build(b: *std.Build) void {
     //   b.getInstallStep().dependOn(&b.addInstallBinFile(
     //       vapor_dep.namedLazyPath("runtime"), "bundle.min.js").step);
     b.addNamedLazyPath("runtime", b.path("js/dist/bundle.min.js"));
+    // Optional browser-API bindings (audio, canvas, geolocation, ...). The core
+    // runtime loads it from beside itself only when an app's wasm needs it, so
+    // install it next to bundle.min.js:
+    //
+    //   b.getInstallStep().dependOn(&b.addInstallBinFile(
+    //       vapor_dep.namedLazyPath("runtime-browser"), "browser.min.js").step);
+    b.addNamedLazyPath("runtime-browser", b.path("js/dist/browser.min.js"));
 
     // Maintainers only: regenerate js/dist/bundle.min.js after editing js/src.
     // The esbuild version is pinned so the committed bundle is reproducible.
     const runtime_step = b.step("runtime", "Rebuild js/dist/bundle.min.js from js/src (needs npx)");
-    const esbuild = b.addSystemCommand(&.{
-        "npx",                 "--yes",
-        "esbuild@0.28.0",      "js/src/main.js",
-        "--bundle",            "--minify",
-        "--log-level=warning", "--outfile=js/dist/bundle.min.js",
-    });
-    esbuild.setCwd(b.path("."));
-    runtime_step.dependOn(&esbuild.step);
+    const bundles = [_][2][]const u8{
+        .{ "js/src/main.js", "js/dist/bundle.min.js" },
+        .{ "js/src/browser/index.js", "js/dist/browser.min.js" },
+    };
+    for (bundles) |bundle| {
+        const esbuild = b.addSystemCommand(&.{
+            "npx",                                "--yes",
+            "esbuild@0.28.0",                     bundle[0],
+            "--bundle",                           "--minify",
+            "--format=esm",                       "--log-level=warning",
+            b.fmt("--outfile={s}", .{bundle[1]}),
+        });
+        esbuild.setCwd(b.path("."));
+        runtime_step.dependOn(&esbuild.step);
+    }
 
     const test_config_module = b.createModule(.{
         .root_source_file = b.path("tests/support/config.zig"),
@@ -147,8 +161,9 @@ pub fn build(b: *std.Build) void {
     const abi_tool = b.addExecutable(.{ .name = "check-abi", .root_module = abi_tool_mod });
     const run_abi = b.addRunArtifact(abi_tool);
     run_abi.setCwd(b.path("."));
-    run_abi.addArgs(&.{ "src", "js/dist/bundle.min.js" });
+    run_abi.addArgs(&.{ "src", "js/dist/bundle.min.js", "js/dist/browser.min.js" });
     run_abi.addFileInput(b.path("js/dist/bundle.min.js"));
+    run_abi.addFileInput(b.path("js/dist/browser.min.js"));
     run_abi.has_side_effects = true;
     const abi_step = b.step("check-abi", "Verify the JS runtime implements every wasm import");
     abi_step.dependOn(&run_abi.step);
@@ -182,6 +197,10 @@ pub fn build(b: *std.Build) void {
     run_browser.setCwd(b.path("."));
     run_browser.has_side_effects = true;
     run_browser.step.dependOn(&build_app.step);
+    const build_bindings_app = b.addSystemCommand(&.{ b.graph.zig_exe, "build" });
+    build_bindings_app.setCwd(b.path("tests/browser/bindings"));
+    build_bindings_app.has_side_effects = true;
+    run_browser.step.dependOn(&build_bindings_app.step);
     browser_step.dependOn(&run_browser.step);
 
     const check_step = addCheckStep(b, build_options_module, test_config_module, optimize);

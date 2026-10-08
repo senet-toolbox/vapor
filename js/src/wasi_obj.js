@@ -129,10 +129,26 @@ window.addEventListener("popstate", async function(event) {
 
 
 async function loadWasm(path, imports = {}) {
-  const response = await fetch(path); // cache-bust
+  const response = await fetch(path);
   const bytes = await response.arrayBuffer();
-  const { instance } = await WebAssembly.instantiate(bytes, imports);
+  const module = await WebAssembly.compile(bytes);
+  const browser = await loadBrowserBindings(module, imports);
+  const instance = await WebAssembly.instantiate(module, imports);
+  browser?.setInstance(instance.exports);
   return instance;
+}
+
+// Browser-API bindings (audio, canvas, geolocation, IndexedDB, ...) ship as
+// browser.min.js beside this bundle, and are fetched only when the app's wasm
+// imports one of them: Zig emits an import only for functions the app calls.
+async function loadBrowserBindings(module, imports) {
+  const needsMore = WebAssembly.Module.imports(module).some(
+    (i) => i.module === "env" && !(i.name in imports.env),
+  );
+  if (!needsMore) return null;
+  const browser = await import(new URL("./browser.min.js", import.meta.url));
+  Object.assign(imports.env, browser.install({ readWasmString, allocString }));
+  return browser;
 }
 
 let pathname;
