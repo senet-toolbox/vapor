@@ -493,6 +493,16 @@ fn renderApp(route: []const u8) !*UINode {
     return Vapor.lib.getUINodeChild(root, 0) orelse error.MissingAppNode;
 }
 
+// Apps call Fetch.fetch from a page's init() with nothing but Vapor.init
+// before it. Fetch.init used to be a separate, undocumented call, and without
+// it the first fetch() hit an undefined hashmap.
+test "Vapor.init alone makes Fetch usable" {
+    Vapor.init(.{});
+    const a = Fetch.fetch("/api/after-init", .{ .method = .GET });
+    const b = Fetch.fetch("/api/after-init", .{ .method = .GET });
+    try std.testing.expectEqual(@intFromPtr(a), @intFromPtr(b));
+}
+
 test "renderCycle exposes rendered UINode tree for a registered page" {
     initRenderCycleRuntime("/cycle-tree");
 

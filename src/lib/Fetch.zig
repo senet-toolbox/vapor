@@ -334,6 +334,8 @@ pub const Fetch = struct {
         80,
     ) = undefined;
 
+    /// Called by Vapor.init; (re)creates empty registries. Calling it again
+    /// before any request is in flight, as older apps do, is harmless.
     pub fn init() void {
         request_registry = std.HashMap(RequestKey, *RequestEntry, RequestKeyContext, 80)
             .init(Vapor.arena(.persist));

@@ -397,6 +397,9 @@ pub fn init(config: VaporConfig) void {
     packed_transitions = std.AutoHashMap(u32, []Types.TransitionProperty).init(allocator);
     packed_transforms = std.AutoHashMap(u32, []Types.TransformType).init(allocator);
     KeyGenerator.initWriter();
+    // Fetch's registries live in the persist arena set up above. Without this,
+    // the first fetch() traps on an undefined hashmap ("null function").
+    Fetch.Fetch.init();
 
     // All this below adds 9kb
     // animations = std.StringHashMap(Animation).init(allocator);
