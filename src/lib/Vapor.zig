@@ -6,7 +6,7 @@ pub const debug = builtin.mode == .Debug;
 const types = @import("types.zig");
 const UIContext = @import("UITree.zig");
 const UINode = @import("UITree.zig").UINode;
-const CommandsTree = UIContext.CommandsTree;
+pub const CommandsTree = UIContext.CommandsTree;
 const TransitionState = @import("Transition.zig").TransitionState;
 const Router = @import("Router.zig");
 pub const Element = @import("Element.zig").Element;
@@ -455,12 +455,12 @@ pub fn forceEverything() void {
 /// This function adds the route to the tether radix tree.
 /// Deinitializes the tether instance recursively calls routes deinit routes from radix tree
 /// # Parameters:
-var route_segments: [][]const u8 = undefined;
+pub var route_segments: [][]const u8 = undefined;
 var deepest_reset_layout: ?LayoutItem = null;
 var deepest_reset_layout_path: []const u8 = "";
 var target_min_layout_path: []const u8 = "";
 
-fn findResetLayout() void {
+pub fn findResetLayout() void {
     var potential_path: []const u8 = "";
     for (route_segments, 0..) |segment, i| {
         potential_path = std.fmt.allocPrint(Vapor.arena(.frame), "{s}/{s}", .{ potential_path, segment }) catch return;
@@ -478,8 +478,8 @@ fn findResetLayout() void {
     }
 }
 
-var next_layout_path_to_check: []const u8 = "";
-fn callNestedLayouts() void {
+pub var next_layout_path_to_check: []const u8 = "";
+pub fn callNestedLayouts() void {
     if (route_segments.len == 0) {
         if (deepest_reset_layout) |layout| {
             const layout_fn = layout.call_fn;
@@ -521,7 +521,7 @@ fn callNestedLayouts() void {
 pub var clean_up_ctx: *UIContext = undefined;
 pub var current_route: []const u8 = "";
 var previous_route: []const u8 = "";
-var render_page: *const fn () void = undefined;
+pub var render_page: *const fn () void = undefined;
 pub var generator: CSSGenerator = undefined;
 
 const Status = struct {
@@ -829,7 +829,7 @@ const LayoutOptions = struct {
 pub const PageFn = *const fn () void;
 pub const LayoutFn = fn (*const fn () void) void;
 /// Dynamic segment values of the route being rendered.
-var route_params: []const Router.Param = &.{};
+pub var route_params: []const Router.Param = &.{};
 
 /// The value of a dynamic segment of the current route, e.g. for a page
 /// registered as `/users/:id`, `routeParam("id")` is "42" on /users/42.
@@ -1255,7 +1255,7 @@ pub fn markChildrenNotDirty(node: *UINode) void {
 }
 
 var buffer: [5_000_000]u8 = undefined;
-var writer: std.Io.Writer = undefined;
+pub var writer: std.Io.Writer = undefined;
 var generated_file: std.Io.File = undefined;
 var generating: bool = false;
 const release_dir = "release";
@@ -1512,304 +1512,22 @@ fn copyDirRecursive(io: anytype, cwd: std.Io.Dir, src: []const u8, dest: []const
     }
 }
 
-pub fn printUIRouteTree(route: []const u8) void {
-    frame_arena.beginFrame(); // For double-buffered approach
-    current_route = route;
-    // Vapor.btn_registry.clearRetainingCapacity();
-    // Vapor.mounted_funcs.clearRetainingCapacity();
+const QueryModule = @import("Query.zig");
+pub const printUIRouteTree = QueryModule.printUIRouteTree;
+pub const printUITree = QueryModule.printUITree;
+pub const escapeForJson = QueryModule.escapeForJson;
+pub const replace_dash = QueryModule.replace_dash;
+pub const queryComponentIds = QueryModule.queryComponentIds;
+pub const queryByUUID = QueryModule.queryByUUID;
+pub const mutateById = QueryModule.mutateById;
+pub const MutationType = QueryModule.MutationType;
+pub const mutateElementById = QueryModule.mutateElementById;
+pub const Bounds = QueryModule.Bounds;
+pub const Offsets = QueryModule.Offsets;
+pub const getComponentOffsets = QueryModule.getComponentOffsets;
+pub const getComponentBounds = QueryModule.getComponentBounds;
+pub const iterateTreeChildren = QueryModule.iterateTreeChildren;
 
-    // ctx_callback_registry.clearRetainingCapacity();
-
-    // mounted_ctx_funcs.clearRetainingCapacity();
-
-    // Get the old context for current route
-    const old_route = router.searchRoute(route) orelse {
-        printlnWithColor("No Router found {s}\n", .{route}, "#FF3029", "ERROR");
-        printlnWithColor("Loading Error Page\n", .{}, "#FF3029", "ERROR");
-        return;
-    };
-    render_page = old_route.page;
-    route_params = old_route.params;
-    const old_ctx = current_ctx;
-    // Create new context
-    const new_ctx: *UIContext = allocator_global.create(UIContext) catch {
-        println("Failed to allocate UIContext\n", .{});
-        return;
-    };
-
-    UIContext.initContext(new_ctx) catch |err| {
-        println("Allocator ran out of space {any}\n", .{err});
-        new_ctx.deinit();
-        allocator_global.destroy(new_ctx);
-        return;
-    };
-
-    new_ctx.root.?.uuid = old_ctx.root.?.uuid;
-
-    // Pure tree is attached to the traversal algo, ie itll be updated when the traversal algo is updated
-    // pure_tree.init(new_ctx.root.?, &allocator_global) catch {};
-    // error_tree.init(new_ctx.root.?, &allocator_global) catch {};
-    // Here we set the current_ctx to the new_ctx
-    current_ctx = new_ctx;
-    var route_itr = std.mem.tokenizeScalar(u8, route, '/');
-    var count: usize = 0;
-    while (route_itr.next()) |_| {
-        count += 1;
-    }
-    route_segments = allocator_global.alloc([]const u8, count) catch return;
-    count = 0;
-    route_itr.reset();
-    while (route_itr.next()) |route_token| {
-        route_segments[count] = route_token;
-        count += 1;
-    }
-
-    next_layout_path_to_check = "";
-    // We call the routes and nested layuts
-    // This finds the reset layout, if it exists
-    findResetLayout();
-    // This calls the render tree, with render_page as the root function call
-    // First it traverses the layouts calling them in order, and then it calls the render_page
-    callNestedLayouts(); // 4.5ms
-
-    // We reconcile the new dom
-    // the reason the vapor-debugger gets remvoed is the new ui tree does not include it;
-
-    // const valid_route = replace_dash(current_route) catch unreachable;
-    // defer allocator_global.free(valid_route);
-
-    // writer.print("\"{s}\":", .{current_route}) catch unreachable;
-    // writer.writeAll("{\n") catch unreachable;
-    printStaticTextNode(new_ctx.root.?);
-    // writer.writeAll("}\n") catch unreachable;
-}
-
-pub fn printUITree(node: *UINode) void {
-    // if (node.dirty) {
-    println("UI: {s}\n", .{node.uuid});
-    // }
-    var children = node.children();
-    while (children.next()) |child| {
-        printUITree(child);
-    }
-}
-
-pub fn escapeForJson(input: []const u8) ![]u8 {
-    var list = std.array_list.Managed(u8).init(allocator_global);
-
-    for (input) |c| {
-        switch (c) {
-            '"' => {
-                // Add backslash before quote: → \"
-                try list.append('\\');
-                try list.append('"');
-            },
-            '\\' => {
-                // Optional: also escape existing backslashes → \\
-                try list.append('\\');
-                try list.append('\\');
-            },
-            '\n' => {
-                // Optional: also escape existing backslashes → \\
-                continue;
-            },
-            else => {
-                try list.append(c);
-            },
-        }
-    }
-
-    return list.toOwnedSlice();
-}
-
-pub fn replace_dash(input: []const u8) ![]u8 {
-    var list = std.array_list.Managed(u8).init(allocator_global);
-
-    for (input) |c| {
-        switch (c) {
-            '/' => {
-                // Add backslash before quote: → \"
-                try list.append('-');
-            },
-            else => {
-                try list.append(c);
-            },
-        }
-    }
-
-    return list.toOwnedSlice();
-}
-
-fn printStaticTextNode(node: *UINode) void {
-    if (node.state_type == .static) blk: {
-        var valid_text: []const u8 = "";
-        if (node.text) |text| {
-            valid_text = escapeForJson(text) catch |err| {
-                printlnErr("static text: skipping '{s}': {any}", .{ node.uuid, err });
-                break :blk;
-            };
-        } else if (node.href) |href| {
-            valid_text = escapeForJson(href) catch |err| {
-                printlnErr("static text: skipping '{s}': {any}", .{ node.uuid, err });
-                break :blk;
-            };
-        } else break :blk;
-        defer allocator_global.free(valid_text);
-        if (writer.end > current_route.len + 10) {
-            _ = writer.write(",\n") catch |err| {
-                printlnErr("static text: manifest truncated at '{s}': {any}", .{ node.uuid, err });
-                break :blk;
-            };
-        }
-        writer.print("\"{s}\":\"{s}\"", .{ node.uuid, valid_text }) catch |err| {
-            printlnErr("static text: manifest truncated at '{s}': {any}", .{ node.uuid, err });
-            break :blk;
-        };
-    }
-    var children = node.children();
-    while (children.next()) |child| {
-        printStaticTextNode(child);
-    }
-}
-
-/// Set when `collectComponentIds` could not record a match, so
-/// `queryComponentIds` can report a short list instead of returning one that
-/// looks complete.
-var component_id_collection_failed: bool = false;
-
-fn collectComponentIds(node: *UINode, selected_type: ElementType, component_ids: *std.array_list.Managed([]const u8)) void {
-    if (node.type == selected_type) {
-        component_ids.append(node.uuid) catch |err| {
-            printlnErr("queryComponentIds: could not record '{s}': {any}", .{ node.uuid, err });
-            component_id_collection_failed = true;
-        };
-    }
-    var children = node.children();
-    while (children.next()) |child| {
-        collectComponentIds(child, selected_type, component_ids);
-    }
-}
-
-pub fn queryComponentIds(target_type: ElementType) ![][]const u8 {
-    const root = current_ctx.root orelse return error.NoTree;
-    var component_ids = std.array_list.Managed([]const u8).init(allocator_global);
-    component_id_collection_failed = false;
-    collectComponentIds(root, target_type, &component_ids);
-    if (component_id_collection_failed) {
-        component_ids.deinit();
-        return error.OutOfMemory;
-    }
-    return try component_ids.toOwnedSlice();
-}
-
-fn findNodeByUUID(node: *UINode, uuid: []const u8) ?*UINode {
-    // 1. Check the current node
-    if (std.mem.eql(u8, node.uuid, uuid)) {
-        return node;
-    }
-
-    // 2. Iterate through children
-    var children = node.children();
-    while (children.next()) |child| {
-        // Only return if we actually found something!
-        if (findNodeByUUID(child, uuid)) |found| {
-            return found;
-        }
-    }
-
-    // 3. No match found in this branch
-    return null;
-}
-
-pub fn queryByUUID(uuid: []const u8) !*UINode {
-    const root = current_ctx.root orelse return error.NoTree;
-    const node = findNodeByUUID(root, uuid) orelse return error.NodeNotFound;
-    return node;
-}
-
-pub fn mutateById(uuid: []const u8, attribute: []const u8, value: []const u8) void {
-    if (isWasi) {
-        Wasm.mutateDomElementStringWasm(uuid.ptr, uuid.len, attribute.ptr, attribute.len, value.ptr, value.len);
-    }
-}
-
-pub const MutationType = union(enum) {
-    string: []const u8,
-    int: i32,
-    float: f32,
-};
-
-pub fn mutateElementById(uuid: []const u8, attribute: []const u8, value: MutationType) void {
-    switch (value) {
-        .string => |string| {
-            Wasm.mutateDomElementStringWasm(uuid.ptr, uuid.len, attribute.ptr, attribute.len, string.ptr, string.len);
-        },
-        .int => |int| {
-            Wasm.mutateDomElementI32Wasm(uuid.ptr, uuid.len, attribute.ptr, attribute.len, int);
-        },
-        .float => |float| {
-            Wasm.mutateDomElementF32Wasm(uuid.ptr, uuid.len, attribute.ptr, attribute.len, float);
-        },
-    }
-}
-
-pub const Bounds = struct {
-    top: f32 = 0,
-    left: f32 = 0,
-    right: f32 = 0,
-    bottom: f32 = 0,
-    width: f32 = 0,
-    height: f32 = 0,
-};
-
-pub const Offsets = struct {
-    top: f32 = 0,
-    left: f32 = 0,
-    right: f32 = 0,
-    bottom: f32 = 0,
-    width: f32 = 0,
-    height: f32 = 0,
-};
-
-pub fn getComponentOffsets(uuid: []const u8) ?Offsets {
-    const bounds_ptr = if (isWasi) blk: {
-        break :blk Wasm.getOffsetsWasm(uuid.ptr, uuid.len);
-    } else {
-        return null;
-    };
-
-    return Offsets{
-        .top = bounds_ptr[0],
-        .left = bounds_ptr[1],
-        .right = bounds_ptr[2],
-        .bottom = bounds_ptr[3],
-        .width = bounds_ptr[4],
-        .height = bounds_ptr[5],
-    };
-}
-
-pub fn getComponentBounds(uuid: []const u8) ?Bounds {
-    const bounds_ptr = if (isWasi) blk: {
-        break :blk Wasm.getBoundingClientRectWasm(uuid.ptr, uuid.len);
-    } else {
-        return null;
-    };
-
-    return Bounds{
-        .top = bounds_ptr[0],
-        .left = bounds_ptr[1],
-        .right = bounds_ptr[2],
-        .bottom = bounds_ptr[3],
-        .width = bounds_ptr[4],
-        .height = bounds_ptr[5],
-    };
-}
-
-pub fn iterateTreeChildren(tree: *CommandsTree) void {
-    for (tree.children.items) |child| {
-        iterateTreeChildren(child);
-    }
-}
 pub var ui_node_layout_info = packed struct {
     ui_node_size: u32,
 
