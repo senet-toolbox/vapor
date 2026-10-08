@@ -111,6 +111,8 @@ const max_depth = 4;
 /// explicitly in `instantiations` below.
 fn refAll(comptime T: type, comptime depth: usize) void {
     if (depth == 0) return;
+    // isOurs walks type names at comptime; large namespaces exceed the default.
+    @setEvalBranchQuota(100_000);
     inline for (comptime std.meta.declarations(T)) |decl| {
         const Value = @TypeOf(@field(T, decl.name));
 
