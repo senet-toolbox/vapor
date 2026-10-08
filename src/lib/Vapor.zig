@@ -1858,62 +1858,8 @@ pub var ui_node_layout_info = packed struct {
 };
 
 // Make sure this function is not evaluated at compile time
-/// Parses a CSS hex colour: `#rgb`, `#rgba`, `#rrggbb` or `#rrggbbaa`.
-/// Returns 0-255 channels and alpha in 0-1. Anything else is opaque black,
-/// as before; previously only `#rrggbb` was understood, so `#fff` was black
-/// and alpha digits were ignored.
-pub fn hexToRgba(hex_str: []const u8) [4]f32 {
-    const black = [4]f32{ 0, 0, 0, 1 };
-    if (hex_str.len < 1 or hex_str[0] != '#') return black;
-    const digits = hex_str[1..];
-
-    var channels = [4]u8{ 0, 0, 0, 255 };
-    switch (digits.len) {
-        3, 4 => for (digits, 0..) |c, i| {
-            const v = charToHex(c) catch return black;
-            channels[i] = v * 17; // 0xf -> 0xff
-        },
-        6, 8 => for (0..digits.len / 2) |i| {
-            channels[i] = parseHexByte(digits[i * 2 ..][0..2]) catch return black;
-        },
-        else => return black,
-    }
-    return .{
-        @floatFromInt(channels[0]),
-        @floatFromInt(channels[1]),
-        @floatFromInt(channels[2]),
-        @as(f32, @floatFromInt(channels[3])) / 255.0,
-    };
-}
-
-test hexToRgba {
-    const eq = std.testing.expectEqual;
-    try eq([4]f32{ 5, 55, 148, 1 }, hexToRgba("#053794"));
-    try eq([4]f32{ 255, 255, 255, 1 }, hexToRgba("#fff"));
-    try eq([4]f32{ 0, 0, 0, 0.4 }, hexToRgba("#0006"));
-    try eq([4]f32{ 255, 0, 0, 0.5019608 }, hexToRgba("#ff000080"));
-    try eq([4]f32{ 0, 0, 0, 1 }, hexToRgba("#12345")); // invalid length
-    try eq([4]f32{ 0, 0, 0, 1 }, hexToRgba("#zzzzzz")); // invalid digit
-    try eq([4]f32{ 0, 0, 0, 1 }, hexToRgba("fff")); // no '#'
-}
-
-fn parseHexByte(hex: []const u8) !u8 {
-    if (hex.len != 2) return error.InvalidLength;
-
-    const high = try charToHex(hex[0]);
-    const low = try charToHex(hex[1]);
-
-    return (high << 4) | low;
-}
-
-fn charToHex(c: u8) !u8 {
-    return switch (c) {
-        '0'...'9' => c - '0',
-        'a'...'f' => c - 'a' + 10,
-        'A'...'F' => c - 'A' + 10,
-        else => error.InvalidCharacter,
-    };
-}
+const HexModule = @import("Hex.zig");
+pub const hexToRgba = HexModule.hexToRgba;
 
 /// fmtln is a wrapper around std.fmt.allocPrint that allocates memory from the frame allocator
 /// this means that this slice is deallocated on each frame
@@ -1986,40 +1932,23 @@ pub fn cloneFrame(
     return memory.*;
 }
 
-pub fn printlnErr(
-    comptime fmt: []const u8,
-    args: anytype,
-) void {
-    _ = fmt;
-    _ = args;
-}
+const LogModule = @import("Log.zig");
+pub const printlnErr = LogModule.printlnErr;
+pub const print = LogModule.print;
+pub const printErr = LogModule.printErr;
+pub const printWarn = LogModule.printWarn;
+pub const printInfo = LogModule.printInfo;
+pub const printDebug = LogModule.printDebug;
+pub const printlnSrcErr = LogModule.printlnSrcErr;
+pub const printlnWithColor = LogModule.printlnWithColor;
+pub const printlnColor = LogModule.printlnColor;
+pub const printlnAllocation = LogModule.printlnAllocation;
+pub const printlnSrc = LogModule.printlnSrc;
+pub const println = LogModule.println;
+pub const log = LogModule.log;
+pub const alert = LogModule.alert;
 
-const LogLevel = enum(u32) {
-    err = 0,
-    warn = 1,
-    info = 2,
-    debug = 3,
-
-    fn label(self: LogLevel) []const u8 {
-        return switch (self) {
-            .err => "ERROR",
-            .warn => "WARN",
-            .info => "INFO",
-            .debug => "DEBUG",
-        };
-    }
-
-    fn color(self: LogLevel) []const u8 {
-        return switch (self) {
-            .err => "color: #FF3029;",
-            .warn => "color: #FFA629;",
-            .info => "color: #4229FF;",
-            .debug => "color: #FF29F4;",
-        };
-    }
-};
-
-extern "env" fn consoleLogWasm(
+pub extern "env" fn consoleLogWasm(
     level: u32,
     msg_ptr: [*]const u8,
     msg_len: usize,
@@ -2027,109 +1956,7 @@ extern "env" fn consoleLogWasm(
     style_len: usize,
 ) callconv(.c) void;
 
-pub fn print(
-    level: LogLevel,
-    comptime fmt: []const u8,
-    args: anytype,
-) void {
-    if (!(isWasi and build_options.enable_debug)) return;
-    // var buf: [16 * 1024]u8 = undefined;
-    const msg = std.fmt.allocPrint(allocator_global, fmt, args) catch return;
-    defer allocator_global.free(msg);
-    // const msg = std.fmt.bufPrint(&buf, fmt, args) catch return;
-    printRaw(level, msg);
-}
-
-fn printRaw(level: LogLevel, msg: []const u8) void {
-    // var full_buf: [2048]u8 = undefined;
-    const full = std.fmt.allocPrint(allocator_global, "[%c{s}%c] {s}", .{ level.label(), msg }) catch return;
-    defer allocator_global.free(full);
-    const style = level.color();
-    consoleLogWasm(@intFromEnum(level), full.ptr, full.len, style.ptr, style.len);
-}
-
 // Convenience wrappers (optional)
-pub fn printErr(comptime fmt: []const u8, args: anytype) void {
-    print(.err, fmt, args);
-}
-pub fn printWarn(comptime fmt: []const u8, args: anytype) void {
-    print(.warn, fmt, args);
-}
-pub fn printInfo(comptime fmt: []const u8, args: anytype) void {
-    print(.info, fmt, args);
-}
-pub fn printDebug(comptime fmt: []const u8, args: anytype) void {
-    print(.debug, fmt, args);
-}
-
-pub fn printlnSrcErr(
-    comptime fmt: []const u8,
-    args: anytype,
-    src: std.builtin.SourceLocation,
-) void {
-    if (isWasi and build_options.enable_debug) {
-        const buf = std.fmt.allocPrint(allocator_global, fmt, args) catch return;
-        const buf_with_src = std.fmt.allocPrint(allocator_global, "[Vapor] [%cERROR:{s}:{d}%c]\n{s}", .{ src.file, src.line, buf[0..] }) catch return;
-        const style_1 = "color: #FF3029;";
-        const style_2 = "";
-        _ = Wasm.consoleLogColoredWasm(buf_with_src.ptr, buf_with_src.len, style_1[0..].ptr, style_1.len, style_2[0..].ptr, style_2.len);
-        allocator_global.free(buf_with_src);
-        allocator_global.free(buf);
-    }
-}
-
-pub fn printlnWithColor(
-    comptime fmt: []const u8,
-    args: anytype,
-    color: []const u8,
-    title: []const u8,
-) void {
-    _ = fmt;
-    _ = args;
-    _ = color;
-    _ = title;
-}
-
-pub fn printlnColor(
-    comptime fmt: []const u8,
-    args: anytype,
-    color: Types.Color,
-) void {
-    _ = fmt;
-    _ = args;
-    _ = color;
-}
-
-pub fn printlnAllocation(
-    comptime fmt: []const u8,
-    args: anytype,
-) void {
-    _ = fmt;
-    _ = args;
-}
-
-pub fn printlnSrc(
-    comptime fmt: []const u8,
-    args: anytype,
-    src: std.builtin.SourceLocation,
-) void {
-    _ = fmt;
-    _ = args;
-    _ = src;
-}
-
-pub fn println(
-    comptime fmt: []const u8,
-    args: anytype,
-) void {
-    if (isWasi and build_options.enable_debug) {
-        const buf = std.fmt.allocPrint(allocator_global, fmt, args) catch return;
-        _ = Wasm.consoleLogWasm(buf.ptr, buf.len);
-        allocator_global.free(buf);
-    } else if (!isWasi) {
-        std.debug.print(fmt, args);
-    }
-}
 
 /// name: name of the interval
 /// cb: callback function
@@ -2341,13 +2168,6 @@ pub fn onCommitCtxCallback() void {
         const node = Vapor.on_commit_ctx_funcs.orderedRemove(i);
         @call(.auto, node.data.runFn, .{&node.data});
         if (i == 0) return;
-    }
-}
-
-pub fn alert(comptime fmt: []const u8, args: anytype) void {
-    if (isWasi) {
-        const message = Vapor.fmtln(fmt, args);
-        Wasm.alertWasm(message.ptr, message.len);
     }
 }
 
@@ -2587,25 +2407,6 @@ pub const std_options = std.Options{
     .log_level = .debug,
     .logFn = log,
 };
-
-pub fn log(
-    comptime level: std.log.Level,
-    comptime scope: @EnumLiteral(),
-    comptime format: []const u8,
-    args: anytype,
-) void {
-    _ = scope;
-    if (isWasi and build_options.enable_debug) {
-        switch (level) {
-            .err => _ = printErr(format, args),
-            .warn => _ = printWarn(format, args),
-            .info => _ = printInfo(format, args),
-            .debug => _ = printDebug(format, args),
-        }
-    } else if (!isWasi) {
-        std.debug.print(format, args);
-    }
-}
 
 export fn recordState(err_str: [*:0]u8, event_str: ?[*:0]u8) void {
     _ = err_str;
