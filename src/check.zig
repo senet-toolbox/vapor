@@ -62,6 +62,7 @@ const modules = .{
     @import("lib/UITree.zig"),
     @import("lib/Vapor.zig"),
     @import("lib/WASM.zig"),
+    @import("lib/types/background.zig"),
     @import("lib/StaticGenerator.zig"),
     @import("lib/Exports.zig"),
     @import("lib/Hooks.zig"),
