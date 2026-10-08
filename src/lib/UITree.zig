@@ -321,7 +321,7 @@ pub fn currentNode(ui_ctx: *UIContext) ?*UINode {
 pub fn open(ui_ctx: *UIContext, elem_decl: ElemDecl) !*UINode {
     const stack = ui_ctx.stack.?;
     // Parent node
-    const current_open = stack.ptr orelse unreachable;
+    const current_open = stack.ptr orelse @panic("vapor: a component was created outside a render function");
     var node = try ui_ctx.init(current_open, elem_decl.elem_type);
     node.level = elem_decl.level;
     node.can_have_children = elem_decl.can_have_children;
@@ -356,7 +356,7 @@ pub fn open(ui_ctx: *UIContext, elem_decl: ElemDecl) !*UINode {
 pub fn openUnattached(ui_ctx: *UIContext, elem_decl: ElemDecl) !*UINode {
     const stack = ui_ctx.stack.?;
     // Parent node
-    const current_open = stack.ptr orelse unreachable;
+    const current_open = stack.ptr orelse @panic("vapor: a component was created outside a render function");
     var node = try ui_ctx.init(current_open, elem_decl.elem_type);
     node.level = elem_decl.level;
 
@@ -679,7 +679,7 @@ pub fn buildClassString(
     };
     class_string_cache.put(combined, full_class) catch |err| {
         Vapor.printlnErr("Could not put class string {any}\n", .{err});
-        unreachable;
+        @panic("vapor: Could not put class string");
     };
     current_open.class = full_class;
 }

@@ -887,7 +887,7 @@ pub const Observer = struct {
 
         const closure = Vapor.arena(.persist).create(Closure) catch |err| {
             Vapor.println("Error could not create closure {any}\n ", .{err});
-            unreachable;
+            @panic("vapor: Error could not create closure");
         };
         closure.* = .{};
 

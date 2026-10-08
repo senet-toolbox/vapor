@@ -151,8 +151,14 @@ pub const Draggable = struct {
         self.initial_y = evt.clientY();
 
         // Add document-level listeners for move and up
-        self.move_listener_id = Vapor.addGlobalListenerCtx(.pointermove, handlePointerMove, .{self}) orelse unreachable;
-        self.up_listener_id = Vapor.addGlobalListenerCtx(.pointerup, handlePointerUp, .{self}) orelse unreachable;
+        self.move_listener_id = Vapor.addGlobalListenerCtx(.pointermove, handlePointerMove, .{self}) orelse {
+            Vapor.printlnErr("Draggable: could not add the pointermove listener; drag not started", .{});
+            return;
+        };
+        self.up_listener_id = Vapor.addGlobalListenerCtx(.pointerup, handlePointerUp, .{self}) orelse {
+            Vapor.printlnErr("Draggable: could not add the pointerup listener; drag not started", .{});
+            return;
+        };
 
         // User callback
         if (self.on_drag_start) |callback| {

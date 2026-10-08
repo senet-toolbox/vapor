@@ -107,14 +107,14 @@ pub fn readBase64(file_reader: *FileReader, file_index: usize, onload: fn ([]con
 
         const closure = Vapor.arena(.frame).create(Closure) catch |err| {
             Vapor.println("Error could not create closure {any}\n ", .{err});
-            unreachable;
+            @panic("vapor: Error could not create closure");
         };
         closure.* = .{};
 
         const id = Vapor.ctx_callback_registry.count() + 1;
         Vapor.ctx_callback_registry.put(id, &closure.run_node) catch |err| {
             Vapor.println("Button Function Registry {any}\n", .{err});
-            unreachable;
+            @panic("vapor: Button Function Registry");
         };
 
         Wasm.readFileAsBase64Wasm(file_reader.evt.id, file_index, callback_id);

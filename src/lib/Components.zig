@@ -79,7 +79,7 @@ pub fn Hooks(hooks: Vapor.HooksFuncs) fn (void) void {
         .state_type = .static,
         .elem_type = .Hooks,
     };
-    const ui_node = LifeCycle.open(elem_decl) orelse unreachable;
+    const ui_node = LifeCycle.open(elem_decl) orelse @panic("vapor: could not allocate a Hooks node");
     if (hooks.mounted) |f| {
         elem_decl.hooks.mounted_id = 1;
         Vapor.mounted_funcs.put(hashKey(ui_node.uuid), f) catch |err| {
@@ -119,7 +119,7 @@ const Layout = enum { center, start, end };
 fn createNode(elem_decl: ElementDecl) *UINode {
     const ui_node = LifeCycle.open(elem_decl) orelse {
         // Vapor.printlnSrcErr("Could not add component to lifecycle {any}\n", .{error.CouldNotAllocate}, @src());
-        unreachable;
+        @panic("vapor: Could not add component to lifecycle");
     };
     return ui_node;
 }
@@ -345,7 +345,7 @@ pub const ComponentBuilder = struct {
             .elem_type = self._elem_type,
         }) orelse {
             Vapor.printlnSrcErr("Node is null", .{}, @src());
-            unreachable;
+            @panic("vapor: Node is null");
         };
         new_self._ui_node = node;
         return node;
@@ -430,7 +430,7 @@ pub const ComponentBuilder = struct {
     pub fn Video(options: *const types.Video) Self {
         const ui_node = Vapor.current_ctx.open(.{ .state_type = _state_type, .elem_type = .Video, .can_have_children = false }) catch |err| {
             println("{any}\n", .{err});
-            unreachable;
+            @panic("vapor: could not allocate a Video node");
         };
         return Self{ ._elem_type = .Video, ._video = options, ._ui_node = ui_node, ._returns_close = false };
     }
@@ -479,7 +479,7 @@ pub const ComponentBuilder = struct {
         const ui_node = createNode(.{ .state_type = _state_type, .elem_type = .Form });
         Vapor.attachEventCtxCallback(ui_node, .submit, submit, args) catch |err| {
             Vapor.println("ONSUBMIT: Could not attach event callback {any}\n", .{err});
-            unreachable;
+            @panic("vapor: ONSUBMIT: Could not attach event callback");
         };
         return Self{ ._ui_node = ui_node, ._elem_type = .Form, ._returns_close = true };
     }
@@ -487,7 +487,7 @@ pub const ComponentBuilder = struct {
     pub fn Section() Self {
         const ui_node = LifeCycle.open(.{ .state_type = _state_type, .elem_type = .Intersection }) orelse {
             Vapor.printlnSrcErr("Could not add component to lifecycle {any}\n", .{error.CouldNotAllocate}, @src());
-            unreachable;
+            @panic("vapor: Could not add component to lifecycle");
         };
         return Self{ ._ui_node = ui_node, ._elem_type = .Intersection, ._returns_close = true };
     }
@@ -495,7 +495,7 @@ pub const ComponentBuilder = struct {
     pub fn List() Self {
         const ui_node = LifeCycle.open(.{ .state_type = _state_type, .elem_type = .List }) orelse {
             Vapor.printlnSrcErr("Could not add component to lifecycle {any}\n", .{error.CouldNotAllocate}, @src());
-            unreachable;
+            @panic("vapor: Could not add component to lifecycle");
         };
         return Self{ ._ui_node = ui_node, ._elem_type = .List, ._returns_close = true };
     }
@@ -503,7 +503,7 @@ pub const ComponentBuilder = struct {
     pub fn ListItem() Self {
         const ui_node = LifeCycle.open(.{ .state_type = _state_type, .elem_type = .ListItem }) orelse {
             Vapor.printlnSrcErr("Could not add component to lifecycle {any}\n", .{error.CouldNotAllocate}, @src());
-            unreachable;
+            @panic("vapor: Could not add component to lifecycle");
         };
         return Self{ ._ui_node = ui_node, ._elem_type = .ListItem, ._returns_close = true };
     }
@@ -511,7 +511,7 @@ pub const ComponentBuilder = struct {
     pub fn Center() *Self {
         const ui_node = LifeCycle.open(.{ .state_type = _state_type, .elem_type = .FlexBox }) orelse {
             Vapor.printlnSrcErr("Could not add component to lifecycle {any}\n", .{error.CouldNotAllocate}, @src());
-            unreachable;
+            @panic("vapor: Could not add component to lifecycle");
         };
         const self = Vapor.arena(.frame).create(Self) catch |err| {
             Vapor.printlnErr("component builder: allocation failed: {any}", .{err});
@@ -534,7 +534,7 @@ pub const ComponentBuilder = struct {
 
         const ui_node = LifeCycle.open(elem_decl) orelse {
             Vapor.printlnSrcErr("LifeCycle open could not allocate {any}\n", .{error.CouldNotAllocate}, @src());
-            unreachable;
+            @panic("vapor: LifeCycle open could not allocate");
         };
 
         return Self{ ._elem_type = .SubmitButton, ._ui_node = ui_node, ._returns_close = true };
@@ -548,19 +548,19 @@ pub const ComponentBuilder = struct {
 
         const ui_node = LifeCycle.open(elem_decl) orelse {
             Vapor.printlnSrcErr("LifeCycle open could not allocate {any}\n", .{error.CouldNotAllocate}, @src());
-            unreachable;
+            @panic("vapor: LifeCycle open could not allocate");
         };
 
         const erased = Vapor.ErasedCallback.make(Vapor.arena(.frame), cb, args) catch |err| {
             println("Error could not create closure {any}\n", .{err});
-            unreachable;
+            @panic("vapor: Error could not create closure");
         };
 
         const callback_id = hashKey(ui_node.uuid);
         // Store just the ErasedCallback instead of *Node
         Vapor.erased_registry.put(callback_id, erased) catch |err| {
             println("Registry error {any}\n", .{err});
-            unreachable;
+            @panic("vapor: Registry error");
         };
 
         return Self{ ._elem_type = .CtxButton, ._ui_node = ui_node, ._returns_close = true };
@@ -569,7 +569,7 @@ pub const ComponentBuilder = struct {
     pub fn Stack() Self {
         const ui_node = LifeCycle.open(.{ .state_type = _state_type, .elem_type = .FlexBox }) orelse {
             Vapor.printlnSrcErr("Could not add component to lifecycle {any}\n", .{error.CouldNotAllocate}, @src());
-            unreachable;
+            @panic("vapor: Could not add component to lifecycle");
         };
         ui_node.direction = .column;
         return Self{ ._ui_node = ui_node, ._elem_type = .FlexBox, ._flex_type = .stack, ._direction = .column, ._returns_close = true };
@@ -578,7 +578,7 @@ pub const ComponentBuilder = struct {
     pub fn Link(options: LinkOptions) Self {
         const ui_node = LifeCycle.open(.{ .state_type = _state_type, .elem_type = .Link, .href = options.url, .aria_label = options.aria_label }) orelse {
             Vapor.printlnSrcErr("Could not add component Link to lifecycle {any}\n", .{error.CouldNotAllocate}, @src());
-            unreachable;
+            @panic("vapor: Could not add component Link to lifecycle");
         };
 
         return Self{ ._ui_node = ui_node, ._elem_type = .Link, ._aria_label = options.aria_label, ._href = options.url, ._returns_close = true };
@@ -587,7 +587,7 @@ pub const ComponentBuilder = struct {
     pub fn RedirectLink(options: LinkOptions) Self {
         const ui_node = LifeCycle.open(.{ .state_type = _state_type, .elem_type = .RedirectLink, .href = options.url, .aria_label = options.aria_label }) orelse {
             Vapor.printlnSrcErr("Could not add component Link to lifecycle {any}\n", .{error.CouldNotAllocate}, @src());
-            unreachable;
+            @panic("vapor: Could not add component Link to lifecycle");
         };
         return Self{ ._ui_node = ui_node, ._elem_type = .RedirectLink, ._aria_label = options.aria_label, ._href = options.url, ._returns_close = true };
     }
@@ -595,7 +595,7 @@ pub const ComponentBuilder = struct {
     pub fn Label(text: []const u8) Self {
         const ui_node = LifeCycle.open(.{ .state_type = .static, .elem_type = .Label, .text = text, .can_have_children = false }) orelse {
             Vapor.printlnSrcErr("Could not add component to lifecycle {any}\n", .{error.CouldNotAllocate}, @src());
-            unreachable;
+            @panic("vapor: Could not add component to lifecycle");
         };
         return Self{ ._elem_type = .Label, ._text = text, ._ui_node = ui_node, ._returns_close = false };
     }
@@ -611,7 +611,7 @@ pub const ComponentBuilder = struct {
         };
         const ui_node = LifeCycle.open(.{ .state_type = _state_type, .elem_type = .Code, .can_have_children = false }) orelse {
             Vapor.printlnSrcErr("Could not add component to lifecycle {any}\n", .{error.CouldNotAllocate}, @src());
-            unreachable;
+            @panic("vapor: Could not add component to lifecycle");
         };
         return Self{ ._elem_type = .Code, ._text = text, ._ui_node = ui_node, ._returns_close = false };
     }
@@ -619,7 +619,7 @@ pub const ComponentBuilder = struct {
     pub fn Spacer(val: f32) Self {
         const ui_node = LifeCycle.open(.{ .state_type = _state_type, .elem_type = .Spacer, .can_have_children = false }) orelse {
             Vapor.printlnSrcErr("Could not add component to lifecycle {any}\n", .{error.CouldNotAllocate}, @src());
-            unreachable;
+            @panic("vapor: Could not add component to lifecycle");
         };
         return Self{ ._elem_type = .Spacer, ._ui_node = ui_node, ._size = .hw(.px(val), .expand), ._returns_close = false };
     }
@@ -627,7 +627,7 @@ pub const ComponentBuilder = struct {
     pub fn Divider(w: f32) Self {
         const ui_node = LifeCycle.open(.{ .state_type = _state_type, .elem_type = .FlexBox, .can_have_children = false }) orelse {
             Vapor.printlnSrcErr("Could not add component to lifecycle {any}\n", .{error.CouldNotAllocate}, @src());
-            unreachable;
+            @panic("vapor: Could not add component to lifecycle");
         };
         return Self{ ._elem_type = .FlexBox, ._ui_node = ui_node, ._size = .hw(.expand, .px(w)), ._returns_close = false };
     }
@@ -635,7 +635,7 @@ pub const ComponentBuilder = struct {
     pub fn Iframe(iframe_src: ?[]const u8) Self {
         const ui_node = LifeCycle.open(.{ .state_type = _state_type, .elem_type = .Iframe, .can_have_children = false }) orelse {
             Vapor.printlnSrcErr("Could not add component to lifecycle {any}\n", .{error.CouldNotAllocate}, @src());
-            unreachable;
+            @panic("vapor: Could not add component to lifecycle");
         };
         return Self{ ._elem_type = .Iframe, ._ui_node = ui_node, ._returns_close = false, ._href = iframe_src };
     }
@@ -643,7 +643,7 @@ pub const ComponentBuilder = struct {
     pub fn FieldSet() Self {
         const ui_node = LifeCycle.open(.{ .state_type = _state_type, .elem_type = .FieldSet }) orelse {
             Vapor.printlnSrcErr("Could not add component to lifecycle {any}\n", .{error.CouldNotAllocate}, @src());
-            unreachable;
+            @panic("vapor: Could not add component to lifecycle");
         };
         return Self{ ._elem_type = .FieldSet, ._ui_node = ui_node, ._returns_close = true };
     }
@@ -651,7 +651,7 @@ pub const ComponentBuilder = struct {
     pub fn Number(value: anytype) Self {
         const ui_node = LifeCycle.open(.{ .state_type = _state_type, .elem_type = .Text, .can_have_children = false }) orelse {
             Vapor.printlnSrcErr("Could not add component to lifecycle {any}\n", .{error.CouldNotAllocate}, @src());
-            unreachable;
+            @panic("vapor: Could not add component to lifecycle");
         };
         const text = blk: switch (@typeInfo(@TypeOf(value))) {
             .int => {
@@ -949,7 +949,7 @@ pub const ComponentBuilder = struct {
         var n = self.*;
         var element = self._element orelse {
             Vapor.printlnSrcErr("Element is null must bind() first, before setting onChange", .{}, @src());
-            unreachable;
+            @panic("vapor: Element is null must bind() first, before setting onChange");
         };
         const ui_node = self.getOrCreateNode(&n);
         var onid = hashKey(ui_node.uuid);
@@ -965,7 +965,7 @@ pub const ComponentBuilder = struct {
         var n = self.*;
         var element = self._element orelse {
             Vapor.printlnSrcErr("Element is null must bind() first, before setting onChange", .{}, @src());
-            unreachable;
+            @panic("vapor: Element is null must bind() first, before setting onChange");
         };
         const ui_node = self.getOrCreateNode(&n);
         var onid = hashKey(ui_node.uuid);
@@ -980,12 +980,12 @@ pub const ComponentBuilder = struct {
     pub fn onChange(self: *const Self, func: anytype, args: anytype) *const Self {
         const ui_node = self._ui_node orelse {
             Vapor.printlnSrcErr("Node is null", .{}, @src());
-            unreachable;
+            @panic("vapor: Node is null");
         };
 
         Vapor.attachEventCallbackCtx(ui_node, .input, func, args) catch |err| {
             Vapor.println("ONCHANGE: Could not attach event callback {any}\n", .{err});
-            unreachable;
+            @panic("vapor: ONCHANGE: Could not attach event callback");
         };
         return self;
     }
@@ -997,7 +997,7 @@ pub const ComponentBuilder = struct {
 
         const ui_node = self._ui_node orelse {
             Vapor.printlnSrcErr("Node is null", .{}, @src());
-            unreachable;
+            @panic("vapor: Node is null");
         };
 
         var callback_id: u32 = @truncate(@intFromPtr(&callback));
@@ -1031,7 +1031,7 @@ pub const ComponentBuilder = struct {
 
         const ui_node = self._ui_node orelse {
             Vapor.printlnSrcErr("Node is null", .{}, @src());
-            unreachable;
+            @panic("vapor: Node is null");
         };
 
         var callback_id: u32 = @truncate(@intFromPtr(&callback));
@@ -1059,7 +1059,7 @@ pub const ComponentBuilder = struct {
 
         const ui_node = self._ui_node orelse {
             Vapor.printlnSrcErr("Node is null", .{}, @src());
-            unreachable;
+            @panic("vapor: Node is null");
         };
 
         const erased = Vapor.ErasedCallback.make(Vapor.arena(.frame), callback, args) catch |err| {
@@ -1087,7 +1087,7 @@ pub const ComponentBuilder = struct {
 
         const ui_node = self._ui_node orelse {
             Vapor.printlnSrcErr("Node is null", .{}, @src());
-            unreachable;
+            @panic("vapor: Node is null");
         };
 
         const erased = Vapor.ErasedCallback.make(Vapor.arena(.frame), callback, args) catch |err| {
@@ -1155,16 +1155,16 @@ pub const ComponentBuilder = struct {
     pub fn ifMouseOver(self: *const Self, func: anytype, args: anytype) *const Self {
         const ui_node = self._ui_node orelse {
             Vapor.printlnSrcErr("Node is null", .{}, @src());
-            unreachable;
+            @panic("vapor: Node is null");
         };
         Vapor.attachEventCtxCallback(ui_node, .mouseover, func, args) catch |err| {
             Vapor.println("OnEventCtx: Could not attach event callback {any}\n", .{err});
-            unreachable;
+            @panic("vapor: OnEventCtx: Could not attach event callback");
         };
 
         Vapor.attachEventCtxCallback(ui_node, .mouseout, func, args) catch |err| {
             Vapor.println("OnEventCtx: Could not attach event callback {any}\n", .{err});
-            unreachable;
+            @panic("vapor: OnEventCtx: Could not attach event callback");
         };
 
         return self;
@@ -1173,11 +1173,11 @@ pub const ComponentBuilder = struct {
     pub fn onHover(self: *const Self, func: anytype, args: anytype) *const Self {
         const ui_node = self._ui_node orelse {
             Vapor.printlnSrcErr("Node is null", .{}, @src());
-            unreachable;
+            @panic("vapor: Node is null");
         };
         Vapor.attachEventCtxCallback(ui_node, .pointerenter, func, args) catch |err| {
             Vapor.println("OnEventCtx: Could not attach event callback {any}\n", .{err});
-            unreachable;
+            @panic("vapor: OnEventCtx: Could not attach event callback");
         };
         return self;
     }
@@ -1185,11 +1185,11 @@ pub const ComponentBuilder = struct {
     pub fn onLeave(self: *const Self, func: anytype, args: anytype) *const Self {
         const ui_node = self._ui_node orelse {
             Vapor.printlnSrcErr("Node is null", .{}, @src());
-            unreachable;
+            @panic("vapor: Node is null");
         };
         Vapor.attachEventCtxCallback(ui_node, .mouseleave, func, args) catch |err| {
             Vapor.println("ONLEAVE: Could not attach event callback {any}\n", .{err});
-            unreachable;
+            @panic("vapor: ONLEAVE: Could not attach event callback");
         };
         return self;
     }
@@ -1197,7 +1197,7 @@ pub const ComponentBuilder = struct {
     pub fn cycle(self: *const Self, should_cycle: bool) *const Self {
         const ui_node = self._ui_node orelse {
             Vapor.printlnSrcErr("Node is null", .{}, @src());
-            unreachable;
+            @panic("vapor: Node is null");
         };
         ui_node.cycle = should_cycle;
         return self;
@@ -1206,11 +1206,11 @@ pub const ComponentBuilder = struct {
     pub fn onEvent(self: *const Self, event: types.EventType, func: anytype, args: anytype) Self {
         const ui_node = self._ui_node orelse {
             Vapor.printlnSrcErr("Node is null", .{}, @src());
-            unreachable;
+            @panic("vapor: Node is null");
         };
         Vapor.attachEventCtxCallback(ui_node, event, func, args) catch |err| {
             Vapor.println("OnEventCtx: Could not attach event callback {any}\n", .{err});
-            unreachable;
+            @panic("vapor: OnEventCtx: Could not attach event callback");
         };
         return self.*;
     }
@@ -1218,11 +1218,11 @@ pub const ComponentBuilder = struct {
     pub fn onEventCtx(self: *const Self, event: types.EventType, func: anytype, args: anytype) *const Self {
         const ui_node = self._ui_node orelse {
             Vapor.printlnSrcErr("Node is null", .{}, @src());
-            unreachable;
+            @panic("vapor: Node is null");
         };
         Vapor.attachEventCtxCallback(ui_node, event, func, args) catch |err| {
             Vapor.println("OnEventCtx: Could not attach event callback {any}\n", .{err});
-            unreachable;
+            @panic("vapor: OnEventCtx: Could not attach event callback");
         };
         return self;
     }
@@ -1246,7 +1246,7 @@ pub const ComponentBuilder = struct {
         };
         const closure = Vapor.arena(.frame).create(Closure) catch |err| {
             println("Error could not create closure {any}\n ", .{err});
-            unreachable;
+            @panic("vapor: Error could not create closure");
         };
         closure.* = .{ .arguments = args };
         Vapor.mounted_ctx_funcs.put(hashKey(ui_node.uuid), &closure.run_node) catch |err| {
@@ -1260,7 +1260,7 @@ pub const ComponentBuilder = struct {
         const ui_node = self.getOrCreateNode(&n);
         Vapor.attachEventCtxCallback(ui_node, .mouseenter, cb, args) catch |err| {
             Vapor.println("ONHOVERCTX: Could not attach event callback {any}\n", .{err});
-            unreachable;
+            @panic("vapor: ONHOVERCTX: Could not attach event callback");
         };
         return n;
     }
@@ -1270,7 +1270,7 @@ pub const ComponentBuilder = struct {
         const ui_node = self.getOrCreateNode(&n);
         Vapor.attachEventCallback(ui_node, .pointerdown, cb) catch |err| {
             Vapor.println("ONDRAGSTART: Could not attach event callback {any}\n", .{err});
-            unreachable;
+            @panic("vapor: ONDRAGSTART: Could not attach event callback");
         };
         return n;
     }
@@ -1291,7 +1291,7 @@ pub const ComponentBuilder = struct {
         var element = draggable_ptr.element;
         var ui_node = self._ui_node orelse {
             Vapor.printlnSrcErr("Node is null must ref() first", .{}, @src());
-            unreachable;
+            @panic("vapor: Node is null must ref() first");
         };
         ui_node.hooks.created_id = 1;
         element.element_type = self._elem_type;
@@ -1304,7 +1304,7 @@ pub const ComponentBuilder = struct {
             .{draggable_ptr},
         ) catch |err| {
             Vapor.println("ONDRAGSTART: Could not attach event callback {any}\n", .{err});
-            unreachable;
+            @panic("vapor: ONDRAGSTART: Could not attach event callback");
         };
 
         // Vapor.onEndCtx(struct {
@@ -1767,7 +1767,7 @@ pub const ComponentBuilder = struct {
     pub fn hide(self: *const Self, shown: bool) *const Self {
         const ui_node = self._ui_node orelse {
             Vapor.printlnSrcErr("Node is null", .{}, @src());
-            unreachable;
+            @panic("vapor: Node is null");
         };
 
         const uuid = ui_node.uuid;
@@ -1784,7 +1784,7 @@ pub const ComponentBuilder = struct {
     pub fn attribute(self: *const Self, attribute_name: []const u8, value: []const u8) *const Self {
         const ui_node = self._ui_node orelse {
             Vapor.printlnSrcErr("Node is null", .{}, @src());
-            unreachable;
+            @panic("vapor: Node is null");
         };
 
         const uuid = ui_node.uuid;
@@ -1847,7 +1847,10 @@ pub const ComponentBuilder = struct {
         const sizing: types.Sizing = switch (min.type) {
             .percent => .{ .type = .min_percent, .size = min.size },
             .fixed => .{ .type = .min_px, .size = min.size },
-            else => unreachable,
+            else => {
+                Vapor.printlnErr("minWidth: only .percent and .px sizes are supported; ignored", .{});
+                return self.*;
+            },
         };
         if (n._size == null) {
             n._size = .{ .width = sizing };
@@ -1862,7 +1865,10 @@ pub const ComponentBuilder = struct {
         const sizing: types.Sizing = switch (max.type) {
             .percent => .{ .type = .max_percent, .size = max.size },
             .fixed => .{ .type = .max_px, .size = max.size },
-            else => unreachable,
+            else => {
+                Vapor.printlnErr("maxWidth: only .percent and .px sizes are supported; ignored", .{});
+                return self.*;
+            },
         };
         if (n._size == null) {
             n._size = .{ .width = sizing };
@@ -1887,7 +1893,10 @@ pub const ComponentBuilder = struct {
         const sizing: types.Sizing = switch (min.type) {
             .percent => .{ .type = .min_percent, .size = min.size },
             .fixed => .{ .type = .min_px, .size = min.size },
-            else => unreachable,
+            else => {
+                Vapor.printlnErr("minHeight: only .percent and .px sizes are supported; ignored", .{});
+                return self.*;
+            },
         };
         if (n._size == null) {
             n._size = .{ .height = sizing };
@@ -1902,7 +1911,10 @@ pub const ComponentBuilder = struct {
         const sizing: types.Sizing = switch (max.type) {
             .percent => .{ .type = .max_percent, .size = max.size },
             .fixed => .{ .type = .max_px, .size = max.size },
-            else => unreachable,
+            else => {
+                Vapor.printlnErr("maxHeight: only .percent and .px sizes are supported; ignored", .{});
+                return self.*;
+            },
         };
         if (n._size == null) {
             n._size = .{ .height = sizing };
@@ -2095,7 +2107,7 @@ pub const ComponentBuilder = struct {
     }
 
     pub fn clone(self: *const Self) void {
-        const ui_node = self._ui_node orelse unreachable;
+        const ui_node = self._ui_node orelse @panic("vapor: builder has no node");
         const cloned_ui_node = createNode(.{
             .state_type = _state_type,
             .elem_type = ui_node.type,
@@ -2122,7 +2134,7 @@ pub const ComponentBuilder = struct {
     }
 
     pub fn end(self: *const Self) void {
-        const ui_node = self._ui_node orelse unreachable;
+        const ui_node = self._ui_node orelse @panic("vapor: builder has no node");
         if (self._used_style) {
             if (ui_node.can_have_children) LifeCycle.close({});
             return;

@@ -623,7 +623,7 @@ fn linesToCSS(lines: Types.PackedLines, writer: anytype) !void {
 }
 
 fn backgroundLayersToCSS(packed_layers: Types.PackedLayers, writer: writer_t) !void {
-    const layers = Vapor.packed_layers.get(packed_layers.items_ptr) orelse unreachable;
+    const layers = Vapor.packed_layers.get(packed_layers.items_ptr) orelse @panic("vapor: background layers missing from packed_layers");
 
     for (layers, 0..) |layer, i| {
         switch (layer) {
@@ -646,7 +646,7 @@ fn backgroundLayersToCSS(packed_layers: Types.PackedLayers, writer: writer_t) !v
 }
 
 fn layersToCSS(packed_layers: Types.PackedLayers, writer: writer_t) !void {
-    const layers = Vapor.packed_layers.get(packed_layers.items_ptr) orelse unreachable;
+    const layers = Vapor.packed_layers.get(packed_layers.items_ptr) orelse @panic("vapor: background layers missing from packed_layers");
 
     // First pass: write background-image
     for (layers, 0..) |layer, i| {
@@ -942,7 +942,7 @@ pub fn writeStyleField(field: Types.StyleFields, visual: *const Types.PackedVisu
         },
         else => {
             Vapor.printlnErr("StyleField not implemented {any}", .{field});
-            unreachable;
+            @panic("vapor: StyleField not implemented");
         },
     }
 }
@@ -1425,8 +1425,11 @@ pub fn generateMarginsPadding(margin_paddings_ptr: *const Types.PackedMarginsPad
 
 pub fn generateAnimations(animations: *const Types.PackedAnimations, writer: anytype) void {
     if (animations.has_animation_enter) {
-        if (Vapor.string_table.get(animations.animation_enter)) |name| {
-            const animation = Vapor.animations.?.get(name) orelse unreachable;
+        if (Vapor.string_table.get(animations.animation_enter)) |name| anim: {
+            const animation = (if (Vapor.animations) |a| a.get(name) else null) orelse {
+                Vapor.printlnErr("animation '{s}' is not defined; register it with Vapor.Animation before using it", .{name});
+                break :anim;
+            };
             writer.write("animation:") catch {};
             generateAnimation(&animation, writer);
             writer.write(";\n") catch {};
@@ -1623,8 +1626,11 @@ pub export fn getStyle(ptr: ?*UINode) ?[*]const u8 {
 
     if (packed_field_ptrs.animations_ptr) |animations_ptr| {
         if (animations_ptr.has_animation_enter) {
-            if (Vapor.string_table.get(animations_ptr.animation_enter)) |name| {
-                const animation = Vapor.animations.?.get(name) orelse unreachable;
+            if (Vapor.string_table.get(animations_ptr.animation_enter)) |name| anim: {
+                const animation = (if (Vapor.animations) |a| a.get(name) else null) orelse {
+                    Vapor.printlnErr("animation '{s}' is not defined; register it with Vapor.Animation before using it", .{name});
+                    break :anim;
+                };
                 writer.write("animation:") catch {};
                 generateAnimation(&animation, &writer);
                 writer.write(";\n") catch {};

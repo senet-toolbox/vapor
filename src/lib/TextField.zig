@@ -74,7 +74,7 @@ pub fn BuilderClose(comptime state_type: types.StateType) type {
                 .elem_type = self._elem_type,
             }) orelse {
                 Vapor.printlnSrcErr("Node is null", .{}, @src());
-                unreachable;
+                @panic("vapor: Node is null");
             };
             new_self._ui_node = node;
             return node;
@@ -107,7 +107,7 @@ pub fn BuilderClose(comptime state_type: types.StateType) type {
 
             const ui_node = LifeCycle.open(elem_decl) orelse {
                 Vapor.printlnSrcErr("Could not add component Link to lifecycle {any}\n", .{error.CouldNotAllocate}, @src());
-                unreachable;
+                @panic("vapor: Could not add component Link to lifecycle");
             };
 
             const self = Self{
@@ -128,7 +128,7 @@ pub fn BuilderClose(comptime state_type: types.StateType) type {
             };
             const ui_node = LifeCycle.open(elem_decl) orelse {
                 Vapor.printlnSrcErr("{any}\n", .{error.CouldNotAllocate}, @src());
-                unreachable;
+                @panic("vapor: could not allocate a TextField node");
             };
 
             switch (textfield_type) {
@@ -206,7 +206,7 @@ pub fn BuilderClose(comptime state_type: types.StateType) type {
                 },
                 else => {
                     Vapor.printlnSrcErr("Error: TextField only accepts valid types, Not valid: {any}", .{textfield_type}, @src());
-                    unreachable;
+                    @panic("vapor: Error: TextField only accepts valid types, Not valid");
                     // @compileError("TextField only accepts []const u8 or TextInput");
                 },
             }
@@ -256,7 +256,7 @@ pub fn BuilderClose(comptime state_type: types.StateType) type {
                             },
                             else => {
                                 Vapor.printlnSrcErr("Error: Placeholder and TextField Type mismatch TextFieldType: {any} PlaceholderType: {any}", .{ self._text_field_type, V }, @src());
-                                unreachable;
+                                @panic("vapor: Error: Placeholder and TextField Type mismatch TextFieldType: PlaceholderType");
                                 // @compileError("TextField only accepts []const u8 or TextInput");
                             },
                         }
@@ -332,7 +332,7 @@ pub fn BuilderClose(comptime state_type: types.StateType) type {
 
             _ = self._ui_node orelse {
                 Vapor.printlnSrcErr("Node is null must ref() first, before setting onChange", .{}, @src());
-                unreachable;
+                @panic("vapor: Node is null must ref() first, before setting onChange");
             };
 
             switch (self._text_field_type) {
@@ -378,7 +378,7 @@ pub fn BuilderClose(comptime state_type: types.StateType) type {
 
             _ = self._ui_node orelse {
                 Vapor.printlnSrcErr("Node is null must ref() first, before setting onChange", .{}, @src());
-                unreachable;
+                @panic("vapor: Node is null must ref() first, before setting onChange");
             };
 
             switch (self._text_field_type) {
@@ -389,7 +389,7 @@ pub fn BuilderClose(comptime state_type: types.StateType) type {
                     }
                     _ = Vapor.text_field_table.replaceOrAdd(value) catch |err| {
                         std.log.err("bindValue: Could not add string to table {any}\n", .{err});
-                        unreachable;
+                        @panic("vapor: bindValue: Could not add string to table");
                     };
 
                     new_self._text_field_params.?.password.value_ptr = value.*.ptr;
@@ -402,7 +402,7 @@ pub fn BuilderClose(comptime state_type: types.StateType) type {
                     }
                     _ = Vapor.text_field_table.replaceOrAdd(value) catch |err| {
                         std.log.err("bindValue: Could not add string to table {any}\n", .{err});
-                        unreachable;
+                        @panic("vapor: bindValue: Could not add string to table");
                     };
 
                     new_self._text_field_params.?.email.value_ptr = value.*.ptr;
@@ -415,7 +415,7 @@ pub fn BuilderClose(comptime state_type: types.StateType) type {
                     }
                     _ = Vapor.text_field_table.replaceOrAdd(value) catch |err| {
                         std.log.err("bindValue: Could not add string to table {any}\n", .{err});
-                        unreachable;
+                        @panic("vapor: bindValue: Could not add string to table");
                     };
 
                     new_self._text_field_params.?.string.value_ptr = value.*.ptr;
@@ -428,7 +428,7 @@ pub fn BuilderClose(comptime state_type: types.StateType) type {
                     }
                     _ = Vapor.text_field_table.replaceOrAdd(value) catch |err| {
                         std.log.err("bindValue: Could not add string to table {any}\n", .{err});
-                        unreachable;
+                        @panic("vapor: bindValue: Could not add string to table");
                     };
 
                     new_self._text_field_params.?.telephone.value_ptr = value.*.ptr;
@@ -495,7 +495,7 @@ pub fn BuilderClose(comptime state_type: types.StateType) type {
                     }
                     _ = Vapor.text_field_table.replaceOrAdd(value) catch |err| {
                         std.log.err("bindValue: Could not add string to table {any}\n", .{err});
-                        unreachable;
+                        @panic("vapor: bindValue: Could not add string to table");
                     };
 
                     new_self._text_field_params.?.password.value_ptr = value.*.ptr;
@@ -508,7 +508,7 @@ pub fn BuilderClose(comptime state_type: types.StateType) type {
                     }
                     _ = Vapor.text_field_table.replaceOrAdd(value) catch |err| {
                         std.log.err("bindValue: Could not add string to table {any}\n", .{err});
-                        unreachable;
+                        @panic("vapor: bindValue: Could not add string to table");
                     };
 
                     new_self._text_field_params.?.email.value_ptr = value.*.ptr;
@@ -521,7 +521,7 @@ pub fn BuilderClose(comptime state_type: types.StateType) type {
                     }
                     _ = Vapor.text_field_table.replaceOrAdd(value) catch |err| {
                         std.log.err("bindValue: Could not add string to table {any}\n", .{err});
-                        unreachable;
+                        @panic("vapor: bindValue: Could not add string to table");
                     };
 
                     new_self._text_field_params.?.telephone.value_ptr = value.*.ptr;
@@ -534,7 +534,7 @@ pub fn BuilderClose(comptime state_type: types.StateType) type {
                     } else if (@TypeOf(value.*) == []const u8) {
                         _ = Vapor.text_field_table.replaceOrAdd(value) catch |err| {
                             std.log.err("bindValue: Could not add string to table {any}\n", .{err});
-                            unreachable;
+                            @panic("vapor: bindValue: Could not add string to table");
                         };
                     } else {
                         Vapor.printlnErr("String bindValue and TextField type mismatch {any}", .{@typeInfo(@TypeOf(value.*))});
@@ -565,7 +565,7 @@ pub fn BuilderClose(comptime state_type: types.StateType) type {
                     } else if (@TypeOf(value.*) == []const u8) {
                         _ = Vapor.text_field_table.replaceOrAdd(value) catch |err| {
                             std.log.err("bindValue: Could not add string to table {any}\n", .{err});
-                            unreachable;
+                            @panic("vapor: bindValue: Could not add string to table");
                         };
                     } else {
                         Vapor.printlnErr("String bindValue and TextField type mismatch {any}", .{@typeInfo(@TypeOf(value.*))});
@@ -608,7 +608,7 @@ pub fn BuilderClose(comptime state_type: types.StateType) type {
         pub fn focus(self: *const Self) Self {
             const ui_node = self._ui_node orelse {
                 Vapor.printlnSrcErr("Node is null", .{}, @src());
-                unreachable;
+                @panic("vapor: Node is null");
             };
 
             var uuid: []const u8 = ui_node.uuid;
@@ -629,7 +629,7 @@ pub fn BuilderClose(comptime state_type: types.StateType) type {
                     .elem_type = self._elem_type,
                 }) orelse {
                     Vapor.printlnSrcErr("Node is null", .{}, @src());
-                    unreachable;
+                    @panic("vapor: Node is null");
                 };
                 new_self._ui_node = ui_node;
 
@@ -638,7 +638,7 @@ pub fn BuilderClose(comptime state_type: types.StateType) type {
 
             Vapor.attachEventCallback(ui_node, .focus, cb) catch |err| {
                 Vapor.println("ONLEAVE: Could not attach event callback {any}\n", .{err});
-                unreachable;
+                @panic("vapor: ONLEAVE: Could not attach event callback");
             };
             return new_self;
         }
@@ -652,7 +652,7 @@ pub fn BuilderClose(comptime state_type: types.StateType) type {
                     .elem_type = self._elem_type,
                 }) orelse {
                     Vapor.printlnSrcErr("Node is null", .{}, @src());
-                    unreachable;
+                    @panic("vapor: Node is null");
                 };
                 new_self._ui_node = ui_node;
 
@@ -661,7 +661,7 @@ pub fn BuilderClose(comptime state_type: types.StateType) type {
 
             Vapor.attachEventCallback(ui_node, .blur, cb) catch |err| {
                 Vapor.println("ONLEAVE: Could not attach event callback {any}\n", .{err});
-                unreachable;
+                @panic("vapor: ONLEAVE: Could not attach event callback");
             };
 
             return new_self;
@@ -679,11 +679,11 @@ pub fn BuilderClose(comptime state_type: types.StateType) type {
         pub fn onEvent(self: *const Self, event: types.EventType, func: anytype, args: anytype) *const Self {
             const ui_node = self._ui_node orelse {
                 Vapor.printlnSrcErr("Node is null", .{}, @src());
-                unreachable;
+                @panic("vapor: Node is null");
             };
             Vapor.attachEventCtxCallback(ui_node, event, func, args) catch |err| {
                 Vapor.println("OnEventCtx: Could not attach event callback {any}\n", .{err});
-                unreachable;
+                @panic("vapor: OnEventCtx: Could not attach event callback");
             };
             return self;
         }
@@ -691,11 +691,11 @@ pub fn BuilderClose(comptime state_type: types.StateType) type {
         pub fn onEventCtx(self: *const Self, event: types.EventType, func: anytype, args: anytype) *const Self {
             const ui_node = self._ui_node orelse {
                 Vapor.printlnSrcErr("Node is null", .{}, @src());
-                unreachable;
+                @panic("vapor: Node is null");
             };
             Vapor.attachEventCtxCallback(ui_node, event, func, args) catch |err| {
                 Vapor.println("OnEventCtx: Could not attach event callback {any}\n", .{err});
-                unreachable;
+                @panic("vapor: OnEventCtx: Could not attach event callback");
             };
             return self;
         }
@@ -703,7 +703,7 @@ pub fn BuilderClose(comptime state_type: types.StateType) type {
         pub fn onMount(self: *const Self, callback: anytype, args: anytype) *const Self {
             const ui_node = self._ui_node orelse {
                 Vapor.printlnSrcErr("Node is null", .{}, @src());
-                unreachable;
+                @panic("vapor: Node is null");
             };
 
             const erased = Vapor.ErasedCallback.make(Vapor.arena(.frame), callback, args) catch |err| {
@@ -757,7 +757,7 @@ pub fn BuilderClose(comptime state_type: types.StateType) type {
                     .elem_type = self._elem_type,
                 }) orelse {
                     Vapor.printlnSrcErr("Node is null", .{}, @src());
-                    unreachable;
+                    @panic("vapor: Node is null");
                 };
                 new_self._ui_node = ui_node;
 
@@ -769,7 +769,7 @@ pub fn BuilderClose(comptime state_type: types.StateType) type {
             // cb with the updated value
             Vapor.attachEventCallback(ui_node, .keydown, cb) catch |err| {
                 Vapor.println("ONLEAVE: Could not attach event callback {any}\n", .{err});
-                unreachable;
+                @panic("vapor: ONLEAVE: Could not attach event callback");
             };
 
             return new_self;
@@ -843,7 +843,7 @@ pub fn BuilderClose(comptime state_type: types.StateType) type {
                     .elem_type = self._elem_type,
                 }) orelse {
                     Vapor.printlnSrcErr("Node is null", .{}, @src());
-                    unreachable;
+                    @panic("vapor: Node is null");
                 };
                 new_self._ui_node = ui_node;
 
@@ -852,7 +852,7 @@ pub fn BuilderClose(comptime state_type: types.StateType) type {
 
             Vapor.attachEventCallback(ui_node, .pointerenter, cb) catch |err| {
                 Vapor.println("ONLEAVE: Could not attach event callback {any}\n", .{err});
-                unreachable;
+                @panic("vapor: ONLEAVE: Could not attach event callback");
             };
 
             return new_self;
@@ -867,7 +867,7 @@ pub fn BuilderClose(comptime state_type: types.StateType) type {
                     .elem_type = self._elem_type,
                 }) orelse {
                     Vapor.printlnSrcErr("Node is null", .{}, @src());
-                    unreachable;
+                    @panic("vapor: Node is null");
                 };
                 new_self._ui_node = ui_node;
 
@@ -875,7 +875,7 @@ pub fn BuilderClose(comptime state_type: types.StateType) type {
             };
             Vapor.attachEventCallback(ui_node, .mouseleave, cb) catch |err| {
                 Vapor.println("ONLEAVE: Could not attach event callback {any}\n", .{err});
-                unreachable;
+                @panic("vapor: ONLEAVE: Could not attach event callback");
             };
 
             return new_self;
@@ -890,7 +890,7 @@ pub fn BuilderClose(comptime state_type: types.StateType) type {
                     .elem_type = self._elem_type,
                 }) orelse {
                     Vapor.printlnSrcErr("Node is null", .{}, @src());
-                    unreachable;
+                    @panic("vapor: Node is null");
                 };
                 new_self._ui_node = ui_node;
 
@@ -899,7 +899,7 @@ pub fn BuilderClose(comptime state_type: types.StateType) type {
 
             Vapor.attachEventCtxCallback(ui_node, .mouseenter, cb, args) catch |err| {
                 Vapor.println("ONLEAVE: Could not attach event callback {any}\n", .{err});
-                unreachable;
+                @panic("vapor: ONLEAVE: Could not attach event callback");
             };
 
             return new_self;
@@ -955,7 +955,7 @@ pub fn BuilderClose(comptime state_type: types.StateType) type {
                     .elem_type = self._elem_type,
                 }) orelse {
                     Vapor.printlnSrcErr("Node is null", .{}, @src());
-                    unreachable;
+                    @panic("vapor: Node is null");
                 };
                 new_self._ui_node = ui_node;
 
@@ -1450,7 +1450,7 @@ pub fn BuilderClose(comptime state_type: types.StateType) type {
             }
 
             if (self._bind_update_fn != null or self._on_change_cb != null) {
-                const node = self._ui_node orelse unreachable;
+                const node = self._ui_node orelse @panic("vapor: TextField has no node");
 
                 Vapor.attachEventCtxCallback(node, .input, struct {
                     pub fn handler(ctx_opaque: Ctx, evt: *Vapor.Event) void {

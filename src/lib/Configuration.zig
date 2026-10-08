@@ -761,9 +761,9 @@ var hash_id: bool = false;
 const style_hash_null: u32 = 2316552965;
 pub fn configure(ui_ctx: *UIContext, elem_decl: ElemDecl) *UINode {
     hash_id = false;
-    const stack = ui_ctx.stack orelse unreachable;
-    const current_open = stack.ptr orelse unreachable;
-    const parent = current_open.parent orelse unreachable;
+    const stack = ui_ctx.stack orelse @panic("vapor: a component was created outside a render function");
+    const current_open = stack.ptr orelse @panic("vapor: a component was created outside a render function");
+    const parent = current_open.parent orelse @panic("vapor: element has no parent");
     const style = elem_decl.style;
 
     // Early exit if style hasn't changed
@@ -1001,9 +1001,9 @@ pub fn configure(ui_ctx: *UIContext, elem_decl: ElemDecl) *UINode {
 
 pub fn configureByNode(ui_node: ?*UINode, elem_decl: ElemDecl) *UINode {
     hash_id = false;
-    const current_open = ui_node orelse unreachable;
-    const parent = current_open.parent orelse unreachable;
-    const style = elem_decl.style orelse unreachable;
+    const current_open = ui_node orelse @panic("vapor: configure called without a node");
+    const parent = current_open.parent orelse @panic("vapor: element has no parent");
+    const style = elem_decl.style orelse @panic("vapor: configureByNode called without a style");
     inherited_color = null;
 
     // Early exit if style hasn't changed
@@ -1466,8 +1466,8 @@ pub fn checkVisual(visual: *const types.Visual, packet_visual: *types.PackedVisu
 
 pub fn configurePlainByNode(ui_node: ?*UINode, elem_decl: ElemDecl) *UINode {
     hash_id = false;
-    const current_open = ui_node orelse unreachable;
-    const parent = current_open.parent orelse unreachable;
+    const current_open = ui_node orelse @panic("vapor: configure called without a node");
+    const parent = current_open.parent orelse @panic("vapor: element has no parent");
     inherited_color = null;
 
     // Early exit if style hasn't changed

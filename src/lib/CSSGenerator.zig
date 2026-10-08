@@ -352,7 +352,7 @@ pub fn getCSS(gen: *Generator) []const u8 {
         gen.end += len;
         if (gen.start + len > gen.buffer.len) {
             Vapor.printlnErr("Buffer overflow, increase buffer size {d}\n", .{gen.start + len});
-            unreachable;
+            @panic("vapor: Buffer overflow, increase buffer size");
         }
         @memcpy(gen.buffer[gen.start..gen.end], css[0..len]);
         gen.start += len;

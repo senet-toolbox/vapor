@@ -271,11 +271,11 @@ pub const Element = struct {
         if (!Vapor.isWasi) return;
         const ui_node = self._node_ptr orelse {
             Vapor.printlnSrc("Node is null", .{}, @src());
-            unreachable;
+            @panic("vapor: Node is null");
         };
         return Vapor.attachEventCtxCallback(ui_node, event_type, cb, args) catch |err| {
             std.log.err("Event Callback Error: {any}\n", .{err});
-            unreachable;
+            @panic("vapor: Event Callback Error");
         };
     }
 
@@ -654,7 +654,7 @@ pub const Element = struct {
     pub fn startVideo(self: *Element) void {
         const id = self._get_id() orelse {
             Vapor.printlnSrcErr("Id is null", .{}, @src());
-            unreachable;
+            @panic("vapor: Id is null");
         };
         if (isWasi) {
             Wasm.startVideoWasm(id.ptr, id.len);
@@ -664,7 +664,7 @@ pub const Element = struct {
     pub fn playVideo(self: *Element) void {
         const id = self._get_id() orelse {
             Vapor.printlnSrcErr("Id is null", .{}, @src());
-            unreachable;
+            @panic("vapor: Id is null");
         };
         if (isWasi) {
             Wasm.playVideoWasm(id.ptr, id.len);
@@ -675,7 +675,7 @@ pub const Element = struct {
         if (!isWasi) return;
         const id = self._get_id() orelse {
             Vapor.printlnSrcErr("Id is null", .{}, @src());
-            unreachable;
+            @panic("vapor: Id is null");
         };
         Wasm.pauseVideoWasm(id.ptr, id.len);
     }
@@ -683,7 +683,7 @@ pub const Element = struct {
     pub fn stopCamera(self: *Element) void {
         const id = self._get_id() orelse {
             Vapor.printlnSrcErr("Id is null", .{}, @src());
-            unreachable;
+            @panic("vapor: Id is null");
         };
         if (isWasi) {
             Wasm.stopCameraWasm(id.ptr, id.len);
@@ -693,7 +693,7 @@ pub const Element = struct {
     pub fn seekVideo(self: *Element, time: f32) void {
         const id = self._get_id() orelse {
             Vapor.printlnSrcErr("Id is null", .{}, @src());
-            unreachable;
+            @panic("vapor: Id is null");
         };
         if (isWasi) {
             Wasm.seekVideoWasm(id.ptr, id.len, time);
@@ -703,7 +703,7 @@ pub const Element = struct {
     pub fn setVolume(self: *Element, volume: f32) void {
         const id = self._get_id() orelse {
             Vapor.printlnSrcErr("Id is null", .{}, @src());
-            unreachable;
+            @panic("vapor: Id is null");
         };
         Wasm.setVolumeWasm(id.ptr, id.len, volume);
     }
@@ -711,7 +711,7 @@ pub const Element = struct {
     pub fn muteVideo(self: *Element) void {
         const id = self._get_id() orelse {
             Vapor.printlnSrcErr("Id is null", .{}, @src());
-            unreachable;
+            @panic("vapor: Id is null");
         };
         Wasm.muteVideoWasm(id.ptr, id.len, true);
     }
@@ -720,7 +720,7 @@ pub const Element = struct {
         if (!isWasi) return 0;
         const id = self._get_id() orelse {
             Vapor.printlnSrcErr("Id is null", .{}, @src());
-            unreachable;
+            @panic("vapor: Id is null");
         };
         return Wasm.getVideoDurationWasm(id.ptr, id.len);
     }
@@ -729,7 +729,7 @@ pub const Element = struct {
         if (!isWasi) return 0;
         const id = self._get_id() orelse {
             Vapor.printlnSrcErr("Id is null", .{}, @src());
-            unreachable;
+            @panic("vapor: Id is null");
         };
         return Wasm.getVideoCurrentTimeWasm(id.ptr, id.len);
     }
@@ -850,7 +850,7 @@ pub fn mutateDomElementStyleString(
 pub export fn getOnFocusCallback(self: *Element) u32 {
     const uuid = self._get_id() orelse {
         Vapor.printlnSrcErr("Id is null", .{}, @src());
-        unreachable;
+        @panic("vapor: Id is null");
     };
     var onid = hashKey(uuid);
     onid +%= hashKey(Vapor.on_focus_hash);
@@ -860,7 +860,7 @@ pub export fn getOnFocusCallback(self: *Element) u32 {
 pub export fn getOnHoverCallback(self: *Element) u32 {
     const uuid = self._get_id() orelse {
         Vapor.printlnSrcErr("Id is null", .{}, @src());
-        unreachable;
+        @panic("vapor: Id is null");
     };
     if (self.on_hover == null) return 0;
     var onid = hashKey(uuid);
@@ -871,7 +871,7 @@ pub export fn getOnHoverCallback(self: *Element) u32 {
 pub export fn getOnChangeCallback(self: *Element) u32 {
     const uuid = self._get_id() orelse {
         Vapor.printlnSrcErr("Id is null", .{}, @src());
-        unreachable;
+        @panic("vapor: Id is null");
     };
     if (self.on_change == null) return 0;
     var onid = hashKey(uuid);
@@ -882,7 +882,7 @@ pub export fn getOnChangeCallback(self: *Element) u32 {
 pub export fn getOnBlurCallback(self: *Element) u32 {
     const uuid = self._get_id() orelse {
         Vapor.printlnSrcErr("Id is null", .{}, @src());
-        unreachable;
+        @panic("vapor: Id is null");
     };
     var onid = hashKey(uuid);
     onid +%= hashKey(Vapor.on_blur_hash);

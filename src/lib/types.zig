@@ -107,7 +107,8 @@ pub const AnchorPlacement = enum(u8) {
             .top_right => "top right",
             .bottom_left => "bottom left",
             .bottom_right => "bottom right",
-            else => unreachable,
+            // Callers skip .none; exhaustive so a new placement is a compile error.
+            .none => "center",
         };
     }
 };

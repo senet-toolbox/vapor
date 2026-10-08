@@ -90,7 +90,7 @@ const API = struct {
         const id = std.mem.span(id_ptr);
         defer Vapor.allocator_global.free(id);
         const element = Vapor.element_registry.get(hashKey(id)) orelse return;
-        const text = element.getInputValue() orelse unreachable;
+        const text = element.getInputValue() orelse return;
         element.text = text;
     }
 
