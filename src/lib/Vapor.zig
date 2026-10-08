@@ -122,7 +122,17 @@ pub fn getWindowPath() []const u8 {
 pub fn store(key: []const u8, value: anytype) void {
     if (!isWasi) return;
     switch (@typeInfo(@TypeOf(value))) {
-        .int, .float => Wasm.setLocalStorageNumberWasm(key.ptr, key.len, value),
+        .int => Wasm.setLocalStorageNumberWasm(key.ptr, key.len, value),
+        // Floats go through the string binding: localStorage holds strings
+        // anyway, and the number binding takes a u32.
+        .float => {
+            var buf: [64]u8 = undefined;
+            const text = std.fmt.bufPrint(&buf, "{d}", .{value}) catch |err| {
+                Vapor.printlnErr("store: could not format '{s}': {any}", .{ key, err });
+                return;
+            };
+            Wasm.setLocalStorageStringWasm(key.ptr, key.len, text.ptr, text.len);
+        },
         .pointer => |ptr| {
             switch (ptr.size) {
                 .slice => {
@@ -159,7 +169,10 @@ pub fn getStore(comptime T: type, key: []const u8) ?T {
         usize => return @intCast(Wasm.getLocalStorageU32Wasm(key.ptr, key.len)),
         i32 => return Wasm.getLocalStorageI32Wasm(key.ptr, key.len),
         u32 => return Wasm.getLocalStorageU32Wasm(key.ptr, key.len),
-        f32 => return Wasm.getLocalStorageF32Wasm(key.ptr, key.len),
+        f32 => {
+            const string = Wasm.getLocalStorageStringWasm(key.ptr, key.len) orelse return null;
+            return std.fmt.parseFloat(f32, std.mem.span(string)) catch null;
+        },
         else => {
             if (@typeInfo(T) == .@"enum") {
                 const string = Wasm.getLocalStorageStringWasm(key.ptr, key.len) orelse return null;
@@ -1408,19 +1421,19 @@ pub fn generate() void {
         generatorFatal("building the assets/ path", err, release_dir);
     copyDirRecursive(io, cwd, "assets", assets_dest);
 
-    // Copy the JS runtime into release/. Projects keep it either at the root
-    // or, as metal scaffolds them, under static/; a release/ that already has
-    // one (metal writes it at create time) needs nothing.
+    // Copy the JS runtime into release/. The build installs the copy that
+    // ships with this vapor version to zig-out/bin/, which is the one that
+    // matches the wasm; the other locations are for projects that predate it.
     var dest_dir = cwd.openDir(io, release_dir, .{}) catch return;
     defer dest_dir.close(io);
-    const bundle_sources = [_][]const u8{ "bundle.min.js", "static/bundle.min.js" };
+    const bundle_sources = [_][]const u8{ "zig-out/bin/bundle.min.js", "bundle.min.js", "static/bundle.min.js" };
     const copied = for (bundle_sources) |src| {
         cwd.copyFile(src, dest_dir, "bundle.min.js", io, .{}) catch continue;
         break true;
     } else false;
     if (!copied) {
         if (dest_dir.access(io, "bundle.min.js", .{})) |_| {} else |_| {
-            std.debug.print("warning: no bundle.min.js found (looked in ./ and static/); {s}/ will not load\n", .{release_dir});
+            std.debug.print("warning: no bundle.min.js found (looked in zig-out/bin/, ./ and static/); {s}/ will not load\n", .{release_dir});
         }
     }
 

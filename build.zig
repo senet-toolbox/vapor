@@ -44,6 +44,26 @@ pub fn build(b: *std.Build) void {
 
     b.installArtifact(exe);
 
+    // The JS runtime the wasm talks to. It ships prebuilt in js/dist so apps
+    // need no Node toolchain, and it travels with the Zig source so the two
+    // can never come from different versions. Apps install it with:
+    //
+    //   b.getInstallStep().dependOn(&b.addInstallBinFile(
+    //       vapor_dep.namedLazyPath("runtime"), "bundle.min.js").step);
+    b.addNamedLazyPath("runtime", b.path("js/dist/bundle.min.js"));
+
+    // Maintainers only: regenerate js/dist/bundle.min.js after editing js/src.
+    // The esbuild version is pinned so the committed bundle is reproducible.
+    const runtime_step = b.step("runtime", "Rebuild js/dist/bundle.min.js from js/src (needs npx)");
+    const esbuild = b.addSystemCommand(&.{
+        "npx",                 "--yes",
+        "esbuild@0.28.0",      "js/src/main.js",
+        "--bundle",            "--minify",
+        "--log-level=warning", "--outfile=js/dist/bundle.min.js",
+    });
+    esbuild.setCwd(b.path("."));
+    runtime_step.dependOn(&esbuild.step);
+
     const test_config_module = b.createModule(.{
         .root_source_file = b.path("tests/support/config.zig"),
         .target = target,
@@ -111,6 +131,24 @@ pub fn build(b: *std.Build) void {
     test_step.dependOn(&run_unit_tests.step);
     test_step.dependOn(&run_string_table_tests.step);
     test_step.dependOn(&run_pool_tests.step);
+
+    // Every extern fn must exist in the shipped runtime, or the browser refuses
+    // to load any app that reaches it. See tools/check_abi.zig.
+    const abi_tool_mod = b.createModule(.{
+        .root_source_file = b.path("tools/check_abi.zig"),
+        .target = b.graph.host,
+        .optimize = .Debug,
+    });
+    const abi_tool = b.addExecutable(.{ .name = "check-abi", .root_module = abi_tool_mod });
+    const run_abi = b.addRunArtifact(abi_tool);
+    run_abi.setCwd(b.path("."));
+    run_abi.addArgs(&.{ "src", "js/dist/bundle.min.js" });
+    run_abi.addFileInput(b.path("js/dist/bundle.min.js"));
+    run_abi.has_side_effects = true;
+    const abi_step = b.step("check-abi", "Verify the JS runtime implements every wasm import");
+    abi_step.dependOn(&run_abi.step);
+    test_step.dependOn(&run_abi.step);
+    test_step.dependOn(&b.addRunArtifact(b.addTest(.{ .root_module = abi_tool_mod })).step);
 
     const check_step = addCheckStep(b, build_options_module, test_config_module, optimize);
 

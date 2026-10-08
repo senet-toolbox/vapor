@@ -32,8 +32,20 @@ jobs:
       - name: Type-check the whole library
         run: zig build check
 
+      # Includes check-abi: every extern fn must exist in js/dist/bundle.min.js.
       - name: Tests
         run: zig build test
+
+      # js/dist is committed so apps need no Node. Rebuild it and fail if the
+      # result differs, i.e. someone edited js/src without running
+      # `zig build runtime`.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: JS runtime is up to date
+        run: |
+          zig build runtime
+          git diff --exit-code -- js/dist
 
       # The shipping target, at the optimisation level that actually ships.
       # Bounds and safety behaviour differ here from Debug.

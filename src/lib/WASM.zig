@@ -12,9 +12,6 @@ const Vapor = @import("Vapor.zig");
 /// Requests a UI re-render cycle.
 pub extern fn requestRerenderWasm() void;
 
-/// Tracks memory allocations (for debugging).
-pub extern fn trackAllocWasm() void;
-
 /// Checks for WASM memory growth.
 // pub extern fn checkMemoryGrowthWasm() void;
 
@@ -169,8 +166,6 @@ pub extern fn mutateDomElementF32Wasm(
     attribute_len: usize,
     value: f32,
 ) void;
-
-pub extern fn runOnAnimationFrameWasm(callback_id: u32) void;
 
 pub extern fn consoleLogColoredErrorWasm(
     ptr: [*]const u8,
@@ -337,9 +332,6 @@ pub extern "env" fn createInterval(
     delay: u32,
 ) void;
 
-/// Animation tick (for game loops).
-pub extern fn tick(id: u32) bool;
-
 // =============================================================================
 // NAVIGATION & ROUTING
 // =============================================================================
@@ -455,17 +447,11 @@ pub extern fn getLocalStorageStringWasm(ptr: [*]const u8, len: usize) ?[*:0]u8;
 /// Stores a number in local storage.
 pub extern fn setLocalStorageNumberWasm(ptr: [*]const u8, len: usize, value: u32) void;
 
-/// Retrieves a floating-point number (encoded) from local storage.
-pub extern fn getLocalStorageF32Wasm(ptr: [*]const u8, len: usize) u32;
-
 /// Retrieves a signed integer from local storage.
 pub extern fn getLocalStorageI32Wasm(ptr: [*]const u8, len: usize) i32;
 
 /// Retrieves an unsigned integer from local storage.
 pub extern fn getLocalStorageU32Wasm(ptr: [*]const u8, len: usize) u32;
-
-/// Retrieves an unsigned integer (alias).
-pub extern fn getLocalStorageUIntWasm(ptr: [*]const u8, len: usize) u32;
 
 /// Removes a key from local storage.
 pub extern fn removeLocalStorageWasm(ptr: [*]const u8, len: usize) void;

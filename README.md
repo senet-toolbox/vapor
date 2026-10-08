@@ -65,6 +65,21 @@ const theme_module = b.addModule("theme", .{
 vapor_module.addImport("theme", theme_module);
 ```
 
+Vapor also ships the JavaScript runtime that loads the wasm and applies its
+DOM operations. Install it next to your wasm so the two always come from the
+same Vapor version:
+
+```zig
+// build.zig, after b.installArtifact(exe)
+b.getInstallStep().dependOn(&b.addInstallBinFile(
+    vapor_dep.namedLazyPath("runtime"),
+    "bundle.min.js",
+).step);
+```
+
+and load it from your HTML with `<script type="module" src="/bundle.min.js">`
+(served from `zig-out/bin/`). `metal vapor create` sets all of this up.
+
 The two modules are small:
 
 ```zig
@@ -261,6 +276,22 @@ It runs against three targets: `wasm32-wasi` (what ships), your host, and
 result CI does. Native hosts need libc and position-independent code where wasm
 does not, and macOS supplies both implicitly, so a Linux-only failure is
 otherwise invisible until CI.
+
+### The JS runtime
+
+The runtime source lives in `js/src/`; `js/dist/bundle.min.js` is the built
+copy that apps install, committed so that apps need no Node toolchain. After
+editing `js/src`, rebuild it (needs `npx`; esbuild is pinned):
+
+```bash
+zig build runtime
+```
+
+`zig build test` runs `check-abi`, which fails if any `extern fn` in `src/`
+has no implementation in the bundle — the browser refuses to instantiate a
+module with a missing import, so this would otherwise surface as a LinkError
+in every app that reaches the function. CI also rebuilds the bundle and fails
+if it differs from the committed one.
 
 ## Security notes
 
