@@ -11,7 +11,7 @@ and the stylesheet.
 > **Status: alpha.** The API is still moving. Breaking changes bump the major
 > version and are documented with migration notes in
 > [CHANGELOG.md](CHANGELOG.md), but there is no deprecation cycle yet. It is
-> used in production by one site ([senet.build](https://senet.build)).
+> used in production by one site ([senet.run](https://senet.run)).
 
 ## Requirements
 
