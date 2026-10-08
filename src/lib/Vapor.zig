@@ -18,7 +18,7 @@ const getVisualStyle = @import("convertStyleCustomWriter.zig").getVisualStyle;
 pub const Bridge = @import("Bridge.zig");
 pub const Event = @import("Event.zig");
 const CSSGenerator = @import("CSSGenerator.zig");
-const hashKey = utils.hashKey;
+pub const hashKey = utils.hashKey;
 const Pool = @import("Pool.zig");
 const mutateDomElementStyleString = @import("Element.zig").mutateDomElementStyleString;
 const HtmlGenerator = @import("HtmlGenerator.zig");
@@ -682,65 +682,20 @@ pub fn createPage(path: []const u8, page: fn () void, page_deinit: ?fn () void) 
     }
     return;
 }
-extern fn performance_now() f64; // imported from JS, for example
+pub extern fn performance_now() f64; // imported from JS, for example
 
-var animation_frame_callback: ?*Node = null;
-pub fn runOnAnimationFrame(callback: anytype, args: anytype) u32 {
-    const Args = @TypeOf(args);
-    const Closure = struct {
-        arguments: Args,
-        run_node: Node = .{ .data = .{ .runFn = runFn, .deinitFn = deinitFn } },
-        //
-        fn runFn(action: *Action) void {
-            const run_node: *Node = @fieldParentPtr("data", action);
-            const closure: *@This() = @alignCast(@fieldParentPtr("run_node", run_node));
-            @call(.auto, callback, closure.arguments);
-        }
-        //
-        fn deinitFn(node: *Node) void {
-            const closure: *@This() = @alignCast(@fieldParentPtr("run_node", node));
-            allocator_global.destroy(closure);
-        }
-    };
-
-    const closure = Vapor.arena(.frame).create(Closure) catch |err| {
-        printlnErr("runOnAnimationFrame: could not allocate closure, frame not scheduled: {any}", .{err});
-        return 0;
-    };
-    closure.* = .{
-        .arguments = args,
-    };
-
-    animation_frame_callback = &closure.run_node;
-    ctx_callback_registry.put(@intFromPtr(animation_frame_callback), &closure.run_node) catch |err| {
-        printlnErr("runOnAnimationFrame: could not register callback, frame not scheduled: {any}", .{err});
-        return 0;
-    };
-
-    if (isWasi) {
-        return Wasm.requestAnimationFrameWasm(@intFromPtr(animation_frame_callback));
-    }
-    return 0;
+const TimersModule = @import("Timers.zig");
+comptime {
+    _ = TimersModule;
 }
+pub const loopInterval = TimersModule.loopInterval;
+pub const timeout = TimersModule.timeout;
+pub const cancelTimeout = TimersModule.cancelTimeout;
+pub const registerTimeout = TimersModule.registerTimeout;
+pub const runOnAnimationFrame = TimersModule.runOnAnimationFrame;
+pub const nowMs = TimersModule.nowMs;
+pub const startViewTransition = TimersModule.startViewTransition;
 
-export fn callAnimationFrameCallback(callback_ptr: u32) void {
-    const node = Vapor.ctx_callback_registry.get(callback_ptr) orelse {
-        std.log.err("Ctx Callback Not found {any}\n", .{callback_ptr});
-        return;
-    };
-    @call(.auto, node.data.runFn, .{&node.data});
-    if (Vapor.mode == .atomic) {
-        Vapor.cycle();
-    }
-}
-
-pub fn nowMs() f64 {
-    if (isWasi) {
-        return performance_now();
-    } else {
-        return 0;
-    }
-}
 pub fn endPage(_: *UIContext) void {
     if (changed_route) {
         ////// BE CAREFUL WITH THIS the configuration system does not run if the value has been created already i think?
@@ -1591,85 +1546,6 @@ pub extern "env" fn consoleLogWasm(
 
 // Convenience wrappers (optional)
 
-/// name: name of the interval
-/// cb: callback function
-/// args: arguments to pass to the callback function
-/// delay: delay in ms
-pub fn loopInterval(name: []const u8, delay_ms: u32, callback: anytype, args: anytype) void {
-    const erased = Vapor.ErasedCallback.make(Vapor.arena(.frame), callback, args) catch |err| {
-        printlnErr("loopInterval '{s}': could not allocate closure, interval not started: {any}", .{ name, err });
-        return;
-    };
-
-    const callback_id: u32 = hashKey(name);
-    // Store just the ErasedCallback instead of *Node
-    Vapor.erased_registry.put(callback_id, erased) catch |err| {
-        printlnErr("loopInterval '{s}': could not register, interval not started: {any}", .{ name, err });
-        return;
-    };
-
-    if (isWasi) {
-        Wasm.createInterval(callback_id, delay_ms);
-    }
-}
-
-pub fn timeout(callback_name: []const u8, ms: u32, cb: anytype, args: anytype) void {
-    const Args = @TypeOf(args);
-    const Closure = struct {
-        arguments: Args,
-        run_node: Node = .{ .data = .{ .runFn = runFn, .deinitFn = deinitFn } },
-        //
-        fn runFn(action: *Action) void {
-            const run_node: *Node = @fieldParentPtr("data", action);
-            const closure: *@This() = @alignCast(@fieldParentPtr("run_node", run_node));
-            @call(.auto, cb, closure.arguments);
-        }
-        //
-        fn deinitFn(node: *Node) void {
-            const closure: *@This() = @alignCast(@fieldParentPtr("run_node", node));
-            allocator_global.destroy(closure);
-        }
-    };
-
-    const closure = allocator_global.create(Closure) catch |err| {
-        printlnErr("timeout: could not allocate closure, callback not scheduled: {any}", .{err});
-        return;
-    };
-    closure.* = .{
-        .arguments = args,
-    };
-
-    const callback_id = hashKey(callback_name);
-    ctx_callback_registry.put(callback_id, &closure.run_node) catch |err| {
-        println("Button Function Registry {any}\n", .{err});
-    };
-
-    if (isWasi) {
-        Wasm.timeoutCtx(ms, callback_id);
-    } else {
-        return;
-    }
-}
-
-pub fn cancelTimeout(callback_name: []const u8) void {
-    const callback_id = hashKey(callback_name);
-    if (isWasi) {
-        Wasm.cancelTimeoutWasm(callback_id);
-    }
-}
-
-pub fn registerTimeout(ms: u32, cb: *const fn () void) void {
-    const id = callback_registry.count() + 1;
-    callback_registry.put(id, cb) catch |err| {
-        println("Button Function Registry {any}\n", .{err});
-    };
-    if (isWasi) {
-        Wasm.timeout(ms, id);
-    } else {
-        return;
-    }
-}
-
 pub const Clipboard = struct {
     pub fn copy(text: []const u8) void {
         if (isWasi) {
@@ -2089,24 +1965,6 @@ pub const ErasedCallback = struct {
         };
     }
 };
-
-pub fn startViewTransition(callback: anytype, args: anytype) void {
-    const erased = Vapor.ErasedCallback.make(Vapor.arena(.frame), callback, args) catch |err| {
-        printlnErr("view transition: could not allocate closure, transition skipped: {any}", .{err});
-        return;
-    };
-
-    const callback_id: u32 = hashKey("view-transition");
-    // Store just the ErasedCallback instead of *Node
-    Vapor.erased_registry.put(callback_id, erased) catch |err| {
-        printlnErr("view transition: could not register callback, transition skipped: {any}", .{err});
-        return;
-    };
-
-    if (isWasi) {
-        Wasm.startViewTransitionWasm(callback_id);
-    }
-}
 
 /// Gives `node` a caller-chosen id (`.id()`, `.src()`).
 ///
