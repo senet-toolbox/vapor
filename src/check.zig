@@ -62,6 +62,7 @@ const modules = .{
     @import("lib/UITree.zig"),
     @import("lib/Vapor.zig"),
     @import("lib/WASM.zig"),
+    @import("lib/Memory.zig"),
     @import("lib/Query.zig"),
     @import("lib/Hex.zig"),
     @import("lib/Log.zig"),
