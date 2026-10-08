@@ -1065,25 +1065,36 @@ pub fn generateVisual(visual: *const Types.PackedVisual, writer: writer_t) void 
     }
 
     // Shadow
-    if (visual.shadow.blur > 0 or visual.shadow.spread > 0 or
-        visual.shadow.top != 0 or visual.shadow.left != 0)
-    {
-        writePropValue("box-shadow", .{ .tag = .shadow, .data = .{ .shadow = visual.shadow } }, writer);
-    }
+    // if (visual.shadow.blur > 0 or visual.shadow.spread > 0 or
+    //     visual.shadow.top != 0 or visual.shadow.left != 0)
+    // {
+    //     writePropValue("box-shadow", .{ .tag = .shadow, .data = .{ .shadow = visual.shadow } }, writer);
+    // }
 
-    if (visual.text_shadow.blur > 0 or visual.text_shadow.spread > 0 or
-        visual.text_shadow.top != 0 or visual.text_shadow.left != 0)
-    {
-        const shadow = visual.text_shadow;
+    // if (visual.text_shadow.blur > 0 or visual.text_shadow.spread > 0 or
+    //     visual.text_shadow.top != 0 or visual.text_shadow.left != 0)
+    // {
+    //     writePropValue("text-shadow", .{ .tag = .shadow, .data = .{ .shadow = visual.text_shadow } }, writer);
+    //     // const shadow = visual.text_shadow;
+    //     // writer.write("text-shadow:") catch {};
+    //     // writer.writeI16(shadow.left) catch {};
+    //     // writer.write("px ") catch {};
+    //     // writer.writeI16(shadow.top) catch {};
+    //     // writer.write("px ") catch {};
+    //     // writer.writeU8Num(shadow.blur) catch {};
+    //     // writer.write("px ") catch {};
+    //     // colorToCSS(shadow.color, writer) catch {};
+    //     // writer.write(";\n") catch {};
+    // }
+
+    if (visual.text_shadow > 0) blk: {
+        const shadow = Vapor.shadows.get(visual.text_shadow) orelse {
+            std.log.err("Could not aqurie shadow", .{});
+            break :blk;
+        };
         writer.write("text-shadow:") catch {};
-        writer.writeI16(shadow.left) catch {};
-        writer.write("px ") catch {};
-        writer.writeI16(shadow.top) catch {};
-        writer.write("px ") catch {};
-        writer.writeU8Num(shadow.blur) catch {};
-        writer.write("px ") catch {};
-        colorToCSS(shadow.color, writer) catch {};
-        writer.write(";\n") catch {};
+        shadow.writeCss(writer) catch {};
+        writer.write(";") catch {};
     }
 
     if (visual.new_shadow > 0) blk: {

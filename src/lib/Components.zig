@@ -1553,7 +1553,11 @@ pub const ComponentBuilder = struct {
         if (value == null) return self.*;
         var n = self.*;
         var v = n._visual orelse types.Visual{};
-        v.new_shadow = value.?;
+        if (self._elem_type == .Text or self._elem_type == .TextFmt) {
+            v.text_shadow = value.?;
+        } else {
+            v.new_shadow = value.?;
+        }
         n._visual = v;
         return n;
     }

@@ -1443,6 +1443,16 @@ pub fn checkVisual(visual: *const types.Visual, packet_visual: *types.PackedVisu
         packet_visual.resize = resize;
     }
 
+    if (visual.text_shadow) |text_shadow| {
+        var count = Vapor.shadows.count();
+        count += 1;
+        packet_visual.text_shadow = count;
+        Vapor.shadows.put(count, text_shadow) catch |err| {
+            Vapor.printlnErr("shadow: could not register, shadow skipped: {any}", .{err});
+            packet_visual.text_shadow = 0;
+        };
+    }
+
     if (visual.new_shadow) |new_shadow| {
         var count = Vapor.shadows.count();
         count += 1;

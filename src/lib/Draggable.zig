@@ -3,7 +3,7 @@ const Vapor = @import("Vapor.zig");
 
 // Draggable behavior that can be attached to any element
 pub const Draggable = struct {
-    element: *Vapor.Binded,
+    element: *Vapor.Binded = undefined,
 
     // State
     initial_x: f32 = 0,

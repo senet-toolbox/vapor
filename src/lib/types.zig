@@ -1978,7 +1978,7 @@ pub const Visual = struct {
 
     /// Shadow configuration for drop shadows
     shadow: ?NewShadow = null,
-    text_shadow: ?Shadow = null,
+    text_shadow: ?NewShadow = null,
 
     new_shadow: ?NewShadow = null,
 
@@ -2282,7 +2282,7 @@ pub const PackedVisual = packed struct {
     has_outline_color: bool = false,
     outline_color: PackedColor = .{},
     shadow: PackedShadow = .{},
-    text_shadow: PackedShadow = .{},
+    text_shadow: u32 = 0,
     has_white_space: bool = false,
     white_space: WhiteSpace = .normal,
     cursor: Cursor = .default,

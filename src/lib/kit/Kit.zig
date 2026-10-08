@@ -471,11 +471,67 @@ pub const HttpHeader = struct {
 };
 
 pub const Headers = struct {
+    const Self = @This();
+
     content_type: []const u8 = "text/html",
     authorization: ?[]const u8 = null,
     accept: ?[]const u8 = null,
     user_agent: ?[]const u8 = null,
+
+    pub const Field = struct {
+        name: []const u8, // "Content-Type"
+        value: []const u8,
+    };
+
+    pub fn iterator(self: *const Self) Iterator {
+        return .{ .headers = self };
+    }
+
+    pub const Iterator = struct {
+        headers: *const Self,
+        idx: usize = 0,
+
+        pub fn next(it: *Iterator) ?Field {
+            const fields = std.meta.fields(Self);
+            while (it.idx < fields.len) {
+                const i = it.idx;
+                it.idx += 1;
+                inline for (fields, 0..) |f, j| {
+                    if (i == j) {
+                        // non-optional []const u8 coerces to ?[]const u8,
+                        // so this one line handles both kinds of field
+                        const opt: ?[]const u8 = @field(it.headers, f.name);
+                        if (opt) |v| return .{
+                            .name = comptime headerName(f.name),
+                            .value = v,
+                        };
+                    }
+                }
+            }
+            return null;
+        }
+    };
 };
+
+/// content_type -> Content-Type, user_agent -> User-Agent
+fn headerName(comptime field: []const u8) []const u8 {
+    comptime {
+        var out: []const u8 = "";
+        var upper = true;
+        for (field) |c| {
+            if (c == '_') {
+                out = out ++ "-";
+                upper = true;
+            } else if (upper) {
+                out = out ++ [_]u8{std.ascii.toUpper(c)};
+                upper = false;
+            } else {
+                out = out ++ [_]u8{c};
+            }
+        }
+        return out;
+    }
+}
 
 const BodyType = enum {
     string,
