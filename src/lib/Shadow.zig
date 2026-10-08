@@ -164,17 +164,17 @@ pub fn toCss(self: Shadow, writer: *Writer) !void {
 
 // -- 6. Tests --
 
-test "Complex Composition" {
-    const allocator = std.testing.allocator;
-    const blue = Color{ .hex = "#053794" };
-    const dark = Color{ .hex = "#0006" };
-
-    // Matches your request: box-shadow: inset 0 -2px #053794, 0 1px 3px #0006
+test "inset and drop layers compose into one box-shadow" {
+    // box-shadow: inset 0 -2px #053794, 0 1px 3px #0006
     const s = Shadow.init()
-        .inset(0, -2, blue)
-        .drop(0, 1, 3, dark);
+        .inset(0, -2, .hex("#053794"))
+        .drop(0, 1, 3, .hex("#0006"));
 
-    const css = try s.toCss(allocator);
-    defer allocator.free(css);
-    // errdefer std.debug.print("CSS: {s}\n", .{css});
+    var buf: [256]u8 = undefined;
+    var writer: Writer = undefined;
+    writer.init(&buf);
+    try s.writeCss(&writer);
+    const css = writer.getAll();
+
+    try std.testing.expectEqualStrings("inset 0px -2px 0px rgb(5,55,148),0px 1px 3px rgba(0,0,0,0.40)", css);
 }

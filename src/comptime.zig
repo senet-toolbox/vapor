@@ -181,3 +181,13 @@ pub const Testing = if (builtin.is_test) struct {
 pub fn parentPtr(comptime Parent: type, comptime field_name: []const u8, field_ptr: anytype) *Parent {
     return @alignCast(@fieldParentPtr(field_name, field_ptr));
 }
+
+// A test binary only collects test blocks from its own root module, so the
+// ones inside src/lib run from the `vapor-lib-tests` step, which is rooted
+// here. Each file with tests has to be referenced from this block.
+test {
+    _ = lib; // lib/Vapor.zig
+    _ = Animation;
+    _ = types.NewShadow;
+    _ = @import("lib/keystone/JWT.zig");
+}

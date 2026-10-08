@@ -127,7 +127,12 @@ pub fn build(b: *std.Build) void {
     });
     const run_pool_tests = b.addRunArtifact(pool_tests);
 
+    // Test blocks inside src/lib: see the `test` block in src/comptime.zig.
+    const lib_tests = b.addTest(.{ .name = "vapor-lib-tests", .root_module = test_vapor_module });
+    const run_lib_tests = b.addRunArtifact(lib_tests);
+
     const test_step = b.step("test", "Run Vapor unit tests");
+    test_step.dependOn(&run_lib_tests.step);
     test_step.dependOn(&run_unit_tests.step);
     test_step.dependOn(&run_string_table_tests.step);
     test_step.dependOn(&run_pool_tests.step);
@@ -149,6 +154,19 @@ pub fn build(b: *std.Build) void {
     abi_step.dependOn(&run_abi.step);
     test_step.dependOn(&run_abi.step);
     test_step.dependOn(&b.addRunArtifact(b.addTest(.{ .root_module = abi_tool_mod })).step);
+
+    // End-to-end tests in headless Chrome: builds tests/browser/app against
+    // this checkout, then drives it (tests/browser/run.mjs). Needs Node >= 22
+    // and Chrome, so it is its own step rather than part of `test`.
+    const browser_step = b.step("browser-test", "Run the browser tests (needs Node >= 22 and Chrome)");
+    const build_app = b.addSystemCommand(&.{ b.graph.zig_exe, "build" });
+    build_app.setCwd(b.path("tests/browser/app"));
+    build_app.has_side_effects = true;
+    const run_browser = b.addSystemCommand(&.{ "node", "tests/browser/run.mjs" });
+    run_browser.setCwd(b.path("."));
+    run_browser.has_side_effects = true;
+    run_browser.step.dependOn(&build_app.step);
+    browser_step.dependOn(&run_browser.step);
 
     const check_step = addCheckStep(b, build_options_module, test_config_module, optimize);
 
