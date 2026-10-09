@@ -1,5 +1,6 @@
 //! Fixed-capacity containers: a ring buffer and a bounded array.
 
+/// A fixed-capacity ring buffer; pushing when full overwrites the oldest item.
 pub fn RingBuffer(comptime T: type, comptime capacity: usize) type {
     return struct {
         const Self = @This();
@@ -8,6 +9,7 @@ pub fn RingBuffer(comptime T: type, comptime capacity: usize) type {
         head: usize = 0, // next write position
         count: usize = 0,
 
+        /// Adds `item`, overwriting the oldest when full.
         pub fn push(self: *Self, item: T) void {
             self.items[self.head] = item;
             self.head = (self.head + 1) % capacity;
@@ -16,6 +18,7 @@ pub fn RingBuffer(comptime T: type, comptime capacity: usize) type {
             }
         }
 
+        /// Pushes every item of `items`.
         pub fn pushSlice(self: *Self, items: []const T) void {
             for (items) |item| {
                 self.push(item);
@@ -65,6 +68,7 @@ pub fn RingBuffer(comptime T: type, comptime capacity: usize) type {
             ring: *const Self,
             pos: usize,
 
+            /// The next item, oldest first, or `null`.
             pub fn next(it: *Iterator) ?T {
                 if (it.pos >= it.ring.count) return null;
                 const item = it.ring.get(it.pos).?;
@@ -72,19 +76,23 @@ pub fn RingBuffer(comptime T: type, comptime capacity: usize) type {
                 return item;
             }
 
+            /// Restarts the iteration.
             pub fn reset(it: *Iterator) void {
                 it.pos = 0;
             }
         };
 
+        /// Number of items.
         pub fn len(self: *const Self) usize {
             return self.count;
         }
 
+        /// Whether the buffer is full.
         pub fn isFull(self: *const Self) bool {
             return self.count == capacity;
         }
 
+        /// Empties the buffer.
         pub fn clear(self: *Self) void {
             self.head = 0;
             self.count = 0;
@@ -96,12 +104,14 @@ pub fn RingBuffer(comptime T: type, comptime capacity: usize) type {
 const std = @import("std");
 const assert = std.debug.assert;
 
+/// A list stored inline with room for `buffer_capacity` items.
 pub fn BoundedArray(comptime T: type, comptime buffer_capacity: usize) type {
     return struct {
         const Self = @This();
         buffer: [buffer_capacity]T = undefined,
         len: usize = 0,
 
+        /// `len` undefined items; fails if over capacity.
         pub fn init(len: usize) error{Overflow}!Self {
             if (len > buffer_capacity) return error.Overflow;
             return Self{ .len = len };
@@ -115,44 +125,52 @@ pub fn BoundedArray(comptime T: type, comptime buffer_capacity: usize) type {
             return self.buffer[0..self.len];
         }
 
+        /// Appends `item`; fails when full.
         pub fn append(self: *Self, item: T) error{Overflow}!void {
             const new_item_ptr = try self.addOne();
             new_item_ptr.* = item;
         }
 
+        /// Removes and returns the last item.
         pub fn pop(self: *Self) error{OutOfBounds}!T {
             if (self.len == 0) return error.OutOfBounds;
             self.len -= 1;
             return self.buffer[self.len];
         }
 
+        /// Appends `item`; there must be room.
         pub fn appendAssumeCapacity(self: *Self, item: T) void {
             const new_item_ptr = self.addOneAssumeCapacity();
             new_item_ptr.* = item;
         }
 
+        /// Appends `items`; fails if they do not fit.
         pub fn appendSlice(self: *Self, items: []const T) error{Overflow}!void {
             try self.ensureUnusedCapacity(items.len);
             self.appendSliceAssumeCapacity(items);
         }
 
+        /// Appends `items`; they must fit.
         pub fn appendSliceAssumeCapacity(self: *Self, items: []const T) void {
             const old_len = self.len;
             self.len += items.len;
             @memcpy(self.slice()[old_len..][0..items.len], items);
         }
 
+        /// Fails unless `additional_count` more items fit.
         pub fn ensureUnusedCapacity(self: Self, additional_count: usize) error{Overflow}!void {
             if (self.len + additional_count > buffer_capacity) {
                 return error.Overflow;
             }
         }
 
+        /// Adds an undefined item and returns a pointer to it; fails when full.
         pub fn addOne(self: *Self) error{Overflow}!*T {
             try self.ensureUnusedCapacity(1);
             return self.addOneAssumeCapacity();
         }
 
+        /// Like `addOne`; there must be room.
         pub fn addOneAssumeCapacity(self: *Self) *T {
             assert(self.len < buffer_capacity);
             self.len += 1;

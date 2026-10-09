@@ -30,6 +30,7 @@ pub const StringData = union(enum) {
         len: u16,
     },
 
+    /// The stored string.
     pub fn asSlice(self: *const StringData) []const u8 {
         // We sue pointers since The problem is that switch with capture (|d|) in Zig copies the union data, not references it.
         return switch (self.*) {
@@ -67,6 +68,7 @@ free_count_256: u32,
 free_count_512: u32,
 free_count_1024: u32,
 
+/// A pool with `capacity` slots of each size (32 to 1024 bytes).
 pub fn init(allocator: std.mem.Allocator, capacity: u32) !Pool {
     return Pool{
         .slot_32 = try allocator.alloc([32]u8, capacity),
@@ -90,6 +92,7 @@ pub fn init(allocator: std.mem.Allocator, capacity: u32) !Pool {
     };
 }
 
+/// Same as `init`.
 pub fn initGlobalPool(allocator: std.mem.Allocator, capacity: u32) !Pool {
     return Pool{
         .slot_32 = try allocator.alloc([32]u8, capacity),
@@ -112,6 +115,7 @@ pub fn initGlobalPool(allocator: std.mem.Allocator, capacity: u32) !Pool {
         .free_count_1024 = capacity,
     };
 }
+/// Frees the pool's slots.
 pub fn deinitGlobalPool(pool: *Pool, allocator: std.mem.Allocator) void {
     allocator.free(pool.slot_32);
     allocator.free(pool.slots_64);
@@ -119,6 +123,7 @@ pub fn deinitGlobalPool(pool: *Pool, allocator: std.mem.Allocator) void {
     allocator.free(pool.free_list_64);
 }
 
+/// Marks every slot free.
 pub fn resetFreeList(pool: *Pool) void {
     pool.free_count_32 = @intCast(pool.slot_32.len);
     pool.free_count_64 = @intCast(pool.slots_64.len);
@@ -128,6 +133,7 @@ pub fn resetFreeList(pool: *Pool) void {
     pool.free_count_1024 = @intCast(pool.slots_1024.len);
 }
 
+/// Frees the pool's slots.
 pub fn deinit(pool: *Pool, allocator: std.mem.Allocator) void {
     allocator.free(pool.slot_32);
     allocator.free(pool.slots_64);
@@ -143,6 +149,7 @@ pub fn deinit(pool: *Pool, allocator: std.mem.Allocator) void {
     allocator.free(pool.free_list_1024);
 }
 
+/// Builds the free lists; required before `createString`.
 pub fn initFreelist(pool: *Pool) void {
     pool.did_init = true;
     // Initialize freelist with all indices
@@ -179,6 +186,7 @@ pub fn initFreelist(pool: *Pool) void {
     pool.free_count_1024 = @intCast(pool.slots_1024.len);
 }
 
+/// A free 32-byte slot, or `null` when none is left.
 pub fn alloc_32(pool: *Pool) ?*[32]u8 {
     if (pool.free_count_32 == 0) return null;
     // Pop from freelist
@@ -188,6 +196,7 @@ pub fn alloc_32(pool: *Pool) ?*[32]u8 {
     return &pool.slot_32[slot_index];
 }
 
+/// A free 64-byte slot, or `null` when none is left.
 pub fn alloc_64(pool: *Pool) ?*[64]u8 {
     if (pool.free_count_64 == 0) return null;
 
@@ -198,6 +207,7 @@ pub fn alloc_64(pool: *Pool) ?*[64]u8 {
     return &pool.slots_64[slot_index];
 }
 
+/// A free 128-byte slot, or `null` when none is left.
 pub fn alloc_128(pool: *Pool) ?*[128]u8 {
     if (pool.free_count_128 == 0) return null;
 
@@ -208,6 +218,7 @@ pub fn alloc_128(pool: *Pool) ?*[128]u8 {
     return &pool.slots_128[slot_index];
 }
 
+/// A free 256-byte slot, or `null` when none is left.
 pub fn alloc_256(pool: *Pool) ?*[256]u8 {
     if (pool.free_count_256 == 0) return null;
 
@@ -218,6 +229,7 @@ pub fn alloc_256(pool: *Pool) ?*[256]u8 {
     return &pool.slots_256[slot_index];
 }
 
+/// A free 512-byte slot, or `null` when none is left.
 pub fn alloc_512(pool: *Pool) ?*[512]u8 {
     if (pool.free_count_512 == 0) return null;
 
@@ -228,6 +240,7 @@ pub fn alloc_512(pool: *Pool) ?*[512]u8 {
     return &pool.slots_512[slot_index];
 }
 
+/// A free 1024-byte slot, or `null` when none is left.
 pub fn alloc_1024(pool: *Pool) ?*[1024]u8 {
     if (pool.free_count_1024 == 0) return null;
 
@@ -238,6 +251,7 @@ pub fn alloc_1024(pool: *Pool) ?*[1024]u8 {
     return &pool.slots_1024[slot_index];
 }
 
+/// Returns the slot holding `string_data`.
 pub fn free(pool: *Pool, string_data: StringData) void {
     switch (string_data) {
         .pool_ptr_32 => |d| {
@@ -261,6 +275,7 @@ pub fn free(pool: *Pool, string_data: StringData) void {
     }
 }
 
+/// Returns a 32-byte slot to the pool.
 pub fn free_32(pool: *Pool, ptr: *[32]u8) void {
     // Calculate index from pointer arithmetic
     const slot_index = (@intFromPtr(ptr) - @intFromPtr(pool.slot_32.ptr)) / 32;
@@ -270,6 +285,7 @@ pub fn free_32(pool: *Pool, ptr: *[32]u8) void {
     pool.free_count_32 += 1;
 }
 
+/// Returns a 64-byte slot to the pool.
 pub fn free_64(pool: *Pool, ptr: *[64]u8) void {
     // Calculate index from pointer arithmetic
     const slot_index = (@intFromPtr(ptr) - @intFromPtr(pool.slots_64.ptr)) / 64;
@@ -279,6 +295,7 @@ pub fn free_64(pool: *Pool, ptr: *[64]u8) void {
     pool.free_count_64 += 1;
 }
 
+/// Returns a 128-byte slot to the pool.
 pub fn free_128(pool: *Pool, ptr: *[128]u8) void {
     // Calculate index from pointer arithmetic
     const slot_index = (@intFromPtr(ptr) - @intFromPtr(pool.slots_128.ptr)) / 128;
@@ -288,6 +305,7 @@ pub fn free_128(pool: *Pool, ptr: *[128]u8) void {
     pool.free_count_128 += 1;
 }
 
+/// Returns a 256-byte slot to the pool.
 pub fn free_256(pool: *Pool, ptr: *[256]u8) void {
     // Calculate index from pointer arithmetic
     const slot_index = (@intFromPtr(ptr) - @intFromPtr(pool.slots_256.ptr)) / 256;
@@ -297,6 +315,7 @@ pub fn free_256(pool: *Pool, ptr: *[256]u8) void {
     pool.free_count_256 += 1;
 }
 
+/// Returns a 512-byte slot to the pool.
 pub fn free_512(pool: *Pool, ptr: *[512]u8) void {
     // Calculate index from pointer arithmetic
     const slot_index = (@intFromPtr(ptr) - @intFromPtr(pool.slots_512.ptr)) / 512;
@@ -306,6 +325,7 @@ pub fn free_512(pool: *Pool, ptr: *[512]u8) void {
     pool.free_count_512 += 1;
 }
 
+/// Returns a 1024-byte slot to the pool.
 pub fn free_1024(pool: *Pool, ptr: *[1024]u8) void {
     // Calculate index from pointer arithmetic
     const slot_index = (@intFromPtr(ptr) - @intFromPtr(pool.slots_1024.ptr)) / 1024;
@@ -315,6 +335,7 @@ pub fn free_1024(pool: *Pool, ptr: *[1024]u8) void {
     pool.free_count_1024 += 1;
 }
 
+/// Copies `data` into the smallest slot that fits.
 pub fn createString(pool: *Pool, data: []const u8) !StringData {
     if (!pool.did_init) return error.FreeListPoolNotInitialized;
     if (data.len <= 32) {

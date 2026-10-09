@@ -29,6 +29,7 @@ pub const DynamicObject = struct {
     fields: std.array_list.Managed(Field),
     allocator: std.mem.Allocator,
 
+    /// An object with no fields.
     pub fn init(allocator: std.mem.Allocator) DynamicObject {
         return .{
             .fields = std.array_list.Managed(Field).init(allocator),
@@ -36,11 +37,14 @@ pub const DynamicObject = struct {
         };
     }
 
+    /// Frees the field list.
     pub fn deinit(self: *DynamicObject) void {
         self.fields.deinit();
     }
 };
 
+/// Fills a `T` from the object's fields, matched by position: the i-th field
+/// of `T` takes the i-th field of the object.
 pub fn convertFromDynamicToType(comptime T: type, dyn_object: *DynamicObject) T {
     var new_object: T = undefined;
     const fields = @typeInfo(T).@"struct".fields;
@@ -94,12 +98,14 @@ pub fn convertFromDynamicToType(comptime T: type, dyn_object: *DynamicObject) T 
 
 var current_object: ?*DynamicObject = null;
 // Similar for float and bool fields...
+/// The object behind a handle the runtime returned.
 pub fn finalizeObject(handle: u32) *DynamicObject {
     const obj = @as(*DynamicObject, @ptrFromInt(@as(usize, @intCast(handle))));
     return obj;
 }
 
 // Zig Side - Automatic struct introspection
+/// The layout record for one struct field, as the runtime reads it.
 pub fn FieldDescriptor() type {
     return extern struct {
         name_ptr: [*]const u8,
@@ -111,6 +117,7 @@ pub fn FieldDescriptor() type {
     };
 }
 
+/// Describes `T`'s layout to the runtime and holds one instance to share.
 pub fn exportStruct(comptime T: type) type {
     return struct {
         pub var instance: T = undefined;
@@ -161,12 +168,14 @@ pub fn exportStruct(comptime T: type) type {
 }
 pub const API = struct {
     // --- Dynamic Object Construction ---
+    /// Runtime export: starts building an object; returns its handle.
     pub fn startObject() callconv(.c) usize {
         current_object = Vapor.allocator_global.create(DynamicObject) catch return 0;
         current_object.?.* = DynamicObject.init(Vapor.allocator_global);
         return @intFromPtr(current_object.?);
     }
 
+    /// Runtime export: adds a string field.
     pub fn addStringField(handle: i32, key_ptr: [*:0]u8, value_ptr: [*:0]u8) callconv(.c) void {
         const obj = @as(*DynamicObject, @ptrFromInt(@as(usize, @intCast(handle))));
         const key = std.mem.span(key_ptr);
@@ -179,6 +188,7 @@ pub const API = struct {
         }) catch return;
     }
 
+    /// Runtime export: adds an integer field.
     pub fn addIntField(handle: i32, key_ptr: [*:0]u8, value: i32) callconv(.c) void {
         const obj = @as(*DynamicObject, @ptrFromInt(@as(usize, @intCast(handle))));
         const key = std.mem.span(key_ptr);
@@ -190,6 +200,7 @@ pub const API = struct {
         }) catch return;
     }
 
+    /// Runtime export: adds a float field.
     pub fn addFloatField(handle: i32, key_ptr: [*:0]u8, value: f32) callconv(.c) void {
         const obj = @as(*DynamicObject, @ptrFromInt(@as(usize, @intCast(handle))));
         const key = std.mem.span(key_ptr);
@@ -201,6 +212,7 @@ pub const API = struct {
         }) catch return;
     }
 
+    /// Runtime export: adds a bool field.
     pub fn addBoolField(handle: i32, key_ptr: [*:0]u8, value: bool) callconv(.c) void {
         const obj = @as(*DynamicObject, @ptrFromInt(@as(usize, @intCast(handle))));
         const key = std.mem.span(key_ptr);
@@ -212,6 +224,7 @@ pub const API = struct {
         }) catch return;
     }
 
+    /// Runtime export: passes a finished object to the waiting callback.
     pub fn readObject(callback_ptr: u32, object_ptr: ?*DynamicObject) callconv(.c) void {
         const node = Vapor.ctx_callback_registry.get(callback_ptr) orelse {
             Vapor.printlnSrcErr("Callback not found\n", .{}, @src());
