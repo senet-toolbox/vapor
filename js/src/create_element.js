@@ -2,14 +2,14 @@
 import { debug } from "./debug.js";
 import { COMPONENT_TYPES } from "./traversal.js";
 import { safeUrl, setSafeHref } from "./url.js";
-import { DynamicStructReader } from "./wasi.js";
+import { DynamicStructReader } from "./env.js";
 import {
   currentPath,
   readWasmString,
   rerenderRoute,
   text_data,
   wasmInstance,
-} from "./wasi_obj.js";
+} from "./runtime.js";
 
 /**
  * Routes plain clicks on same-origin links client-side. Attached once per

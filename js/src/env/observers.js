@@ -2,7 +2,7 @@
 import { wasmInstance } from "../instance.js";
 import { observers } from "../maps.js";
 import { DynamicStructReader, WasmObjectBuilder } from "../struct_bridge.js";
-import { readWasmString } from "../wasi_obj.js";
+import { readWasmString } from "../runtime.js";
 
 // Separate map for resize observers (don't share with IntersectionObservers)
 const resizeObservers = new Map();

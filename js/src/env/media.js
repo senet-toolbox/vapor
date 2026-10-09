@@ -1,5 +1,5 @@
 /** Video and camera playback. */
-import { readWasmString } from "../wasi_obj.js";
+import { readWasmString } from "../runtime.js";
 
 export const mediaBindings = {
   // Video / Media

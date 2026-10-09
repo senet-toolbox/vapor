@@ -1,6 +1,6 @@
 /** localStorage, cookies and the clipboard. */
 import { requireWasm, wasmInstance } from "../instance.js";
-import { allocStringFrame, readWasmString } from "../wasi_obj.js";
+import { allocStringFrame, readWasmString } from "../runtime.js";
 
 export const storageBindings = {
   // Local Storage

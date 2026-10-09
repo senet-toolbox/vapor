@@ -4,7 +4,7 @@ import {
   styleSheet,
   readWasmString,
   rebuildCacheFromStylesheet,
-} from "./wasi_obj.js";
+} from "./runtime.js";
 // export const styleSheet =
 // document.styleSheets[0] ||
 // document.head.appendChild(document.createElement("style")).sheet;

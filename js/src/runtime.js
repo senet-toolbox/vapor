@@ -1,6 +1,6 @@
 import { debug } from "./debug.js";
-import { importObject } from "./wasi_env.js";
-import { EventType, setWasiInstance } from "./wasi.js";
+import { importObject } from "./imports.js";
+import { EventType, setWasiInstance } from "./env.js";
 import {
   domNodeRegistry,
   moduleCache,
@@ -19,7 +19,7 @@ import {
   resetTimers,
 } from "./traversal.js";
 import { state } from "./state.js";
-import { styleRuleCache, styleClassCache } from "./wasi_styling.js";
+import { styleRuleCache, styleClassCache } from "./styling.js";
 import { parseWasmError } from "./formatter.js";
 import { readRenderCommand, readUINode, readWasmString } from "./memory_reader.js";
 export { checkMemoryGrowth } from "./memory_stats.js";

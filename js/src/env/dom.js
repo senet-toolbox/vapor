@@ -7,7 +7,7 @@ import {
   f32View,
   readWasmString,
   styleSheet,
-} from "../wasi_obj.js";
+} from "../runtime.js";
 
 export const domBindings = {
   // DOM Element Creation & Manipulation

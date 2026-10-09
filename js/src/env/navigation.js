@@ -7,7 +7,7 @@ import {
   allocStringFrame,
   readWasmString,
   rerenderRoute,
-} from "../wasi_obj.js";
+} from "../runtime.js";
 
 export const navigationBindings = {
   // Navigation & Routing

@@ -4,8 +4,8 @@
  */
 
 import { eventStorage } from "./maps.js";
-import { WasmObjectBuilder, wasmInstance } from "./wasi.js";
-import { readWasmString, allocString } from "./wasi_obj.js";
+import { WasmObjectBuilder, wasmInstance } from "./env.js";
+import { readWasmString, allocString } from "./runtime.js";
 
 // ============================================================================
 // Storage for handles and state

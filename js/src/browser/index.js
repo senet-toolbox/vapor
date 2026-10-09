@@ -3,19 +3,19 @@
 // the core runtime. The core loads it only when an app's wasm imports one of
 // these functions, so apps that use none never download it.
 import { rt } from "./runtime.js";
-import { dragDropBindings } from "./dragDrop.js";
+import { dragDropBindings } from "./drag_drop.js";
 import { websocketBindings } from "./websocket.js";
-import { sessionStorageBindings } from "./sessionStorage.js";
+import { sessionStorageBindings } from "./session_storage.js";
 import { canvasBindings } from "./canvas.js";
 import { audioBindings } from "./audio.js";
 import { geolocationBindings } from "./geolocation.js";
 import { notificationBindings } from "./notification.js";
 import { fullscreenBindings } from "./fullscreen.js";
 import { selectionBindings } from "./selection.js";
-import { mutationObserverBindings } from "./mutationObserver.js";
+import { mutationObserverBindings } from "./mutation_observer.js";
 import { performanceBindings } from "./performance.js";
-import { indexedDBBindings } from "./indexedDB.js";
-import { pointerLockBindings } from "./pointerLock.js";
+import { indexedDBBindings } from "./indexed_db.js";
+import { pointerLockBindings } from "./pointer_lock.js";
 import { vibrationBindings } from "./vibration.js";
 import { orientationBindings } from "./orientation.js";
 import { batteryBindings } from "./battery.js";

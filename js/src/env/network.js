@@ -1,7 +1,7 @@
 /** fetch and the core websocket bindings. */
 import { wasmInstance } from "../instance.js";
 import { sockets } from "../maps.js";
-import { allocStringFrame, readWasmString } from "../wasi_obj.js";
+import { allocStringFrame, readWasmString } from "../runtime.js";
 
 export const networkBindings = {
   // Network / Fetch

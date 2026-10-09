@@ -1,7 +1,7 @@
-import  "./wasi_obj.js";
-import  "./wasi_env.js";
+import  "./runtime.js";
+import  "./imports.js";
 import  "./maps.js";
-import  "./wasi_styling.js";
+import  "./styling.js";
 import  "./traversal.js";
 import  "./state.js";
-import  "./wasi.js";
+import  "./env.js";

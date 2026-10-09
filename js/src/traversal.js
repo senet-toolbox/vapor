@@ -9,8 +9,8 @@ import {
   rerenderRoute,
   text_data,
   currentPath,
-} from "./wasi_obj.js";
-import { updateComponentStyle, setRuleStyle } from "./wasi_styling.js";
+} from "./runtime.js";
+import { updateComponentStyle, setRuleStyle } from "./styling.js";
 import {
   domNodeRegistry,
   eventHandlers,
@@ -24,7 +24,7 @@ import {
   pureNodeRegistry,
 } from "./maps.js";
 import { state } from "./state.js";
-import { DynamicStructReader, elementCache } from "./wasi.js";
+import { DynamicStructReader, elementCache } from "./env.js";
 import {
   applyAccessibility,
   attachElementListeners,

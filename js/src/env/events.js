@@ -5,7 +5,7 @@ import { parseWasmError } from "../formatter.js";
 import { getElement, requireWasm, wasmInstance } from "../instance.js";
 import { domNodeRegistry, eventHandlers, eventStorage } from "../maps.js";
 import { WasmObjectBuilder } from "../struct_bridge.js";
-import { allocStringFrame, readWasmString } from "../wasi_obj.js";
+import { allocStringFrame, readWasmString } from "../runtime.js";
 
 export const eventsBindings = {
   // Event Handling - Document Level

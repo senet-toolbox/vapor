@@ -1,6 +1,6 @@
 /** Debug helpers that watch wasm memory growth. */
 import { debug } from "./debug.js";
-import { wasmInstance } from "./wasi_obj.js";
+import { wasmInstance } from "./runtime.js";
 
 function getWasmMemoryUsage() {
   const memory = wasmInstance.memory;

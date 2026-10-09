@@ -1,6 +1,6 @@
 import { debug } from "./debug.js";
-import { readWasmString, wasmInstance } from "./wasi_obj.js";
-import { env, requireWasm } from "./wasi.js";
+import { readWasmString, wasmInstance } from "./runtime.js";
+import { env, requireWasm } from "./env.js";
 import { fileBindings } from "./file.js";
 // import { cacheEnv } from "./cachebindings.js";
 

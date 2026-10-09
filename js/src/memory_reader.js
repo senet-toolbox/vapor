@@ -1,7 +1,7 @@
 /** Reading render commands, UINodes and strings out of wasm memory. */
 import { COMPONENT_TYPES } from "./traversal.js";
-import { UINodelayoutInfo, layoutInfo, wasmInstance } from "./wasi_obj.js";
-import { styleClassCache } from "./wasi_styling.js";
+import { UINodelayoutInfo, layoutInfo, wasmInstance } from "./runtime.js";
+import { styleClassCache } from "./styling.js";
 
 // Function to read a RenderCommand from memory
 // Essentially we are just reading out a giant memory file and using alignment

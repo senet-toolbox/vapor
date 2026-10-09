@@ -5,8 +5,8 @@ import {
   loadedSections,
   pureNodeRegistry,
 } from "./maps.js";
-import { elementCache } from "./wasi.js";
-import { activeNodeIds, readWasmString, wasmInstance } from "./wasi_obj.js";
+import { elementCache } from "./env.js";
+import { activeNodeIds, readWasmString, wasmInstance } from "./runtime.js";
 
 // Store intervals by route for cleanup
 const routeIntervals = new Map();

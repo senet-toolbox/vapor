@@ -2,8 +2,8 @@
 import { debug } from "../debug.js";
 import { requireWasm, wasmInstance } from "../instance.js";
 import { afterHooksHandlers, beforeHooksHandlers, timeouts } from "../maps.js";
-import { checkMemoryGrowth, readWasmString, requestRerender } from "../wasi_obj.js";
-import { batchRemoveTombStones } from "../wasi_styling.js";
+import { checkMemoryGrowth, readWasmString, requestRerender } from "../runtime.js";
+import { batchRemoveTombStones } from "../styling.js";
 
 export const coreBindings = {
   // Core / System

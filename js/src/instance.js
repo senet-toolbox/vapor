@@ -1,6 +1,6 @@
 /** The live wasm instance and the DOM lookups every binding module shares. */
 import { WasmStructBridge } from "./struct_bridge.js";
-import { readWasmString } from "./wasi_obj.js";
+import { readWasmString } from "./runtime.js";
 
 // ============================================================================
 // WASM Instance Management
