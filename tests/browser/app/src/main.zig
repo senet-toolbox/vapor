@@ -28,6 +28,7 @@ pub export fn init() void {
     Vapor.Page(.{ .route = "/users/:id" }, userPage, null);
     Vapor.Page(.{ .route = "/users/:id/edit" }, userEditPage, null);
     Vapor.Page(.{ .route = "/users/new" }, newUserPage, null);
+    Vapor.Page(.{ .route = "/hide" }, hidePage, null);
     Vapor.Page(.{ .route = "/error" }, notFound, null);
 }
 
@@ -120,6 +121,23 @@ fn cond() void {
         }
         Text("Stable").id("stable").end();
         Text("Unkeyed after").end();
+    });
+}
+
+// ── /hide : .hide(false) shows the element again ───────────────────────────
+
+var panel_hidden = false;
+
+fn toggleHidden() void {
+    panel_hidden = !panel_hidden;
+}
+
+fn hidePage() void {
+    Box().id("hide-page").children({
+        Button(toggleHidden, .{}).id("toggle-hidden").children({
+            Text("Toggle").end();
+        });
+        Text("Panel").id("panel").hide(panel_hidden).end();
     });
 }
 

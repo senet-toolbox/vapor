@@ -859,6 +859,17 @@ test "README examples type-check against the real API" {
     comptime {
         _ = &rootDocExample;
 
+        // Examples in the builder method docs (src/lib/builder/).
+        _ = @TypeOf(Vapor.Box().scroll(.{ .y = .scroll }));
+        _ = @TypeOf(Vapor.Box().pos(.{ .type = .absolute, .top = .px(0), .right = .px(0) }));
+        _ = @TypeOf(Vapor.Box().layout(.center));
+        _ = @TypeOf(Vapor.Box().padding(.all(16)).padding(.tb(8, 4)));
+        _ = @TypeOf(Vapor.Box().margin(.all(8)));
+        _ = @TypeOf(Vapor.Box().size(.full).size(.square_px(48)));
+        _ = @TypeOf(Vapor.Box().width(.px(320)).width(.percent(50)).width(.expand));
+        _ = @TypeOf(Vapor.Heading(2, "Settings"));
+        _ = @TypeOf(Vapor.TextFmt("{d} items", .{3}));
+
         // "A minimal app"
         _ = @TypeOf(Vapor.Center().size(.full));
         _ = @TypeOf(Vapor.Text("Hello, world!"));

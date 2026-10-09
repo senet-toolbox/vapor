@@ -280,6 +280,15 @@ const tests = {
     assertEqual(await p.evaluate(contents), ["Toggle", "Stable", "Unkeyed after"], "without banner");
   },
 
+  async ".hide(false) shows an element .hide(true) hid"(p) {
+    await p.goto("/hide");
+    await p.waitFor(`!!document.getElementById("panel")`, "hide page");
+    await p.click("toggle-hidden");
+    await p.waitFor(`document.getElementById("panel").hidden === true`, "panel hidden");
+    await p.click("toggle-hidden");
+    await p.waitFor(`document.getElementById("panel").hidden === false`, "panel shown again");
+  },
+
   async "typing reaches Zig state"(p) {
     await p.goto("/input");
     await p.waitForText("greeting", "Hello, !");

@@ -3,6 +3,8 @@ const Self = Components.ComponentBuilder;
 const types = @import("../types.zig");
 const Vapor = @import("../vapor.zig");
 
+/// Draws the edge lines registered under `edges_tag` (see `Vapor.Edges`). `null`
+/// leaves the element unchanged.
 pub fn edges(self: *const Self, edges_tag: ?[]const u8) Self {
     if (edges_tag) |_edges| {
         var n = self.*;
@@ -12,24 +14,29 @@ pub fn edges(self: *const Self, edges_tag: ?[]const u8) Self {
     return self.*;
 }
 
+/// Fixes the element's width-to-height ratio.
 pub fn aspectRatio(self: *const Self, ratio: types.AspectRatio) Self {
     var n = self.*;
     n._aspect_ratio = ratio;
     return n;
 }
 
+/// Overflow behaviour on each axis, e.g. `.scroll(.{ .y = .scroll })`.
 pub fn scroll(self: *const Self, scroll_type: types.Scroll) Self {
     var n = self.*;
     n._scroll = scroll_type;
     return n;
 }
 
+/// Whether a scrolling element shows its scroll bar.
 pub fn showScrollBar(self: *const Self, show: bool) Self {
     var n = self.*;
     n._show_scrollbar = show;
     return n;
 }
 
+/// Positioning: `.pos(.{ .type = .absolute, .top = .px(0), .right = .px(0) })`.
+/// Keeps a z-index set with `zIndex`.
 pub fn pos(self: *const Self, position: types.Position) Self {
     var n = self.*;
     var p = n._pos orelse types.Position{};
@@ -42,6 +49,7 @@ pub fn pos(self: *const Self, position: types.Position) Self {
     return n;
 }
 
+/// Stacking order. `null` removes it.
 pub fn zIndex(self: *const Self, z_index: ?i16) Self {
     var n = self.*;
     var p = n._pos orelse types.Position{};
@@ -50,36 +58,42 @@ pub fn zIndex(self: *const Self, z_index: ?i16) Self {
     return n;
 }
 
+/// How children are aligned on both axes, e.g. `.layout(.center)`.
 pub fn layout(self: *const Self, value: types.Layout) Self {
     var n = self.*;
     n._layout = value;
     return n;
 }
 
+/// Where to place this element relative to its CSS anchor (see `Anchor`).
 pub fn anchorPlacement(self: *const Self, value: types.AnchorPlacement) Self {
     var n = self.*;
     n._placement = value;
     return n;
 }
 
+/// Same as `anchorPlacement`.
 pub fn placement(self: *const Self, value: types.AnchorPlacement) Self {
     var n = self.*;
     n._placement = value;
     return n;
 }
 
+/// Centres the children on both axes. Same as `.layout(.center)`.
 pub fn center(self: *const Self) Self {
     var n = self.*;
     n._layout = .center;
     return n;
 }
 
+/// Whether children wrap onto new lines when they do not fit.
 pub fn wrap(self: *const Self, value: types.FlexWrap) Self {
     var n = self.*;
     n._flex_wrap = value;
     return n;
 }
 
+/// Gap between children, in pixels.
 pub fn spacing(self: *const Self, value: u8) Self {
     var n = self.*;
     n._child_gap = value;
@@ -91,12 +105,14 @@ pub fn spacing(self: *const Self, value: u8) Self {
     return n;
 }
 
+/// Inner spacing: `.padding(.all(16))`, `.padding(.tb(8, 4))`, ...
 pub fn padding(self: *const Self, value: types.Padding) Self {
     var n = self.*;
     n._padding = value;
     return n;
 }
 
+/// Left padding in pixels; keeps the other sides.
 pub fn pl(self: *const Self, value: u8) Self {
     var n = self.*;
     if (n._padding == null) n._padding = .{};
@@ -104,6 +120,7 @@ pub fn pl(self: *const Self, value: u8) Self {
     return n;
 }
 
+/// Right padding in pixels; keeps the other sides.
 pub fn pr(self: *const Self, value: u8) Self {
     var n = self.*;
     if (n._padding == null) n._padding = .{};
@@ -111,6 +128,7 @@ pub fn pr(self: *const Self, value: u8) Self {
     return n;
 }
 
+/// Top padding in pixels; keeps the other sides.
 pub fn pt(self: *const Self, value: u8) Self {
     var n = self.*;
     if (n._padding == null) n._padding = .{};
@@ -118,6 +136,7 @@ pub fn pt(self: *const Self, value: u8) Self {
     return n;
 }
 
+/// Bottom padding in pixels; keeps the other sides.
 pub fn pb(self: *const Self, value: u8) Self {
     var n = self.*;
     if (n._padding == null) n._padding = .{};
@@ -125,6 +144,7 @@ pub fn pb(self: *const Self, value: u8) Self {
     return n;
 }
 
+/// Top margin in pixels (negative allowed); keeps the other sides.
 pub fn mt(self: *const Self, value: i16) Self {
     var n = self.*;
     if (n._margin == null) n._margin = .{};
@@ -132,6 +152,7 @@ pub fn mt(self: *const Self, value: i16) Self {
     return n;
 }
 
+/// Bottom margin in pixels (negative allowed); keeps the other sides.
 pub fn mb(self: *const Self, value: i16) Self {
     var n = self.*;
     if (n._margin == null) n._margin = .{};
@@ -139,6 +160,7 @@ pub fn mb(self: *const Self, value: i16) Self {
     return n;
 }
 
+/// Left margin in pixels (negative allowed); keeps the other sides.
 pub fn ml(self: *const Self, value: i16) Self {
     var n = self.*;
     if (n._margin == null) n._margin = .{};
@@ -146,6 +168,7 @@ pub fn ml(self: *const Self, value: i16) Self {
     return n;
 }
 
+/// Right margin in pixels (negative allowed); keeps the other sides.
 pub fn mr(self: *const Self, value: i16) Self {
     var n = self.*;
     if (n._margin == null) n._margin = .{};
@@ -153,6 +176,7 @@ pub fn mr(self: *const Self, value: i16) Self {
     return n;
 }
 
+/// Top and bottom margin in pixels.
 pub fn my(self: *const Self, value: i16) Self {
     var n = self.*;
     if (n._margin == null) n._margin = .{};
@@ -161,6 +185,7 @@ pub fn my(self: *const Self, value: i16) Self {
     return n;
 }
 
+/// Left and right margin in pixels.
 pub fn mx(self: *const Self, value: i16) Self {
     var n = self.*;
     if (n._margin == null) n._margin = .{};
@@ -169,29 +194,37 @@ pub fn mx(self: *const Self, value: i16) Self {
     return n;
 }
 
+/// Outer spacing: `.margin(.all(8))`, ...
 pub fn margin(self: *const Self, value: types.Margin) Self {
     var n = self.*;
     n._margin = value;
     return n;
 }
 
-pub fn hide(self: *const Self, shown: bool) *const Self {
+/// Hides (`true`) or shows (`false`) the element by setting its `hidden`
+/// attribute directly on the page. It acts on an element that is already on the
+/// page, so it has no effect on the first render; to leave something out, do not
+/// render it.
+pub fn hide(self: *const Self, hidden: bool) *const Self {
     const ui_node = self._ui_node orelse {
         Vapor.printlnSrcErr("Node is null", .{}, @src());
         @panic("vapor: Node is null");
     };
+    if (!Vapor.isWasi) return self;
 
+    // `hidden` is a boolean attribute: any value, "false" included, hides.
     const uuid = ui_node.uuid;
-    const _key = "hidden";
-    var value: []const u8 = "false";
-    if (shown) value = "true";
-
-    if (Vapor.isWasi) {
-        Vapor.Wasm.setAttributeWasm(uuid.ptr, uuid.len, _key.ptr, _key.len, value.ptr, value.len);
+    const key = "hidden";
+    if (hidden) {
+        Vapor.Wasm.setAttributeWasm(uuid.ptr, uuid.len, key.ptr, key.len, "".ptr, 0);
+    } else {
+        Vapor.Wasm.removeAttributeWasm(uuid.ptr, uuid.len, key.ptr, key.len);
     }
     return self;
 }
 
+/// Style overrides for one screen size: mobile below 768px, tablet from 768px,
+/// desktop from 1024px. Call once per platform.
 pub fn responsive(self: *const Self, platform: types.Platform, responsive_style: types.ResponsiveStyle) Self {
     var new_self = self.*;
     var responsive_val = self._responsive orelse blk: {
@@ -212,12 +245,14 @@ pub fn responsive(self: *const Self, platform: types.Platform, responsive_style:
     return new_self;
 }
 
+/// Width and height together: `.size(.full)`, `.size(.square_px(48))`.
 pub fn size(self: *const Self, dim: types.Size) Self {
     var n = self.*;
     n._size = dim;
     return n;
 }
 
+/// Height, then width.
 pub fn hw(self: *const Self, height_value: types.Sizing, width_value: types.Sizing) Self {
     var n = self.*;
     if (n._size == null) {
@@ -229,6 +264,8 @@ pub fn hw(self: *const Self, height_value: types.Sizing, width_value: types.Sizi
     return n;
 }
 
+/// Width: `.width(.px(320))`, `.width(.percent(50))`, `.width(.expand)` (fill the
+/// available space), ...
 pub fn width(self: *const Self, length: types.Sizing) Self {
     var n = self.*;
     if (n._size == null) {
@@ -239,6 +276,8 @@ pub fn width(self: *const Self, length: types.Sizing) Self {
     return n;
 }
 
+/// Minimum width. Only `.px` and `.percent` sizes are supported; others are
+/// ignored.
 pub fn minWidth(self: *const Self, min: types.Sizing) Self {
     var n = self.*;
     const sizing: types.Sizing = switch (min.type) {
@@ -257,6 +296,8 @@ pub fn minWidth(self: *const Self, min: types.Sizing) Self {
     return n;
 }
 
+/// Maximum width. Only `.px` and `.percent` sizes are supported; others are
+/// ignored.
 pub fn maxWidth(self: *const Self, max: types.Sizing) Self {
     var n = self.*;
     const sizing: types.Sizing = switch (max.type) {
@@ -275,6 +316,7 @@ pub fn maxWidth(self: *const Self, max: types.Sizing) Self {
     return n;
 }
 
+/// Height, with the same sizes as `width`.
 pub fn height(self: *const Self, length: types.Sizing) Self {
     var n = self.*;
     if (n._size == null) {
@@ -285,6 +327,8 @@ pub fn height(self: *const Self, length: types.Sizing) Self {
     return n;
 }
 
+/// Minimum height. Only `.px` and `.percent` sizes are supported; others are
+/// ignored.
 pub fn minHeight(self: *const Self, min: types.Sizing) Self {
     var n = self.*;
     const sizing: types.Sizing = switch (min.type) {
@@ -303,6 +347,8 @@ pub fn minHeight(self: *const Self, min: types.Sizing) Self {
     return n;
 }
 
+/// Maximum height. Only `.px` and `.percent` sizes are supported; others are
+/// ignored.
 pub fn maxHeight(self: *const Self, max: types.Sizing) Self {
     var n = self.*;
     const sizing: types.Sizing = switch (max.type) {
@@ -321,6 +367,8 @@ pub fn maxHeight(self: *const Self, max: types.Sizing) Self {
     return n;
 }
 
+/// Lays children out `column_count` to a row: a child with a percentage width
+/// takes that share of the row, less its part of the `spacing`.
 pub fn columns(self: *const Self, column_count: u8) *const Self {
     const node = self._ui_node orelse {
         Vapor.printlnSrcErr("Node is null", .{}, @src());
@@ -330,6 +378,7 @@ pub fn columns(self: *const Self, column_count: u8) *const Self {
     return self;
 }
 
+/// Main axis for the children: `.row` or `.column`.
 pub fn direction(self: *const Self, value: types.Direction) Self {
     var n = self.*;
     n._direction = value;
