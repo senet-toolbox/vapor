@@ -9,6 +9,8 @@ const Shadow = @import("Shadow.zig");
 
 pub const Animation = @This();
 
+/// Creates the animation registry. Call it once in your app's `init`, before
+/// any `.build()`; without it `build` does nothing.
 pub fn new() void {
     Vapor.animations = std.StringHashMap(Animation).init(Vapor.arena(.persist));
     RemovalQueue.init(Vapor.arena(.persist));
@@ -52,22 +54,16 @@ pub const PropSet = struct {
     strokeDashoffset: ?f32 = null,
 };
 
-/// Sets multiple properties at once using struct syntax
-/// Usage: .at(20).setAll(.{ .translateX = -8, .skewX = -10, .opacity = 0.9 })
-const animation_types = std.enums.values(AnimationType);
+/// Sets several properties at the current keyframe:
+/// `.at(20).setAll(.{ .translateX = -8, .skewX = -10, .opacity = 0.9 })`.
 pub fn setAll(self: Animation, props: PropSet) Animation {
     var a = self;
-
-    // Use inline for to iterate over struct fields at comptime
-    const fields = @typeInfo(PropSet).@"struct".fields;
-    inline for (fields, 0..) |field, i| {
+    inline for (@typeInfo(PropSet).@"struct".fields) |field| {
         if (@field(props, field.name)) |value| {
-            // Convert field name to AnimationType
-            const anim_type = animation_types[i];
-            a = a.set(anim_type, value);
+            // By name: PropSet lists a subset of AnimationType, not a prefix.
+            a = a.set(@field(AnimationType, field.name), value);
         }
     }
-
     return a;
 }
 
@@ -245,6 +241,7 @@ pub const AnimationType = enum(u8) {
     // For chromatic aberration, you'd animate multiple shadows
     strokeDashoffset,
 
+    /// Whether the property is part of `transform` (translate, scale, rotate, skew).
     pub fn isTransform(self: AnimationType) bool {
         return switch (self) {
             .translateX, .translateY, .translateZ, .scale, .scaleX, .scaleY, .rotate, .rotateX, .rotateY, .rotateZ, .skewX, .skewY => true,
@@ -252,6 +249,7 @@ pub const AnimationType = enum(u8) {
         };
     }
 
+    /// Whether the property is part of `filter` (blur, brightness, saturate).
     pub fn isFilter(self: AnimationType) bool {
         return switch (self) {
             .blur, .brightness, .saturate => true,
@@ -259,6 +257,7 @@ pub const AnimationType = enum(u8) {
         };
     }
 
+    /// The CSS name of the property or transform function.
     pub fn toCss(self: AnimationType) []const u8 {
         return switch (self) {
             .none => "",
@@ -300,6 +299,7 @@ pub const AnimationType = enum(u8) {
         };
     }
 
+    /// Whether the property is `text-shadow`.
     pub fn isTextShadow(self: AnimationType) bool {
         return switch (self) {
             .textShadow => true,
@@ -325,6 +325,7 @@ pub const Easing = enum(u8) {
     easeInOutBack,
     easeOutBounce,
 
+    /// The CSS timing function.
     pub fn toCss(self: Easing) []const u8 {
         return switch (self) {
             .linear => "linear",
@@ -352,6 +353,7 @@ pub const FillMode = enum(u8) {
     backwards,
     both,
 
+    /// The CSS `animation-fill-mode` value.
     pub fn toCss(self: FillMode) []const u8 {
         return switch (self) {
             .none => "none",
@@ -368,6 +370,7 @@ pub const Direction = enum(u8) {
     alternate,
     alternateReverse,
 
+    /// The CSS `animation-direction` value.
     pub fn toCss(self: Direction) []const u8 {
         return switch (self) {
             .normal => "normal",
@@ -388,6 +391,7 @@ pub const Unit = enum(u8) {
     deg,
     none,
 
+    /// The CSS unit suffix.
     pub fn toCss(self: Unit) []const u8 {
         return switch (self) {
             .px => "px",
@@ -409,6 +413,10 @@ pub const Property = struct {
     to_value: f32,
     unit: Unit,
 
+    /// A property animated from `from_val` to `to_val`, in its default unit.
+    /// Starts an animation named `name`. Build it with `.prop` for a simple
+    /// from-to animation, or `.at(percent).set(...)` for keyframes, then register
+    /// it with `.build()` and attach it by name with an element's `.animation(name)`.
     pub fn init(prop_type: AnimationType, from_val: f32, to_val: f32) Property {
         const default_unit: Unit = switch (prop_type) {
             .opacity, .scale, .scaleX, .scaleY, .brightness, .saturate => .none,
@@ -424,6 +432,7 @@ pub const Property = struct {
         };
     }
 
+    /// The property with `unit` instead of its default.
     pub fn inUnit(self: Property, unit: Unit) Property {
         var p = self;
         p.unit = unit;
@@ -449,6 +458,7 @@ pub const PropValue = struct {
     unit: Unit,
 
     // Init for Numbers (Transforms, Opacity, etc.)
+    /// A keyframe value in the property's default unit.
     pub fn init(t: AnimationType, v: f32) PropValue {
         const u: Unit = switch (t) {
             .rotate, .rotateX, .rotateY, .rotateZ, .skewX, .skewY => .deg,
@@ -460,16 +470,19 @@ pub const PropValue = struct {
     }
 
     // Init for Numbers with explicit Unit
+    /// A keyframe value in `u`.
     pub fn initUnit(t: AnimationType, v: f32, u: Unit) PropValue {
         return .{ .type = t, .value = .{ .number = v }, .unit = u };
     }
 
     // Init for Colors (Background, Border, etc.)
+    /// A colour keyframe value.
     pub fn initColor(t: AnimationType, c: Color) PropValue {
         return .{ .type = t, .value = .{ .color = c }, .unit = .none };
     }
 
     // NEW: Init for Shadows
+    /// A shadow keyframe value.
     pub fn initShadow(t: AnimationType, s: Shadow) PropValue {
         return .{ .type = t, .value = .{ .shadow = s }, .unit = .none };
     }
@@ -478,13 +491,16 @@ pub const PropValue = struct {
 // -- NEW: Keyframe Storage --
 
 const MAX_PROPS_PER_FRAME = 8;
-const MAX_KEYFRAMES = 10; // 0%, 25%, 35%, 59%, 60%, 100%...
+/// Keyframes per animation; `at` ignores percentages beyond this many.
+/// shake, shakeY and tada use 11 (0%, 10%, ... 100%).
+const MAX_KEYFRAMES = 12;
 
 pub const Keyframe = struct {
     percent: f32, // 0 to 100
     props: [MAX_PROPS_PER_FRAME]?PropValue = [_]?PropValue{null} ** MAX_PROPS_PER_FRAME,
     count: u8 = 0,
 
+    /// The keyframe with property `t` set to `v`; ignored past 8 properties.
     pub fn add(self: Keyframe, t: AnimationType, v: f32) Keyframe {
         var k = self;
         if (k.count < MAX_PROPS_PER_FRAME) {
@@ -494,6 +510,7 @@ pub const Keyframe = struct {
         return k;
     }
 
+    /// The keyframe with property `t` set to `v` in unit `u`.
     pub fn addUnit(self: Keyframe, t: AnimationType, v: f32, u: Unit) Keyframe {
         var k = self;
         if (k.count < MAX_PROPS_PER_FRAME) {
@@ -504,6 +521,7 @@ pub const Keyframe = struct {
     }
 
     // NEW: Helper to add a color property
+    /// The keyframe with colour property `t` set to `c`.
     pub fn addColor(self: Keyframe, t: AnimationType, c: Color) Keyframe {
         var k = self;
         if (k.count < MAX_PROPS_PER_FRAME) {
@@ -514,6 +532,7 @@ pub const Keyframe = struct {
     }
 
     // NEW: Helper to add a shadow property
+    /// The keyframe with shadow property `t` set to `s`.
     pub fn addShadow(self: Keyframe, t: AnimationType, s: Shadow) Keyframe {
         var k = self;
         if (k.count < MAX_PROPS_PER_FRAME) {
@@ -600,6 +619,7 @@ pub fn setUnit(self: Animation, prop_type: AnimationType, val: f32, unit: Unit) 
     return a;
 }
 // NEW: Builder method for colors
+/// Sets a colour property (background, text colour, ...) at the current keyframe.
 pub fn setColor(self: Animation, prop_type: AnimationType, val: Color) Animation {
     var a = self;
     for (0..a.frame_count) |i| {
@@ -614,6 +634,8 @@ pub fn setColor(self: Animation, prop_type: AnimationType, val: Color) Animation
 }
 
 // Add a property to animate
+/// Animates a property from `from_val` to `to_val`. Up to 8 properties; later
+/// ones are ignored.
 pub fn prop(self: Animation, prop_type: AnimationType, from_val: f32, to_val: f32) Animation {
     var a = self;
     if (a.property_count < MAX_PROPERTIES) {
@@ -624,6 +646,7 @@ pub fn prop(self: Animation, prop_type: AnimationType, from_val: f32, to_val: f3
 }
 
 // Add a property with custom unit
+/// Like `prop`, in `unit`.
 pub fn propUnit(self: Animation, prop_type: AnimationType, from_val: f32, to_val: f32, unit: Unit) Animation {
     var a = self;
     if (a.property_count < MAX_PROPERTIES) {
@@ -633,48 +656,57 @@ pub fn propUnit(self: Animation, prop_type: AnimationType, from_val: f32, to_val
     return a;
 }
 
+/// Length of one run, in milliseconds.
 pub fn duration(self: Animation, milliseconds: u32) Animation {
     var a = self;
     a.duration_ms = milliseconds;
     return a;
 }
 
+/// Wait before starting, in milliseconds.
 pub fn delay(self: Animation, milliseconds: u32) Animation {
     var a = self;
     a.delay_ms = milliseconds;
     return a;
 }
 
+/// Timing function, e.g. `.easeInOut`.
 pub fn easing(self: Animation, value: Easing) Animation {
     var a = self;
     a.easing_fn = value;
     return a;
 }
 
+/// What applies before and after the animation runs, e.g. `.forwards` keeps the
+/// end state.
 pub fn fill(self: Animation, value: FillMode) Animation {
     var a = self;
     a.fill_mode = value;
     return a;
 }
 
+/// Direction: normal, reverse or alternate.
 pub fn dir(self: Animation, value: Direction) Animation {
     var a = self;
     a.direction = value;
     return a;
 }
 
+/// Runs `count` times.
 pub fn iterations(self: Animation, count: u32) Animation {
     var a = self;
     a.iteration_count = count;
     return a;
 }
 
+/// Repeats forever.
 pub fn infinite(self: Animation) Animation {
     var a = self;
     a.iteration_count = null;
     return a;
 }
 
+/// Sets a shadow property at the current keyframe.
 pub fn setShadow(self: Animation, prop_type: AnimationType, shadow: Shadow) Animation {
     var a = self;
     for (0..a.frame_count) |i| {
@@ -751,6 +783,8 @@ pub const tilt = PresetsModule.tilt;
 pub const zoomInRotate = PresetsModule.zoomInRotate;
 pub const zoomOutRotate = PresetsModule.zoomOutRotate;
 
+/// Registers the animation under its name so elements can use it. Requires
+/// `Animation.new()` first.
 pub fn build(self: Animation) void {
     if (Vapor.animations == null) return;
     Vapor.animations.?.put(self._name, self) catch |err| {
@@ -759,6 +793,38 @@ pub fn build(self: Animation) void {
 }
 
 // Examples:
+// setAll paired the i-th PropSet field with the i-th AnimationType, and the
+// two lists diverge at strokeDashoffset, which set backgroundColor instead.
+test "setAll sets each property by name" {
+    const a = Animation.init("set-all").at(0).setAll(.{ .opacity = 0.5, .strokeDashoffset = 5 });
+    var found_offset = false;
+    var found_opacity = false;
+    for (a.frames) |maybe_frame| {
+        const frame = maybe_frame orelse continue;
+        for (frame.props) |maybe_prop| {
+            const p = maybe_prop orelse continue;
+            if (p.type == .strokeDashoffset) found_offset = true;
+            if (p.type == .opacity) found_opacity = true;
+            try std.testing.expect(p.type != .backgroundColor);
+        }
+    }
+    try std.testing.expect(found_offset);
+    try std.testing.expect(found_opacity);
+}
+
+test "presets keep every keyframe they set" {
+    inline for (.{ Animation.shake, Animation.shakeY, Animation.tada }) |preset| {
+        const a = preset("p");
+        var has_end = false;
+        for (a.frames) |maybe_frame| {
+            if (maybe_frame) |frame| {
+                if (frame.percent == 100) has_end = true;
+            }
+        }
+        try std.testing.expect(has_end);
+    }
+}
+
 test "Animation examples" {
     // Single property
     Animation.init("fadeOut")

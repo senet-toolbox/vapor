@@ -2,6 +2,7 @@
 
 const Animation = @import("../Animation.zig");
 
+/// Fades from transparent to opaque in 150 ms and stays visible.
 pub fn fadeIn(name: []const u8) Animation {
     return Animation.init(name)
         .prop(.opacity, 0, 1)
@@ -10,6 +11,7 @@ pub fn fadeIn(name: []const u8) Animation {
         .fill(.forwards);
 }
 
+/// Fades from opaque to transparent in 150 ms and stays hidden.
 pub fn fadeOut(name: []const u8) Animation {
     return Animation.init(name)
         .prop(.opacity, 1, 0)
@@ -18,6 +20,7 @@ pub fn fadeOut(name: []const u8) Animation {
         .fill(.forwards);
 }
 
+/// Slides in from `distance` pixels to the left while fading in.
 pub fn slideInLeft(name: []const u8, distance: f32) Animation {
     return Animation.init(name)
         .prop(.translateX, -distance, 0)
@@ -25,6 +28,7 @@ pub fn slideInLeft(name: []const u8, distance: f32) Animation {
         .fill(.forwards);
 }
 
+/// Slides in from `distance` pixels to the right while fading in.
 pub fn slideInRight(name: []const u8, distance: f32) Animation {
     return Animation.init(name)
         .prop(.translateX, distance, 0)
@@ -32,6 +36,7 @@ pub fn slideInRight(name: []const u8, distance: f32) Animation {
         .fill(.forwards);
 }
 
+/// Slides up into place from `distance` pixels below while fading in.
 pub fn slideInUp(name: []const u8, distance: f32) Animation {
     return Animation.init(name)
         .prop(.translateY, distance, 0)
@@ -39,6 +44,7 @@ pub fn slideInUp(name: []const u8, distance: f32) Animation {
         .fill(.forwards);
 }
 
+/// Slides down into place from `distance` pixels above while fading in.
 pub fn slideInDown(name: []const u8, distance: f32) Animation {
     return Animation.init(name)
         .prop(.translateY, -distance, 0)
@@ -46,6 +52,7 @@ pub fn slideInDown(name: []const u8, distance: f32) Animation {
         .fill(.forwards);
 }
 
+/// Slides `distance` pixels to the left while fading out.
 pub fn slideOutLeft(name: []const u8, distance: f32) Animation {
     return Animation.init(name)
         .prop(.translateX, 0, -distance)
@@ -53,6 +60,7 @@ pub fn slideOutLeft(name: []const u8, distance: f32) Animation {
         .fill(.forwards);
 }
 
+/// Slides `distance` pixels to the right while fading out.
 pub fn slideOutRight(name: []const u8, distance: f32) Animation {
     return Animation.init(name)
         .prop(.translateX, 0, distance)
@@ -60,6 +68,7 @@ pub fn slideOutRight(name: []const u8, distance: f32) Animation {
         .fill(.forwards);
 }
 
+/// Slides `distance` pixels up while fading out.
 pub fn slideOutUp(name: []const u8, distance: f32) Animation {
     return Animation.init(name)
         .prop(.translateY, 0, -distance)
@@ -67,6 +76,7 @@ pub fn slideOutUp(name: []const u8, distance: f32) Animation {
         .fill(.forwards);
 }
 
+/// Slides `distance` pixels down while fading out.
 pub fn slideOutDown(name: []const u8, distance: f32) Animation {
     return Animation.init(name)
         .prop(.translateY, 0, distance)
@@ -74,6 +84,7 @@ pub fn slideOutDown(name: []const u8, distance: f32) Animation {
         .fill(.forwards);
 }
 
+/// Grows from nothing to full size while fading in.
 pub fn zoomIn(name: []const u8) Animation {
     return Animation.init(name)
         .prop(.scale, 0, 1)
@@ -81,6 +92,7 @@ pub fn zoomIn(name: []const u8) Animation {
         .fill(.forwards);
 }
 
+/// Shrinks to nothing while fading out.
 pub fn zoomOut(name: []const u8) Animation {
     return Animation.init(name)
         .prop(.scale, 1, 0)
@@ -88,12 +100,14 @@ pub fn zoomOut(name: []const u8) Animation {
         .fill(.forwards);
 }
 
+/// Rotates a full turn, forever.
 pub fn spin(name: []const u8) Animation {
     return Animation.init(name)
         .prop(.rotate, 0, 360)
         .infinite();
 }
 
+/// Grows to 105% and back, forever.
 pub fn pulse(name: []const u8) Animation {
     return Animation.init(name)
         .prop(.scale, 1, 1.05)
@@ -105,6 +119,7 @@ pub fn pulse(name: []const u8) Animation {
 // ATTENTION / EMPHASIS ANIMATIONS
 // ============================================
 
+/// Bounces up twice and settles.
 pub fn bounce(name: []const u8) Animation {
     return Animation.init(name)
         .at(0).setAll(.{ .translateY = 0 })
@@ -117,6 +132,7 @@ pub fn bounce(name: []const u8) Animation {
         .fill(.both);
 }
 
+/// Shakes left and right.
 pub fn shake(name: []const u8) Animation {
     return Animation.init(name)
         .at(0).set(.translateX, 0)
@@ -133,6 +149,7 @@ pub fn shake(name: []const u8) Animation {
         .duration(500);
 }
 
+/// Shakes up and down.
 pub fn shakeY(name: []const u8) Animation {
     return Animation.init(name)
         .at(0).set(.translateY, 0)
@@ -149,6 +166,7 @@ pub fn shakeY(name: []const u8) Animation {
         .duration(500);
 }
 
+/// Wobbles sideways with a slight tilt.
 pub fn wobble(name: []const u8) Animation {
     return Animation.init(name)
         .at(0).setAll(.{ .translateX = 0, .rotate = 0 })
@@ -161,6 +179,7 @@ pub fn wobble(name: []const u8) Animation {
         .duration(800);
 }
 
+/// Wobbles with a decaying skew, like jelly.
 pub fn jello(name: []const u8) Animation {
     return Animation.init(name)
         .at(0).set(.skewX, 0)
@@ -176,6 +195,7 @@ pub fn jello(name: []const u8) Animation {
         .duration(900);
 }
 
+/// Beats twice, growing to 130%, over 1.3 s.
 pub fn heartbeat(name: []const u8) Animation {
     return Animation.init(name)
         .at(0).set(.scale, 1)
@@ -187,6 +207,7 @@ pub fn heartbeat(name: []const u8) Animation {
         .easing(.easeInOut);
 }
 
+/// Stretches and squashes like a rubber band.
 pub fn rubberBand(name: []const u8) Animation {
     return Animation.init(name)
         .at(0).setAll(.{ .scaleX = 1, .scaleY = 1 })
@@ -199,6 +220,7 @@ pub fn rubberBand(name: []const u8) Animation {
         .duration(800);
 }
 
+/// Shrinks, then grows with a wiggle, for attention.
 pub fn tada(name: []const u8) Animation {
     return Animation.init(name)
         .at(0).setAll(.{ .scale = 1, .rotate = 0 })
@@ -215,6 +237,7 @@ pub fn tada(name: []const u8) Animation {
         .duration(1000);
 }
 
+/// Swings back and forth on its pivot and settles, over 0.8 s.
 pub fn swing(name: []const u8) Animation {
     return Animation.init(name)
         .at(0).set(.rotate, 0)
@@ -231,6 +254,7 @@ pub fn swing(name: []const u8) Animation {
 // ENTRANCE ANIMATIONS
 // ============================================
 
+/// Pops in from 30% size with a bounce.
 pub fn bounceIn(name: []const u8) Animation {
     return Animation.init(name)
         .at(0).setAll(.{ .opacity = 0, .scale = 0.3 })
@@ -243,6 +267,7 @@ pub fn bounceIn(name: []const u8) Animation {
         .fill(.both);
 }
 
+/// Drops in from far above with a bounce.
 pub fn bounceInDown(name: []const u8) Animation {
     return Animation.init(name)
         .at(0).setAll(.{ .opacity = 0, .translateY = -3000 })
@@ -254,6 +279,7 @@ pub fn bounceInDown(name: []const u8) Animation {
         .fill(.both);
 }
 
+/// Rises in from far below with a bounce.
 pub fn bounceInUp(name: []const u8) Animation {
     return Animation.init(name)
         .at(0).setAll(.{ .opacity = 0, .translateY = 3000 })
@@ -265,6 +291,7 @@ pub fn bounceInUp(name: []const u8) Animation {
         .fill(.both);
 }
 
+/// Flips in around the vertical axis.
 pub fn flipIn(name: []const u8) Animation {
     return Animation.init(name)
         .at(0).setAll(.{ .opacity = 0, .rotateY = 90 })
@@ -277,6 +304,7 @@ pub fn flipIn(name: []const u8) Animation {
         .fill(.both);
 }
 
+/// Flips in around the horizontal axis.
 pub fn flipInX(name: []const u8) Animation {
     return Animation.init(name)
         .at(0).setAll(.{ .opacity = 0, .rotateX = 90 })
@@ -289,6 +317,7 @@ pub fn flipInX(name: []const u8) Animation {
         .fill(.both);
 }
 
+/// Rotates into place while fading in.
 pub fn rotateIn(name: []const u8) Animation {
     return Animation.init(name)
         .at(0).setAll(.{ .opacity = 0, .rotate = -200 })
@@ -297,6 +326,7 @@ pub fn rotateIn(name: []const u8) Animation {
         .fill(.both);
 }
 
+/// Rolls in from the left while fading in.
 pub fn rollIn(name: []const u8) Animation {
     return Animation.init(name)
         .at(0).setAll(.{ .opacity = 0, .translateX = -100, .rotate = -120 })
@@ -305,6 +335,7 @@ pub fn rollIn(name: []const u8) Animation {
         .fill(.both);
 }
 
+/// Rushes in from the right with a skew.
 pub fn lightSpeedIn(name: []const u8) Animation {
     return Animation.init(name)
         .at(0).setAll(.{ .opacity = 0, .translateX = 100, .skewX = -30 })
@@ -315,6 +346,7 @@ pub fn lightSpeedIn(name: []const u8) Animation {
         .fill(.both);
 }
 
+/// Expands horizontally from nothing while fading in.
 pub fn expandIn(name: []const u8) Animation {
     return Animation.init(name)
         .at(0).setAll(.{ .opacity = 0, .scaleX = 0, .scaleY = 1 })
@@ -323,6 +355,7 @@ pub fn expandIn(name: []const u8) Animation {
         .fill(.both);
 }
 
+/// Expands vertically from nothing while fading in.
 pub fn expandInY(name: []const u8) Animation {
     return Animation.init(name)
         .at(0).setAll(.{ .opacity = 0, .scaleX = 1, .scaleY = 0 })
@@ -335,6 +368,7 @@ pub fn expandInY(name: []const u8) Animation {
 // EXIT ANIMATIONS
 // ============================================
 
+/// Bounces, then shrinks away while fading out.
 pub fn bounceOut(name: []const u8) Animation {
     return Animation.init(name)
         .at(0).setAll(.{ .opacity = 1, .scale = 1 })
@@ -346,6 +380,7 @@ pub fn bounceOut(name: []const u8) Animation {
         .fill(.both);
 }
 
+/// Hops up, then drops away while fading out.
 pub fn bounceOutDown(name: []const u8) Animation {
     return Animation.init(name)
         .at(0).setAll(.{ .translateY = 0 })
@@ -356,6 +391,7 @@ pub fn bounceOutDown(name: []const u8) Animation {
         .fill(.both);
 }
 
+/// Dips, then rises away while fading out.
 pub fn bounceOutUp(name: []const u8) Animation {
     return Animation.init(name)
         .at(0).setAll(.{ .translateY = 0 })
@@ -366,6 +402,7 @@ pub fn bounceOutUp(name: []const u8) Animation {
         .fill(.both);
 }
 
+/// Flips out around the vertical axis.
 pub fn flipOut(name: []const u8) Animation {
     return Animation.init(name)
         .at(0).setAll(.{ .opacity = 1, .rotateY = 0 })
@@ -375,6 +412,7 @@ pub fn flipOut(name: []const u8) Animation {
         .fill(.both);
 }
 
+/// Rotates away while fading out.
 pub fn rotateOut(name: []const u8) Animation {
     return Animation.init(name)
         .at(0).setAll(.{ .opacity = 1, .rotate = 0 })
@@ -383,6 +421,7 @@ pub fn rotateOut(name: []const u8) Animation {
         .fill(.both);
 }
 
+/// Rolls out to the right while fading out.
 pub fn rollOut(name: []const u8) Animation {
     return Animation.init(name)
         .at(0).setAll(.{ .opacity = 1, .translateX = 0, .rotate = 0 })
@@ -391,6 +430,7 @@ pub fn rollOut(name: []const u8) Animation {
         .fill(.both);
 }
 
+/// Rushes out to the right with a skew.
 pub fn lightSpeedOut(name: []const u8) Animation {
     return Animation.init(name)
         .at(0).setAll(.{ .opacity = 1, .translateX = 0, .skewX = 0 })
@@ -399,6 +439,7 @@ pub fn lightSpeedOut(name: []const u8) Animation {
         .fill(.both);
 }
 
+/// Shrinks to nothing while fading out.
 pub fn shrinkOut(name: []const u8) Animation {
     return Animation.init(name)
         .at(0).setAll(.{ .opacity = 1, .scale = 1 })
@@ -407,6 +448,7 @@ pub fn shrinkOut(name: []const u8) Animation {
         .fill(.both);
 }
 
+/// Swings from a corner like a broken hinge, then falls away.
 pub fn hinge(name: []const u8) Animation {
     return Animation.init(name)
         .at(0).setAll(.{ .opacity = 1, .rotate = 0 })
@@ -424,6 +466,7 @@ pub fn hinge(name: []const u8) Animation {
 // BACKGROUND / SPECIAL ANIMATIONS
 // ============================================
 
+/// Blinks twice over 750 ms.
 pub fn flash(name: []const u8) Animation {
     return Animation.init(name)
         .at(0).set(.opacity, 1)
@@ -434,6 +477,7 @@ pub fn flash(name: []const u8) Animation {
         .duration(750);
 }
 
+/// Blinks once a second, forever.
 pub fn blink(name: []const u8) Animation {
     return Animation.init(name)
         .at(0).set(.opacity, 1)
@@ -443,6 +487,7 @@ pub fn blink(name: []const u8) Animation {
         .infinite();
 }
 
+/// Brightens to 130% and back, forever.
 pub fn glow(name: []const u8) Animation {
     return Animation.init(name)
         .at(0).set(.brightness, 1)
@@ -452,6 +497,7 @@ pub fn glow(name: []const u8) Animation {
         .infinite();
 }
 
+/// Drifts up 20 pixels and back, forever.
 pub fn float(name: []const u8) Animation {
     return Animation.init(name)
         .at(0).set(.translateY, 0)
@@ -462,6 +508,7 @@ pub fn float(name: []const u8) Animation {
         .infinite();
 }
 
+/// Sways 3 degrees each way, forever.
 pub fn sway(name: []const u8) Animation {
     return Animation.init(name)
         .at(0).set(.rotate, -3)
@@ -471,6 +518,7 @@ pub fn sway(name: []const u8) Animation {
         .infinite();
 }
 
+/// Grows to 110% and back every 3 s, forever.
 pub fn breathe(name: []const u8) Animation {
     return Animation.init(name)
         .at(0).set(.scale, 1)
@@ -481,6 +529,8 @@ pub fn breathe(name: []const u8) Animation {
         .infinite();
 }
 
+/// Blurs up to 10 pixels and back every 2 s, forever. Despite the name it
+/// animates blur, not a shadow.
 pub fn pulseShadow(name: []const u8) Animation {
     return Animation.init(name)
         .at(0).set(.blur, 0)
@@ -495,6 +545,7 @@ pub fn pulseShadow(name: []const u8) Animation {
 // LOADING / PROGRESS ANIMATIONS
 // ============================================
 
+/// Spins a full turn while pulsing to 120%, forever.
 pub fn spinPulse(name: []const u8) Animation {
     return Animation.init(name)
         .at(0).setAll(.{ .rotate = 0, .scale = 1 })
@@ -503,6 +554,7 @@ pub fn spinPulse(name: []const u8) Animation {
         .infinite();
 }
 
+/// Swings 45 degrees each way, forever.
 pub fn pendulum(name: []const u8) Animation {
     return Animation.init(name)
         .at(0).set(.rotate, -45)
@@ -512,6 +564,7 @@ pub fn pendulum(name: []const u8) Animation {
         .infinite();
 }
 
+/// Width goes from `from` to `to` pixels and back, forever.
 pub fn morphWidth(name: []const u8, from: f32, to: f32) Animation {
     return Animation.init(name)
         .at(0).set(.width, from)
@@ -521,6 +574,7 @@ pub fn morphWidth(name: []const u8, from: f32, to: f32) Animation {
         .infinite();
 }
 
+/// Pulses in width and opacity, for indeterminate progress bars.
 pub fn progressPulse(name: []const u8) Animation {
     return Animation.init(name)
         .at(0).setAll(.{ .opacity = 0.6, .scaleX = 0.8 })
@@ -534,6 +588,7 @@ pub fn progressPulse(name: []const u8) Animation {
 // TEXT ANIMATIONS
 // ============================================
 
+/// Width grows from 0 to `width` pixels at a steady rate, revealing text.
 pub fn typewriter(name: []const u8, width: f32) Animation {
     return Animation.init(name)
         .at(0).set(.width, 0)
@@ -542,6 +597,7 @@ pub fn typewriter(name: []const u8, width: f32) Animation {
         .fill(.forwards);
 }
 
+/// Blurs out while fading out.
 pub fn blur(name: []const u8) Animation {
     return Animation.init(name)
         .at(0).setAll(.{ .blur = 0, .opacity = 1 })
@@ -549,6 +605,7 @@ pub fn blur(name: []const u8) Animation {
         .fill(.forwards);
 }
 
+/// Comes into focus from a blur while fading in.
 pub fn unblur(name: []const u8) Animation {
     return Animation.init(name)
         .at(0).setAll(.{ .blur = 10, .opacity = 0 })
@@ -560,6 +617,7 @@ pub fn unblur(name: []const u8) Animation {
 // 3D-ISH ANIMATIONS
 // ============================================
 
+/// Flips a full turn around the vertical axis, forever.
 pub fn flip3D(name: []const u8) Animation {
     return Animation.init(name)
         .at(0).set(.rotateY, 0)
@@ -568,6 +626,7 @@ pub fn flip3D(name: []const u8) Animation {
         .infinite();
 }
 
+/// Tilts `deg` degrees in 3D and back, forever.
 pub fn tilt(name: []const u8, deg: f32) Animation {
     return Animation.init(name)
         .at(0).setAll(.{ .rotateX = 0, .rotateY = 0 })
@@ -577,6 +636,7 @@ pub fn tilt(name: []const u8, deg: f32) Animation {
         .infinite();
 }
 
+/// Grows and rotates in from nothing while fading in.
 pub fn zoomInRotate(name: []const u8) Animation {
     return Animation.init(name)
         .at(0).setAll(.{ .scale = 0, .rotate = -180, .opacity = 0 })
@@ -585,6 +645,7 @@ pub fn zoomInRotate(name: []const u8) Animation {
         .fill(.both);
 }
 
+/// Shrinks and rotates away while fading out.
 pub fn zoomOutRotate(name: []const u8) Animation {
     return Animation.init(name)
         .at(0).setAll(.{ .scale = 1, .rotate = 0, .opacity = 1 })
