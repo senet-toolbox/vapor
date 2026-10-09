@@ -20,9 +20,10 @@ pub const ArenaType = enum {
 
 pub const Arena = ArenaType;
 
-/// The allocator for a lifetime. `.frame`: freed two renders later. `.view`:
-/// freed when the route changes. `.persist`: freed only when you free it.
-/// `.request`: never reset at present, so it lives as long as `.persist`.
+/// The allocator for a lifetime. `.frame`: freed two renders later.
+/// `.persist`: freed only when you free it. `.view` is meant to be freed when
+/// the route changes, but at present it is never reset, so it accumulates for
+/// the life of the app. `.request` is never reset either.
 pub fn arena(arena_type: ArenaType) std.mem.Allocator {
     if (Vapor.generating) return Vapor.frame_arena.persistentAllocator();
     return switch (arena_type) {
@@ -239,7 +240,7 @@ pub const persist = struct {
 };
 
 pub const view = struct {
-    /// Copies `value` into memory that lasts until the route changes.
+    /// Copies `value` into view memory (see `arena`).
     pub fn dupe(value: []const u8) []const u8 {
         const allocator = Vapor.arena(.view);
         const buf = allocator.dupe(u8, value) catch |err| {
@@ -248,7 +249,7 @@ pub const view = struct {
         };
         return buf;
     }
-    /// Formats like `std.fmt` into memory that lasts until the route changes.
+    /// Formats like `std.fmt` into view memory (see `arena`).
     pub fn fmt(comptime _fmtln: []const u8, args: anytype) []const u8 {
         const allocator = Vapor.arena(.view);
         const buf = std.fmt.allocPrint(allocator, _fmtln, args) catch |err| {
@@ -258,12 +259,12 @@ pub const view = struct {
         return buf;
     }
 
-    /// An empty `std.AutoHashMap` whose memory lasts until the route changes.
+    /// An empty `std.AutoHashMap` in view memory (see `arena`).
     pub fn HashMap(comptime K: type, comptime V: type) std.AutoHashMap(K, V) {
         return std.AutoHashMap(K, V).init(Vapor.view.arena());
     }
 
-    /// An empty growable list whose memory lasts until the route changes.
+    /// An empty growable list in view memory (see `arena`).
     pub fn array(comptime T: type) ArrayArena(T) {
         return ArrayArena(T).init(.view);
     }
@@ -273,7 +274,7 @@ pub const view = struct {
         return ArrayArena(T).init(.view);
     }
 
-    /// The allocator for memory that lasts until the route changes.
+    /// The allocator for view memory (see `arena`).
     pub fn arena() std.mem.Allocator {
         return Vapor.arena(.view);
     }

@@ -198,12 +198,13 @@ pub const KeyStone = @import("lib/keystone/KeyStone.zig");
 pub const Kit = @import("lib/kit/kit.zig");
 
 // ── Memory ──────────────────────────────────────────────────────────────────
-// Three lifetimes. `frame`: until two renders later, for values used while
-// rendering. `view`: until the route changes. `persist`: until you free it.
+// `frame`: until two renders later, for values used while rendering.
+// `persist`: until you free it. `view` is meant to last until the route
+// changes, but is currently never reset (see `arena`).
 
 /// Allocate for the current render.
 pub const frame = lib.frame;
-/// Allocate for as long as the current route is shown.
+/// Allocate for the current route. Not reset on route changes yet; see `arena`.
 pub const view = lib.view;
 /// Allocate for the life of the app.
 pub const persist = lib.persist;

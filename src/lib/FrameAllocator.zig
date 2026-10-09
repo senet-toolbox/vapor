@@ -23,6 +23,8 @@ pub const RouteFrameArena = struct {
     view: FrameData,
     current_frame: usize = 0,
 
+    /// The arenas over `backing_allocator`.
+    /// Two frame arenas and a view arena over `backing_allocator`.
     pub fn init(backing_allocator: Allocator) RouteFrameArena {
         return .{
             .frames = .{
@@ -33,24 +35,34 @@ pub const RouteFrameArena = struct {
         };
     }
 
+    /// Frees all three arenas.
+    /// Frees the shared arenas; route arenas belong to the router.
     pub fn deinit(self: *RouteFrameArena) void {
         self.frames[0].arena.deinit();
         self.frames[1].arena.deinit();
         self.view.arena.deinit();
     }
 
+    /// The current frame's arena.
     pub fn allocator(self: *RouteFrameArena) Allocator {
         return self.frames[self.current_frame].arena.allocator();
     }
 
+    /// The view arena `Vapor.arena(.view)` uses. It is never reset at present.
+    /// This route's view arena. `Vapor.arena(.view)` does not use it at present.
     pub fn viewAllocator(self: *RouteFrameArena) Allocator {
         return self.view.arena.allocator();
     }
 
+    /// Resets the current route's view arena (not the one `viewAllocator` returns).
+    /// Resets this route's view arena.
     pub fn beginView(self: *RouteFrameArena) void {
         _ = self.view.arena.reset(.retain_capacity);
     }
 
+    /// Starts a new frame on the current route.
+    /// Switches to the other frame arena and resets it, so the previous frame's
+    /// memory stays valid for one more render.
     pub fn beginFrame(self: *RouteFrameArena) void {
         const next = (self.current_frame + 1) % 2;
         _ = self.frames[next].arena.reset(.retain_capacity);
@@ -58,23 +70,32 @@ pub const RouteFrameArena = struct {
         self.current_frame = next;
     }
 
+    /// Allocation statistics for the current frame.
     pub fn getStats(self: *RouteFrameArena) Stats {
         return self.frames[self.current_frame].stats;
     }
 
+    /// Counts a node allocation in the frame statistics.
+    /// Counts a node allocation on the current route.
     pub fn incrementNodeCount(self: *RouteFrameArena) void {
         self.frames[self.current_frame].stats.nodes_memory += @sizeOf(UINode);
         self.frames[self.current_frame].stats.nodes_allocated += 1;
     }
+    /// Counts a stack item allocation in the frame statistics.
+    /// Counts a stack item allocation on the current route.
     pub fn incrementItemCount(self: *RouteFrameArena) void {
         self.frames[self.current_frame].stats.item_memory += @sizeOf(Item);
         self.frames[self.current_frame].stats.items_allocated += 1;
     }
 
+    /// Adds `bytes` to the current route's statistics.
+    /// Adds `bytes` to the frame statistics.
     pub fn addBytesUsed(self: *RouteFrameArena, bytes: usize) void {
         self.frames[self.current_frame].stats.bytes_used += bytes;
     }
 
+    /// Bytes allocated in the current frame.
+    /// Bytes allocated in the current route's frame.
     pub fn queryBytesUsed(self: *RouteFrameArena) usize {
         const current_frame = self.frames[self.current_frame];
         const current_total = current_frame.arena.queryCapacity();
@@ -146,6 +167,7 @@ pub fn deinit(self: *FrameAllocator) void {
 }
 
 // Call this to create a new RouteFrameArena for a route
+/// A new arena set for one registered page.
 pub fn createRouteArena(self: *FrameAllocator) *RouteFrameArena {
     // Returns *RouteFrameArena, so there is no value to degrade to. @panic at
     // least aborts identically in every optimize mode and says why.
@@ -158,11 +180,13 @@ pub fn createRouteArena(self: *FrameAllocator) *RouteFrameArena {
 }
 
 // Call this when switching routes
+/// Makes `route_arena` the one frame allocations come from.
 pub fn setCurrentRoute(self: *FrameAllocator, route_arena: *RouteFrameArena) void {
     self.current_route_arena = route_arena;
 }
 
 // Get the current route's frame allocator
+/// The current route's frame arena; panics before any page is registered.
 pub fn frameAllocator(self: *FrameAllocator) Allocator {
     if (self.current_route_arena) |route| {
         return route.allocator();
@@ -185,14 +209,17 @@ pub fn beginView(self: *FrameAllocator) void {
     }
 }
 
+/// The backing allocator: `.persist` memory, freed individually.
 pub fn persistentAllocator(self: *FrameAllocator) Allocator {
     return self.backing_allocator;
 }
 
+/// The request arena; never reset at present.
 pub fn requestAllocator(self: *FrameAllocator) Allocator {
     return self.request_arena.allocator();
 }
 
+/// Frees the scratch arena.
 pub fn resetScratchArena(self: *FrameAllocator) void {
     _ = self.scratch_arena.reset(.free_all);
 }
@@ -226,6 +253,7 @@ pub fn queryBytesUsed(self: *FrameAllocator) usize {
     return 0;
 }
 
+/// Nodes allocated in the current route's frame.
 pub fn queryNodes(self: *FrameAllocator) usize {
     if (self.current_route_arena) |route| {
         return route.getStats().nodes_allocated;
@@ -249,6 +277,8 @@ pub fn getStats(self: *FrameAllocator) ?Stats {
     return null;
 }
 
+/// Does nothing.
 pub fn printPrevStats(_: *FrameAllocator) void {}
 
+/// Does nothing.
 pub fn printStats(_: *FrameAllocator) void {}
