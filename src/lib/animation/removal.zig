@@ -17,6 +17,7 @@ const AnimationIntern = struct {
     lookup: std.StringHashMap(AnimationId),
     ref_counts: std.array_list.Managed(u32),
 
+    /// An empty table.
     pub fn init(allocator: Allocator) AnimationIntern {
         return .{
             .allocator = allocator,
@@ -26,6 +27,7 @@ const AnimationIntern = struct {
         };
     }
 
+    /// The id of `css`, adding it or counting another use.
     pub fn intern(self: *AnimationIntern, css: []const u8) !AnimationId {
         if (self.lookup.get(css)) |id| {
             self.ref_counts.items[id] += 1;
@@ -40,11 +42,13 @@ const AnimationIntern = struct {
         return id;
     }
 
+    /// The CSS for `id`.
     pub fn get(self: *AnimationIntern, id: AnimationId) ?[]const u8 {
         if (id >= self.strings.items.len) return null;
         return self.strings.items[id];
     }
 
+    /// Drops one use of `id`.
     pub fn release(self: *AnimationIntern, id: AnimationId) void {
         if (id >= self.ref_counts.items.len) return;
         if (self.ref_counts.items[id] == 0) return;
@@ -67,6 +71,7 @@ pub const RemovalQueue = struct {
     animations: AnimationIntern,
     current_generation: u32 = 0,
 
+    /// Creates the queue in `Animation.removal_queue`.
     pub fn init(allocator: Allocator) void {
         Animation.removal_queue = .{
             .allocator = allocator,
@@ -76,6 +81,7 @@ pub const RemovalQueue = struct {
         };
     }
 
+    /// Queues a removed node; with an exit animation it waits for the animation.
     pub fn enqueue(
         self: *RemovalQueue,
         node: *UINode,
@@ -100,6 +106,7 @@ pub const RemovalQueue = struct {
         });
     }
 
+    /// The exit animation CSS of queued item `handle`.
     pub fn getAnimationCss(self: *RemovalQueue, handle: u32) ?[]const u8 {
         if (handle >= self.items.items.len) return null;
         const item = self.items.items[handle];
@@ -107,12 +114,14 @@ pub const RemovalQueue = struct {
         return self.animations.get(item.animation_id);
     }
 
+    /// The DOM id of queued item `handle`.
     pub fn getId(self: *RemovalQueue, handle: u32) ?[]const u8 {
         if (handle >= self.items.items.len) return null;
         const item = self.items.items[handle];
         return item.uuid;
     }
 
+    /// Drops queued item `handle` and its animation's use.
     pub fn release(self: *RemovalQueue, handle: u32) void {
         if (handle >= self.items.items.len) return;
         const item = self.items.items[handle];
@@ -129,10 +138,12 @@ pub const RemovalQueue = struct {
         self.items.items[handle].uuid = ""; // tombstone
     }
 
+    /// Starts a new removal generation.
     pub fn nextGeneration(self: *RemovalQueue) void {
         self.current_generation += 1;
     }
 
+    /// Empties the queue.
     pub fn clearRetainingCapacity(self: *RemovalQueue) void {
         self.items.clearRetainingCapacity();
         self.animations.strings.clearRetainingCapacity();

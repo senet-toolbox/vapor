@@ -143,6 +143,7 @@ pub const UINode = struct {
         parent.children_count += 1;
     }
 
+    /// Appends `child` as the last child of `parent`.
     pub fn appendChild(parent: *UINode, child: *UINode) void {
         child.parent = parent;
         child.next_sibling = null;
@@ -215,6 +216,7 @@ pub const UINode = struct {
     pub const ChildIterator = struct {
         current: ?*UINode,
 
+        /// The next child, or `null` after the last.
         pub fn next(self: *ChildIterator) ?*UINode {
             const node = self.current orelse return null;
             self.current = node.next_sibling;
@@ -223,6 +225,7 @@ pub const UINode = struct {
     };
 };
 
+/// A new node allocated from the frame arena, attached to `parent`.
 pub fn init(_: *UIContext, parent: ?*UINode, etype: EType) !*UINode {
     const node = Vapor.frame_arena.nodeAlloc() orelse return error.NodeAllocFailed;
     Vapor.frame_arena.incrementNodeCount();
@@ -254,8 +257,10 @@ pub fn initContext(ui_ctx: *UIContext) !void {
     ui_ctx.stack = item;
 }
 
+/// Does nothing: nodes live in the frame arena.
 pub fn deinit(_: *UIContext) void {}
 
+/// Pushes `ui_node` as the node the next elements are created inside.
 pub fn stackRegister(ui_ctx: *UIContext, ui_node: *UINode) !void {
     uuid_depth += 1;
     Vapor.frame_arena.incrementItemCount();
@@ -272,6 +277,7 @@ pub fn stackRegister(ui_ctx: *UIContext, ui_node: *UINode) !void {
     ui_ctx.stack = item;
 }
 
+/// Pops the innermost open node.
 pub fn stackPop(ui_ctx: *UIContext) void {
     const current_stack = ui_ctx.stack orelse return;
     ui_ctx.stack = current_stack.next;
@@ -298,6 +304,7 @@ fn setUUID(parent: *UINode, child: *UINode) void {
 
 pub var cache_count: u32 = 0;
 pub var prev_style_hashes: std.AutoHashMap(u32, u32) = undefined;
+/// Records the node's style hashes for comparison with the next render.
 pub fn captureHash(node: *UINode) void {
     // The hash cache is an optimisation; a miss just means recomputing.
     prev_style_hashes.put(node.hash, node.prev_style_hash_computed) catch return;
@@ -316,11 +323,13 @@ pub fn captureHash(node: *UINode) void {
 // Open takes a current stack and adds the elements depth first search
 // Open and close get called in sequence
 // depth first search
+/// The innermost open node.
 pub fn currentNode(ui_ctx: *UIContext) ?*UINode {
     const stack = ui_ctx.stack.?;
     return stack.ptr;
 }
 
+/// Opens a child node of the current node and pushes it.
 pub fn open(ui_ctx: *UIContext, elem_decl: ElemDecl) !*UINode {
     const stack = ui_ctx.stack.?;
     // Parent node
@@ -356,6 +365,7 @@ pub fn open(ui_ctx: *UIContext, elem_decl: ElemDecl) !*UINode {
     return node;
 }
 
+/// Opens a node that is not linked into the tree.
 pub fn openUnattached(ui_ctx: *UIContext, elem_decl: ElemDecl) !*UINode {
     const stack = ui_ctx.stack.?;
     // Parent node
@@ -453,6 +463,7 @@ fn classTypeFromIndex(comptime i: usize) ClassType {
     };
 }
 
+/// The node's class attribute, built from its style group hashes.
 pub fn buildClassString(
     field_ptrs: *const PackedFieldPtrs,
     current_open: *UINode,
@@ -595,12 +606,14 @@ pub fn configureByNode(_: *UIContext, node: ?*UINode, elem_decl: ElemDecl) *UINo
     return ui_node;
 }
 
+/// Configures `node` without style; see Configuration.configurePlainByNode.
 pub fn configurePlainByNode(_: *UIContext, node: ?*UINode, elem_decl: ElemDecl) *UINode {
     const ui_node = Configuration.configurePlainByNode(node, elem_decl);
     captureHash(ui_node);
     return ui_node;
 }
 
+/// Configures the open node and records its style hashes.
 pub fn configure(ui_ctx: *UIContext, elem_decl: ElemDecl) *UINode {
     const ui_node = Configuration.configure(ui_ctx, elem_decl);
     captureHash(ui_node);
@@ -608,6 +621,7 @@ pub fn configure(ui_ctx: *UIContext, elem_decl: ElemDecl) *UINode {
 }
 
 // close is breadth post order first
+/// Closes the innermost open node.
 pub fn close(ui_ctx: *UIContext) void {
     if (uuid_depth > 0) {
         uuid_depth -= 1;
