@@ -113,6 +113,7 @@ fn configureLayers(visual: *const Vapor.Types.Visual, current_hash_v: u32) u32 {
     return hash_v;
 }
 
+/// Packs a node's visual style and returns its hash.
 pub fn configureVisual(ui_node: *UINode, style: *const Vapor.Style) u32 {
     var hash_v: u32 = 0;
     if (ui_node.type == .Button or ui_node.type == .ButtonCycle or ui_node.type == .CtxButton) {
@@ -210,6 +211,7 @@ pub fn configureVisual(ui_node: *UINode, style: *const Vapor.Style) u32 {
     return hash_v;
 }
 
+/// Packs the fields of `visual` into `packet_visual`.
 pub fn checkVisual(visual: *const types.Visual, packet_visual: *types.PackedVisual) void {
     // Refactored to use the packColor helper
     if (visual.background) |background| {

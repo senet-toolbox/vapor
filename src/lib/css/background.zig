@@ -5,6 +5,7 @@ const Writer = @import("../Writer.zig");
 const Types = @import("../types.zig");
 const Vapor = @import("../vapor.zig");
 
+/// Writes a grid layer as CSS gradients.
 pub fn gridToCSS(grid: Types.PackedGrid, writer: anytype) !void {
     writer.write("linear-gradient(90deg, ") catch {};
     const grid_color = grid.packed_color.has_color;
@@ -38,6 +39,7 @@ pub fn gridToCSS(grid: Types.PackedGrid, writer: anytype) !void {
     writer.write("px)") catch {};
 }
 
+/// Writes a dots layer as a radial gradient.
 pub fn dotsToCSS(dots: Types.PackedDots, writer: anytype) !void {
     writer.write("radial-gradient(circle, ") catch {};
     const dots_color = dots.packed_color.has_color;
@@ -56,6 +58,7 @@ pub fn dotsToCSS(dots: Types.PackedDots, writer: anytype) !void {
     writer.write("px)") catch {};
 }
 
+/// Writes a gradient layer.
 pub fn gradientToCSS(gradient: Types.PackedGradient, writer: *Writer) !void {
     switch (gradient.type) {
         .linear => {
@@ -131,6 +134,7 @@ fn linesToCSS(lines: Types.PackedLines, writer: anytype) !void {
     writer.write("px)") catch {};
 }
 
+/// Writes a node's background layers.
 pub fn backgroundLayersToCSS(packed_layers: Types.PackedLayers, writer: *Writer) !void {
     const layers = Vapor.packed_layers.get(packed_layers.items_ptr) orelse @panic("vapor: background layers missing from packed_layers");
 
@@ -154,6 +158,7 @@ pub fn backgroundLayersToCSS(packed_layers: Types.PackedLayers, writer: *Writer)
     writer.write(";\n") catch {};
 }
 
+/// Writes a list of background layers.
 pub fn layersToCSS(packed_layers: Types.PackedLayers, writer: *Writer) !void {
     const layers = Vapor.packed_layers.get(packed_layers.items_ptr) orelse @panic("vapor: background layers missing from packed_layers");
 

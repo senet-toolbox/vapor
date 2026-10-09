@@ -11,6 +11,8 @@ const utils = @import("utils.zig");
 const hashKey = utils.hashKey;
 const Self = @This();
 
+/// Diffs the new render tree against the old one, marking nodes dirty, added or
+/// removed for the runtime.
 pub fn reconcile(old_ctx: *UIContext, new_ctx: *UIContext) void {
     if (old_ctx.root == null or new_ctx.root == null) {
         return;
@@ -293,6 +295,7 @@ fn reconcileAdditions(old_node: *UINode, new_node: *UINode, len_old: usize, len_
 }
 
 // --- Main Reconciler Function ---
+/// Compares one old/new node pair and recurses into their children.
 pub fn traverseNodes(old_node: *UINode, new_node: *UINode) void {
     // --- 1. Reconcile current node properties ---
     const changed = (new_node.finger_print != old_node.finger_print);

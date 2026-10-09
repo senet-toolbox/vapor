@@ -35,6 +35,8 @@ const VisualModule = @import("configure/visual.zig");
 const configureVisual = VisualModule.configureVisual;
 pub const checkVisual = VisualModule.checkVisual;
 
+/// Stores `data` under `hash` in `cache`, reusing the existing slot or taking a
+/// new one from `pool`; returns the stored pointer.
 pub fn getOrPutAndUpdateHash(hash: u32, comptime T: type, data: T, cache: anytype, pool: anytype) !*const T {
     if (cache.get(hash)) |ptr| {
         // 1. The Logic: Value Identity vs. Memory Identity
@@ -79,6 +81,8 @@ const configureInteractive = MotionModule.configureInteractive;
 pub var inherited_color: ?Vapor.Types.Color = null;
 
 pub var hash_id: bool = false;
+/// Configures the node currently open in `ui_ctx` from `elem_decl`: assigns its
+/// id, packs its style and computes the hashes the reconciler compares.
 pub fn configure(ui_ctx: *UIContext, elem_decl: ElemDecl) *UINode {
     hash_id = false;
     const stack = ui_ctx.stack orelse @panic("vapor: a component was created outside a render function");
@@ -319,6 +323,7 @@ pub fn configure(ui_ctx: *UIContext, elem_decl: ElemDecl) *UINode {
     return current_open;
 }
 
+/// Like `configure`, for a node the builder already holds.
 pub fn configureByNode(ui_node: ?*UINode, elem_decl: ElemDecl) *UINode {
     hash_id = false;
     const current_open = ui_node orelse @panic("vapor: configure called without a node");
@@ -635,6 +640,7 @@ pub fn configureByNode(ui_node: ?*UINode, elem_decl: ElemDecl) *UINode {
     return current_open;
 }
 
+/// Like `configureByNode`, without style packing (text field `.plain()`).
 pub fn configurePlainByNode(ui_node: ?*UINode, elem_decl: ElemDecl) *UINode {
     hash_id = false;
     const current_open = ui_node orelse @panic("vapor: configure called without a node");

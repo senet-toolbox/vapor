@@ -175,6 +175,8 @@ pub const TextFieldBuilder = struct {
     pub const ariaHidden = AttributeMethods.ariaHidden;
     pub const tabIndex = AttributeMethods.tabIndex;
 
+    /// Finishes the field: merges its style, attaches the bind/change handler and
+    /// configures the node.
     pub fn end(self: *const Self) void {
         if (self._used_style) return;
         // Vapor.LifeCycle.close({});
@@ -226,6 +228,8 @@ pub const TextFieldBuilder = struct {
             const node = self._ui_node orelse @panic("vapor: TextField has no node");
 
             Vapor.attachEventCtxCallback(node, .input, struct {
+                /// Internal: the input handler `end` attaches; updates the bound value, then
+                /// calls the user's `onChange`.
                 pub fn handler(ctx_opaque: Ctx, evt: *Vapor.Event) void {
                     const ctx: Ctx = ctx_opaque;
                     // 1. Update bound value if present
@@ -245,6 +249,7 @@ pub const TextFieldBuilder = struct {
         _ = Vapor.current_ctx.configureByNode(self._ui_node, elem_decl);
     }
 
+    /// Finishes the field without any style.
     pub fn plain(self: *const Self) void {
         const elem_decl = Vapor.ElementDecl{
             .state_type = _state_type,
@@ -256,6 +261,7 @@ pub const TextFieldBuilder = struct {
         Vapor.LifeCycle.close({});
     }
 
+    /// The field's id.
     pub fn getUUID(self: *const Self) []const u8 {
         if (self._ui_node == null) {
             Vapor.printlnSrcErr("getUUID Failed: Node is null", .{}, @src());
@@ -283,6 +289,7 @@ const FieldExportDate = DynamicObject.exportStruct(types.InputParamsDate);
 const FieldExportRadio = DynamicObject.exportStruct(types.InputParamsRadio);
 
 const API = struct {
+    /// Runtime export: a field's `name`.
     pub fn getFieldName(node_ptr: *UINode) callconv(.c) ?[*]const u8 {
         if (node_ptr.name) |name| {
             name_len = name.len;
@@ -291,10 +298,12 @@ const API = struct {
         return null;
     }
 
+    /// Runtime export: length of the last field name.
     pub fn getFieldNameLen() callconv(.c) usize {
         return name_len;
     }
 
+    /// Runtime export: a field's parameters (kind, placeholder, value, limits).
     pub fn getTextFieldParams(node_ptr: ?*UINode) callconv(.c) ?[*]const u8 {
         const text_field_params = node_ptr.?.text_field_params orelse return null;
         switch (text_field_params.*) {
@@ -347,6 +356,7 @@ const API = struct {
         return null;
     }
 
+    /// Runtime export: the number of parameter fields.
     pub fn getTextFieldCount(node_ptr: *UINode) callconv(.c) u32 {
         const text_field_params = node_ptr.text_field_params orelse {
             Vapor.printErr("Error: No text_field_params found {any}", .{node_ptr.type});
@@ -384,6 +394,7 @@ const API = struct {
         return 0;
     }
 
+    /// Runtime export: one parameter field's layout.
     pub fn getTextFieldDescriptor(node_ptr: ?*UINode, index: u32) callconv(.c) ?*const DynamicObject.FieldDescriptor() {
         const text_field_params = node_ptr.?.text_field_params orelse return null;
         switch (text_field_params.*) {

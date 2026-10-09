@@ -43,6 +43,7 @@ const ValuesModule = @import("css/values.zig");
 pub const writePropValue = ValuesModule.writePropValue;
 pub const colorToCSS = ValuesModule.colorToCSS;
 
+/// Writes one style field (border, colour, ...) of `visual` as CSS.
 pub fn writeStyleField(field: Types.StyleFields, visual: *const Types.PackedVisual, writer: writer_t) void {
     switch (field) {
         .border => {
@@ -96,6 +97,7 @@ pub fn writeStyleField(field: Types.StyleFields, visual: *const Types.PackedVisu
     }
 }
 
+/// Writes a node's packed visual style as CSS declarations.
 pub fn generateVisual(visual: *const Types.PackedVisual, writer: writer_t) void {
     // Color color
     if (visual.background.has_color or visual.background.has_token) {
@@ -319,6 +321,7 @@ pub var show_scrollbar: bool = true;
 // 61.8kb before this function
 // adds 20kb
 
+/// Writes a node's packed layout (flex, size, scroll, ...) as CSS declarations.
 pub fn generateLayout(layout_ptr: *const Types.PackedLayout, writer: *Writer) void {
     var parent_direction_row: bool = true;
     if (layout_ptr.parent_direction == .column) {
@@ -508,6 +511,7 @@ pub fn generateLayout(layout_ptr: *const Types.PackedLayout, writer: *Writer) vo
     }
 }
 
+/// Writes a node's packed position as CSS declarations.
 pub fn generatePositions(position: *const Types.PackedPosition, writer: *Writer) void {
     if (position.position_type != .none) {
         writePropValue("position", .{ .tag = .position_type, .data = .{ .position_type = position.position_type } }, writer);
@@ -550,11 +554,13 @@ pub fn generatePositions(position: *const Types.PackedPosition, writer: *Writer)
     }
 }
 
+/// Writes a node's padding and margin.
 pub fn generateMarginsPadding(margin_paddings_ptr: *const Types.PackedMarginsPaddings, writer: *Writer) void {
     writePropValue("padding", .{ .tag = .padding, .data = .{ .padding = margin_paddings_ptr.padding } }, writer);
     writePropValue("margin", .{ .tag = .margin, .data = .{ .margin = margin_paddings_ptr.margin } }, writer);
 }
 
+/// Writes a node's animation declarations.
 pub fn generateAnimations(animations: *const Types.PackedAnimations, writer: anytype) void {
     if (animations.has_animation_enter) {
         if (Vapor.string_table.get(animations.animation_enter)) |name| anim: {
@@ -569,6 +575,7 @@ pub fn generateAnimations(animations: *const Types.PackedAnimations, writer: any
     }
 }
 
+/// Writes a node's transform.
 pub fn generateTransforms(transform_ptr: *const Types.PackedTransforms, writer: anytype) void {
     if (transform_ptr.has_transform and transform_ptr.transform.type_ptr > 0) {
         writePropValue("transform", .{ .tag = .transform_type, .data = .{ .transform_type = transform_ptr.transform } }, writer);
@@ -593,6 +600,7 @@ pub const getAnimationLen = ExportsModule.getAnimationLen;
 pub const getAnimationsPtr = ExportsModule.getAnimationsPtr;
 pub const getAnimationsLen = ExportsModule.getAnimationsLen;
 
+/// Writes every packed style group of a node.
 pub fn generateStylePass(ptr: ?*UINode, writer: *Writer) void {
     const node_ptr = ptr orelse return;
     const packed_field_ptrs = node_ptr.packed_field_ptrs orelse return;
@@ -624,6 +632,7 @@ pub fn generateStylePass(ptr: ?*UINode, writer: *Writer) void {
     }
 }
 
+/// Writes one animation's shorthand: name, duration, easing, direction, count.
 pub fn generateAnimation(animation: *const Animation, writer: *Writer) void {
     writer.write(animation._name) catch {};
     writer.writeByte(' ') catch {};
@@ -654,6 +663,7 @@ pub const Catalog = struct {
 pub var global_style: []const u8 = "";
 var global_buffer: [4096]u8 = undefined;
 var has_default: bool = false;
+/// Writes the theme's colours as CSS variables, for every theme in `catalog`.
 pub fn setGlobalStyleVariables(catalog: Catalog) void {
     const theme_fields = @typeInfo(Theme.Colors).@"struct".fields;
     var writer: Writer = undefined;

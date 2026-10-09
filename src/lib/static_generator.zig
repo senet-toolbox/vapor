@@ -29,6 +29,7 @@ pub fn ensureDir(io: anytype, cwd: std.Io.Dir, path: []const u8) void {
     };
 }
 
+/// Prerenders every registered page to HTML and writes the release directory.
 pub fn generate() void {
     Vapor.generating = true;
     const cwd = std.Io.Dir.cwd();
@@ -130,6 +131,7 @@ pub fn generate() void {
     Vapor.generating = false;
 }
 
+/// Prerenders the page at `route` to HTML.
 pub fn generateHtml(route: []const u8, dir: []const u8) void {
     _ = dir;
     const cwd = std.Io.Dir.cwd();
@@ -231,6 +233,7 @@ pub fn generateHtml(route: []const u8, dir: []const u8) void {
     HtmlGenerator.generate(new_ctx.root.?, &Vapor.writer, "/static/style.css");
 }
 
+/// Copies the directory `src` into `dest`.
 pub fn copyDirRecursive(io: anytype, cwd: std.Io.Dir, src: []const u8, dest: []const u8) void {
     // Ensure destination exists
     ensureDir(io, cwd, dest);

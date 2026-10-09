@@ -10,10 +10,12 @@ const utils = @import("utils.zig");
 var buf_128: [128]u8 = undefined;
 var writer: Writer = undefined;
 pub const KeyGenerator = struct {
+    /// Prepares the shared key buffer.
     pub fn initWriter() void {
         writer.init(&buf_128);
     }
 
+    /// A class name from a style hash and a prefix, e.g. "vis-a8Kx3".
     pub fn generateHashKey(
         buf: []u8,
         hash: u32,
@@ -31,6 +33,8 @@ pub const KeyGenerator = struct {
         return buf[0..key.len];
     }
 
+    /// A node's generated id from its type, parent id, depth and index among its
+    /// siblings. Position-based, so a moved node gets a new id.
     pub fn generateKey(
         uuid_buf: []u8,
         elem_type: ElementType,

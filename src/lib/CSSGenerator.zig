@@ -22,10 +22,12 @@ const Generator = @This();
 buffer: [1024 * 1024]u8 = undefined,
 start: usize = 0,
 end: usize = 0,
+/// An empty generator.
 pub fn init(gen: *Generator) void {
     gen.* = .{};
 }
 
+/// Forgets the generated CSS.
 pub fn deinit(gen: *Generator) void {
     gen.start = 0;
     gen.end = 0;
@@ -35,6 +37,7 @@ pub fn deinit(gen: *Generator) void {
 var writer: Writer = undefined;
 var injectedCSS = Vapor.persist.array([]const u8);
 
+/// Queues raw CSS to append to the stylesheet.
 pub fn injectCSS(css: []const u8) void {
     injectedCSS.append(css);
 }
@@ -322,6 +325,7 @@ pub fn writeNodeStyle(gen: *Generator, node: *UINode) void {
     }
 }
 
+/// Writes the `:hover` rule `.hoverTarget` produces for `node`.
 pub fn writeTargetStyle(gen: *Generator, node: *UINode, hash_tv: u32, target_ptr: *Types.PackedVisual) void {
     var key_buf: [128]u8 = undefined;
     const target = node.target.?;
@@ -344,11 +348,13 @@ pub fn writeTargetStyle(gen: *Generator, node: *UINode, hash_tv: u32, target_ptr
     appendWriterToGenerator(gen);
 }
 
+/// Logs the generated CSS.
 pub fn printCSS(gen: *Generator) void {
     const buffer = gen.buffer[0..gen.end];
     Vapor.println("{s}", .{buffer});
 }
 
+/// The generated CSS, with injected CSS appended.
 pub fn getCSS(gen: *Generator) []const u8 {
     for (injectedCSS.items) |css| {
         const len: usize = css.len;
@@ -364,6 +370,7 @@ pub fn getCSS(gen: *Generator) []const u8 {
     return gen.buffer[0..gen.end];
 }
 
+/// The generated `@keyframes` rules.
 pub fn getAnimations(gen: *Generator) []const u8 {
     _ = gen;
     const ptr = StyleWriter.getAnimationsPtr() orelse return "";

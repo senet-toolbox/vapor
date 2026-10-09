@@ -430,6 +430,7 @@ fn posTypeToCSS(pos: Pos, writer: *Writer) !void {
 }
 
 // Helper function to convert color array to CSS rgba
+/// Writes a packed colour: literal RGBA or a theme variable.
 pub fn colorToCSS(color: Types.PackedColor, writer: *Writer) !void {
     if (color.has_color) {
         writeRgba(writer, color.color) catch {};
@@ -438,6 +439,7 @@ pub fn colorToCSS(color: Types.PackedColor, writer: *Writer) !void {
     }
 }
 
+/// Writes a theme colour, with alpha or darkening applied.
 pub fn writeThematic(writer: anytype, thematic: Types.Thematic) !void {
     if (thematic.alpha > -1) {
         if (thematic.darken) {
@@ -465,6 +467,7 @@ pub fn writeThematic(writer: anytype, thematic: Types.Thematic) !void {
     }
 }
 
+/// Writes `rgb(...)` or `rgba(...)`.
 pub fn writeRgba(writer: anytype, rgba: Types.Rgba) !void {
     if (rgba.a == 1) {
         try writer.write("rgb(");

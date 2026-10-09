@@ -20,6 +20,7 @@ const Draggable = @import("draggable.zig").Draggable;
 const Shadow = @import("Shadow.zig");
 const Accessibility = @import("accessibility.zig").Accessibility;
 
+/// Compile error unless `f` takes a `Vapor.Kit.ResizeEntry`.
 pub fn assertTakesResizeEntry(comptime f: anytype) void {
     const info = @typeInfo(@TypeOf(f));
     if (info != .@"fn") @compileError("expected a function, got " ++ @typeName(@TypeOf(f)));
@@ -51,6 +52,7 @@ const HeaderSize = enum(u32) {
     Small = 1,
 };
 
+/// A heading styled with `style`, sized by `size`.
 pub fn Header(text: []const u8, size: HeaderSize, style: Style) void {
     // ElementDecl.style is `?*const Style`, so resolve the size-derived default
     // on a local copy and point at that. It outlives open/configure/close.
@@ -125,6 +127,7 @@ pub const LinkOptions = struct {
 const Position = enum { top, bottom, left, right };
 const Layout = enum { center, start, end };
 
+/// Opens a node for `elem_decl`; panics if it cannot be allocated.
 pub fn createNode(elem_decl: ElementDecl) *UINode {
     const ui_node = LifeCycle.open(elem_decl) orelse {
         // Vapor.printlnSrcErr("Could not add component to lifecycle {any}\n", .{error.CouldNotAllocate}, @src());
@@ -196,6 +199,7 @@ pub const StyleMergeParams = struct {
     responsive: ?types.Responsive,
 };
 
+/// Builds the final `Style` from a base style and the builder's chained values.
 pub fn mergeStyles(p: StyleMergeParams) Style {
     var s = if (p.style_ptr) |sp| sp.* else Style{};
     if (s.position == null) s.position = p.pos;
@@ -262,6 +266,8 @@ pub fn mergeStyles(p: StyleMergeParams) Style {
     return s;
 }
 
+/// Copies a Text element's string into persistent memory, reusing the copy
+/// while the text is unchanged.
 pub fn persistText(ui_node: ?*UINode, text_value: ?[]const u8) ?[]const u8 {
     const value = text_value orelse return null;
     const uuid = hashKey(ui_node.?.uuid);
@@ -620,6 +626,7 @@ pub fn BuilderClose(comptime state_type: types.StateType) type {
 
 var alt_len: usize = 0;
 const API = struct {
+    /// Runtime export: a heading node's level.
     pub fn getHeadingLevel(ptr: ?*UINode) callconv(.c) u8 {
         const node_ptr = ptr orelse return 0;
         const heading = node_ptr.type == .Heading;
@@ -629,6 +636,7 @@ const API = struct {
         return 0;
     }
 
+    /// Runtime export: an image node's alt text.
     pub fn getAlt(node_ptr: ?*UINode) callconv(.c) ?[*]const u8 {
         if (node_ptr) |node| {
             const alt = node.alt orelse return null;
@@ -637,6 +645,7 @@ const API = struct {
         }
         return null;
     }
+    /// Runtime export: length of the last alt text.
     pub fn getAltLen() callconv(.c) usize {
         return alt_len;
     }

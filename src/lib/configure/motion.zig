@@ -13,6 +13,7 @@ const Packer = @import("../packer.zig");
 const VisualModule = @import("visual.zig");
 const checkVisual = VisualModule.checkVisual;
 
+/// Packs a node's transform and returns its hash.
 pub fn configureTransforms(ui_node: *UINode, style: *const Vapor.Style) u32 {
     var hash_t: u32 = 0;
     if (style.transform_origin) |transform_origin| {
@@ -83,6 +84,7 @@ fn handleTransform(transform: types.Transform, hash: *u32) types.PackedTransform
     return packed_transform;
 }
 
+/// Packs a node's enter/exit animations and returns their hash.
 pub fn configureAnimations(ui_node: *UINode, elem_decl: ElemDecl) u32 {
     const has_animation = elem_decl.animation_enter != null or elem_decl.animation_exit != null;
     if (!has_animation) return 0;
@@ -130,6 +132,7 @@ pub fn configureAnimations(ui_node: *UINode, elem_decl: ElemDecl) u32 {
     return hash_a;
 }
 
+/// Packs a node's hover/focus styles and returns their hash.
 pub fn configureInteractive(ui_node: *UINode, style: *const Vapor.Style) u32 {
     var hash_i: u32 = 0;
     const interactive = style.interactive orelse return hash_i;

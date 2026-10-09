@@ -35,6 +35,7 @@ pub const ClassCache = struct {
     scratch_arena: std.heap.ArenaAllocator,
     tombstones: Vapor.Array(Hash) = undefined,
 
+    /// An empty cache.
     pub fn init(class_cache: *Self, allocator: std.mem.Allocator) !void {
         class_cache.* = Self{
             .map = undefined,
@@ -46,6 +47,7 @@ pub const ClassCache = struct {
         class_cache.tombstones = Vapor.Array(Hash).init(class_cache.scratch_arena.allocator());
     }
 
+    /// The class-name prefix for a style group, e.g. "lay" for layout.
     pub fn getClassNameByType(class_type: ClassType) []const u8 {
         return switch (class_type) {
             .layout => "lay",
@@ -60,10 +62,12 @@ pub const ClassCache = struct {
         };
     }
 
+    /// The cached class for `hash`, if any.
     pub fn get(self: *Self, hash: Hash) ?Class {
         return self.map.get(hash);
     }
 
+    /// Records a use of the class `hash`, creating it on first use.
     pub fn set(self: *Self, hash: Hash, class_type: ClassType) !void {
         // 1. Check existence FIRST to avoid allocation
         if (self.map.getPtr(hash)) |class| {
@@ -82,6 +86,7 @@ pub const ClassCache = struct {
         });
     }
 
+    /// Drops one use of `hash`; at zero it becomes a tombstone.
     pub fn decrement(self: *Self, hash: Hash) !void {
         const class_ptr = self.map.getPtr(hash) orelse return error.ClassNotFound;
 
@@ -96,10 +101,19 @@ pub const ClassCache = struct {
         }
     }
 
+    /// Classes whose count reached zero.
     pub fn getTombstones(self: *Self) []Hash {
         return self.tombstones.items[0..];
     }
 
+    /// Asks the runtime to delete the CSS rules of classes no element uses.
+    ///
+    /// Deliberately disabled: the guard below returns whenever there is work
+    /// to do. The refcounts are not reliable yet. A class shared by several
+    /// elements is counted once (configuration only calls `set` when the class
+    /// is missing), and removing an element never decrements its classes. So a
+    /// count can reach zero while elements still use the rule. Until both are
+    /// fixed, rules are kept and the stylesheet only grows.
     pub fn batchRemove(self: *Self) void {
         if (self.tombstones.items.len > 0) return;
         if (Vapor.isWasi) {
@@ -107,11 +121,13 @@ pub const ClassCache = struct {
         }
     }
 
+    /// The `index`-th tombstone.
     pub fn getTombstone(self: *Self, index: usize) Hash {
         return self.tombstones.items[index];
     }
 
     // Call this AFTER the JS side has read the tombstones and removed CSS classes
+    /// Clears the tombstones and the whole cache, after the runtime removed them.
     pub fn flushTombstones(self: *Self) void {
         // Reset the list
         self.tombstones.clearRetainingCapacity();
@@ -122,6 +138,7 @@ pub const ClassCache = struct {
         }
     }
 
+    /// The class name of the `index`-th tombstone, for the runtime.
     pub fn getTombstoneName(self: *Self, index: usize) ?[]const u8 {
         if (index >= self.tombstones.items.len) return null;
         const hash = self.tombstones.items[index];

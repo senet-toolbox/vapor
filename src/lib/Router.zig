@@ -76,10 +76,12 @@ fn createNode(allocator: std.mem.Allocator) !*Node {
     return node;
 }
 
+/// An empty route tree.
 pub fn init(target: *Radix, allocator: std.mem.Allocator) !void {
     target.* = .{ .root = try createNode(allocator), .allocator = allocator };
 }
 
+/// Frees the route tree.
 pub fn deinit(radix: *Radix) void {
     radix.destroyNode(radix.root);
 }
@@ -131,6 +133,8 @@ pub fn addRoute(
 
 const max_segments = 64;
 
+/// The page for `path`: exact segments first, then `:param` segments, whose
+/// values come back in the result.
 pub fn searchRoute(radix: *Radix, path: []const u8) ?Route {
     var segments_buf: [max_segments][]const u8 = undefined;
     var count: usize = 0;

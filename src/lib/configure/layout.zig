@@ -10,6 +10,7 @@ const hashKey = utils.hashKey;
 const StringTable = @import("../string_table.zig").StringTable;
 const Packer = @import("../packer.zig");
 
+/// Packs a node's layout style and returns its hash.
 pub fn configureLayouts(ui_node: *UINode, style: *const Vapor.Style) u32 {
     var hash_l: u32 = 0;
 
@@ -77,6 +78,7 @@ pub fn configureLayouts(ui_node: *UINode, style: *const Vapor.Style) u32 {
     return hash_l;
 }
 
+/// Packs a node's responsive overrides and returns their hash.
 pub fn configureResponsive(ui_node: *UINode, style: *const Vapor.Style) u32 {
     var hash_r: u32 = 0;
 
@@ -217,6 +219,7 @@ pub fn configureResponsive(ui_node: *UINode, style: *const Vapor.Style) u32 {
     return hash_r;
 }
 
+/// Packs a node's position and anchor style and returns its hash.
 pub fn configurePositions(ui_node: *UINode, style: *const Vapor.Style) u32 {
     var hash_p: u32 = 0;
     if (style.anchor) |anchor| {
@@ -264,6 +267,7 @@ pub fn configurePositions(ui_node: *UINode, style: *const Vapor.Style) u32 {
     return hash_p;
 }
 
+/// Packs a node's padding and margin and returns their hash.
 pub fn configureMarginsPaddings(ui_node: *UINode, style: *const Vapor.Style) u32 {
     var hash_mp: u32 = 0;
     // ** Packed Margins and Padding **
