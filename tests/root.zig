@@ -844,6 +844,50 @@ test "html escaping leaves ordinary text untouched" {
 // -----------------------------------------------------------------------------
 
 fn readmeOnClick() void {}
+fn docEventHandler(_: *Vapor.Event) void {}
+fn docCtxHandler(_: u32, _: *Vapor.Event) void {}
+fn docHook(_: u32) void {}
+
+// Never called; taking its address compiles every line.
+fn docEventMethods() void {
+    // Event methods take callbacks, which makes them generic: neither
+    // `zig build check` nor ordinary code reaches their bodies until a
+    // call instantiates them. onFocus, onBlur, onChange and
+    // attachEventCallback all failed to compile once someone called them.
+    const box = Vapor.Box();
+    _ = box.onFocus(docEventHandler);
+    _ = box.onBlur(docEventHandler);
+    _ = box.onChange(docCtxHandler, .{@as(u32, 1)});
+    _ = box.onEvent(.click, docCtxHandler, .{@as(u32, 1)});
+    _ = box.onEventCtx(.click, docCtxHandler, .{@as(u32, 1)});
+    _ = box.onHover(docCtxHandler, .{@as(u32, 1)});
+    _ = box.onLeave(docCtxHandler, .{@as(u32, 1)});
+    _ = box.onHoverCtx(docCtxHandler, .{@as(u32, 1)});
+    _ = box.ifMouseOver(docCtxHandler, .{@as(u32, 1)});
+    _ = box.onDragStart(docEventHandler);
+    _ = box.onMount(docHook, .{@as(u32, 1)});
+    _ = box.onUpdate(docHook, .{@as(u32, 1)});
+    _ = box.onDestroy(docHook, .{@as(u32, 1)});
+    _ = box.onMountCtx(docHook, .{@as(u32, 1)});
+    const field = Vapor.TextField(.string);
+    _ = field.onFocus(docEventHandler);
+    _ = field.onBlur(docEventHandler);
+    _ = field.onKeyDown(docEventHandler);
+    _ = field.onHover(docEventHandler);
+    _ = field.onLeave(docEventHandler);
+    _ = field.onEvent(.click, docCtxHandler, .{@as(u32, 1)});
+    _ = field.onEventCtx(.click, docCtxHandler, .{@as(u32, 1)});
+    _ = field.onMount(docHook, .{@as(u32, 1)});
+    _ = field.onChange(docCtxHandler, .{@as(u32, 1)});
+    _ = field.onHoverCtx(docCtxHandler, .{@as(u32, 1)});
+    _ = field.onScroll(docCtxHandler, .{@as(u32, 1)});
+    _ = field.placeholder("Name");
+    _ = field.val(@as(u32, 3));
+    var text_value: []const u8 = "";
+    _ = field.bind(&text_value);
+    var number_value: u32 = 0;
+    _ = Vapor.TextField(.int).bind(&number_value);
+}
 
 // The example in src/root.zig's module docs, verbatim.
 fn rootDocExample() void {
@@ -872,6 +916,8 @@ test "README examples type-check against the real API" {
         _ = @TypeOf(Vapor.Box().inlineStyle("grid-area: {s};", .{"main"}));
         _ = @TypeOf(Vapor.Box().classFmt("col-{d}", .{2}));
         _ = @TypeOf(Vapor.Text("x").font(16, 600, .black));
+
+        _ = &docEventMethods;
 
         // "A minimal app"
         _ = @TypeOf(Vapor.Center().size(.full));

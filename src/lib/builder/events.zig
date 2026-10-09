@@ -25,32 +25,20 @@ pub fn bind(self: *const Self, value: anytype) Self {
 
 pub fn onFocus(self: *const Self, cb: fn (*Vapor.Event) void) Self {
     var n = self.*;
-    var element = self._element orelse {
-        Vapor.printlnSrcErr("Element is null must bind() first, before setting onChange", .{}, @src());
-        @panic("vapor: Element is null must bind() first, before setting onChange");
-    };
     const ui_node = self.getOrCreateNode(&n);
-    var onid = hashKey(ui_node.uuid);
-    onid +%= hashKey(Vapor.on_change_hash);
-    element.on_focus = cb;
-    Vapor.events_callbacks.put(onid, cb) catch |err| {
-        Vapor.println("Event Callback Error: {any}\n", .{err});
+    Vapor.attachEventCallback(ui_node, .focus, cb) catch |err| {
+        Vapor.println("onFocus: Could not attach event callback {any}\n", .{err});
+        @panic("vapor: onFocus: Could not attach event callback");
     };
     return n;
 }
 
 pub fn onBlur(self: *const Self, cb: fn (*Vapor.Event) void) Self {
     var n = self.*;
-    var element = self._element orelse {
-        Vapor.printlnSrcErr("Element is null must bind() first, before setting onChange", .{}, @src());
-        @panic("vapor: Element is null must bind() first, before setting onChange");
-    };
     const ui_node = self.getOrCreateNode(&n);
-    var onid = hashKey(ui_node.uuid);
-    onid +%= hashKey(Vapor.on_blur_hash);
-    element.on_blur = cb;
-    Vapor.events_callbacks.put(onid, cb) catch |err| {
-        Vapor.println("Event Callback Error: {any}\n", .{err});
+    Vapor.attachEventCallback(ui_node, .blur, cb) catch |err| {
+        Vapor.println("onBlur: Could not attach event callback {any}\n", .{err});
+        @panic("vapor: onBlur: Could not attach event callback");
     };
     return n;
 }
@@ -61,7 +49,7 @@ pub fn onChange(self: *const Self, func: anytype, args: anytype) *const Self {
         @panic("vapor: Node is null");
     };
 
-    Vapor.attachEventCallbackCtx(ui_node, .input, func, args) catch |err| {
+    Vapor.attachEventCtxCallback(ui_node, .input, func, args) catch |err| {
         Vapor.println("ONCHANGE: Could not attach event callback {any}\n", .{err});
         @panic("vapor: ONCHANGE: Could not attach event callback");
     };
@@ -263,31 +251,7 @@ pub fn onEventCtx(self: *const Self, event: types.EventType, func: anytype, args
 }
 
 pub fn onMountCtx(self: *const Self, cb: anytype, args: anytype) Self {
-    var n = self.*;
-    const ui_node = self.getOrCreateNode(&n);
-    const Args = @TypeOf(args);
-    const Closure = struct {
-        arguments: Args,
-        run_node: Vapor.Node = .{ .data = .{ .runFn = runFn, .deinitFn = deinitFn } },
-        fn runFn(action: *Vapor.Action) void {
-            const run_node: *Vapor.Node = @fieldParentPtr("data", action);
-            const closure: *@This() = @alignCast(@fieldParentPtr("run_node", run_node));
-            @call(.auto, cb, closure.arguments);
-        }
-        fn deinitFn(node: *Vapor.Node) void {
-            const closure: *@This() = @alignCast(@fieldParentPtr("run_node", node));
-            Vapor.allocator_global.destroy(closure);
-        }
-    };
-    const closure = Vapor.arena(.frame).create(Closure) catch |err| {
-        println("Error could not create closure {any}\n ", .{err});
-        @panic("vapor: Error could not create closure");
-    };
-    closure.* = .{ .arguments = args };
-    Vapor.mounted_ctx_funcs.put(hashKey(ui_node.uuid), &closure.run_node) catch |err| {
-        println("Hooks Function Registry {any}\n", .{err});
-    };
-    return n;
+    return self.onMount(cb, args).*;
 }
 
 pub fn onHoverCtx(self: *const Self, cb: anytype, args: anytype) Self {

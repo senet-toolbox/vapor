@@ -71,12 +71,8 @@ pub fn onBlur(self: *const Self, cb: fn (*Vapor.Event) void) Self {
 }
 
 pub fn onScroll(self: *const Self, callback: anytype, args: anytype) Self {
-    var new_self = self.*;
-    new_self._on_change_cb = Vapor.ErasedEventCallback.make(Vapor.arena(.frame), .scroll, callback, args) catch |err| {
-        Vapor.printlnErr("onScroll: could not allocate callback, handler not attached: {any}", .{err});
-        return new_self;
-    };
-    return new_self;
+    _ = self.onEvent(.scroll, callback, args);
+    return self.*;
 }
 
 pub fn onEvent(self: *const Self, event: types.EventType, func: anytype, args: anytype) *const Self {

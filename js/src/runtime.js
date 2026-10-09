@@ -534,10 +534,12 @@ function setupWasiInstance() {
   }
   state.initial_render = false;
   markReady();
-  // callDestroyFncs();
   removeInactiveNodes();
   wasmInstance.markCurrentTreeNotDirty();
   wasmInstance.resetRerender();
+  // Element listeners (onEvent, onHover, onFocus, ...) attach here as well as
+  // after each rerender; without it they stayed dead until the first rerender.
+  wasmInstance.registerAllListenerCallbacks();
 
   const hash = window.location.hash;
   if (hash) {

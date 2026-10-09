@@ -155,31 +155,9 @@ pub fn attachEventCtxCallback(ui_node: *UINode, event_type: Vapor.EventType, cb:
     try Vapor.nodes_with_events.put(onid, ui_node);
 }
 
+/// Calls `cb` with the event whenever `event_type` fires on the node.
 pub fn attachEventCallback(ui_node: *UINode, event_type: Vapor.EventType, cb: fn (event: *Event) void) !void {
-    if (!Vapor.isWasi) return;
-
-    // Check for duplicates
-    if (ui_node.event_handlers) |handlers| {
-        for (handlers.handlers.items) |handler| {
-            if (handler.event_type == event_type) {
-                return error.EventCtxCallbackError;
-            }
-        }
-    }
-
-    const erased = try ErasedEventCallback.make(Vapor.arena(.frame), event_type, cb, .{});
-
-    // Ensure handlers list exists
-    if (ui_node.event_handlers == null) {
-        const handlers = try Vapor.arena(.frame).create(EventHandlers);
-        handlers.* = .{ .handlers = .{} };
-        ui_node.event_handlers = handlers;
-    }
-
-    try ui_node.event_handlers.?.handlers.append(Vapor.arena(.frame), erased);
-
-    const onid = Vapor.hashKey(ui_node.uuid);
-    try Vapor.nodes_with_events.put(onid, ui_node);
+    return attachEventCtxCallback(ui_node, event_type, cb, .{});
 }
 
 pub fn addGlobalListener(event_type: Vapor.EventType, cb: fn (*Event) void) ?u32 {

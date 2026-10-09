@@ -143,6 +143,8 @@ async function launch() {
   });
   await send("Runtime.enable");
   await send("Page.enable");
+  // Headless pages never have focus, so focus/blur events would not fire.
+  await send("Emulation.setFocusEmulationEnabled", { enabled: true });
 
   const close = () => {
     ws.close();
@@ -287,6 +289,24 @@ const tests = {
     await p.waitFor(`document.getElementById("panel").hidden === true`, "panel hidden");
     await p.click("toggle-hidden");
     await p.waitFor(`document.getElementById("panel").hidden === false`, "panel shown again");
+  },
+
+  async "onFocus and onBlur fire on ordinary elements"(p) {
+    await p.goto("/focus");
+    await p.waitForText("focus-count", "0/0");
+    await p.evaluate(`document.getElementById("focus-target").focus()`);
+    await p.waitForText("focus-count", "1/0");
+    await p.evaluate(`document.getElementById("focus-target").blur()`);
+    await p.waitForText("focus-count", "1/1");
+
+    // Text fields get focus and input through the delegated root listener;
+    // each event must reach Zig exactly once.
+    await p.evaluate(`document.getElementById("focus-field").focus()`);
+    await p.waitForText("field-count", "1/0");
+    await p.type("focus-field", "a");
+    await p.waitForText("field-count", "1/1");
+    await sleep(200);
+    assertEqual(await p.text("field-count"), "1/1", "each event dispatched once");
   },
 
   async "typing reaches Zig state"(p) {

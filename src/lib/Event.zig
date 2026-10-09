@@ -322,6 +322,13 @@ export fn registerAllListenerCallbacks() void {
                 if (handler.event_type == .submit or handler.event_type == .mouseover or handler.event_type == .mouseout) {
                     continue;
                 }
+                // The runtime's root listener already delivers these for text
+                // fields (focusin/focusout/input); a direct listener would
+                // dispatch each event twice.
+                const text_input = ui_node.type == .TextField or ui_node.type == .TextArea;
+                if (text_input and (handler.event_type == .focus or handler.event_type == .blur or handler.event_type == .input)) {
+                    continue;
+                }
 
                 const event_type_str = std.enums.tagName(Vapor.Types.EventType, handler.event_type) orelse unreachable;
                 var callback_id = hashKey(ui_node.uuid);

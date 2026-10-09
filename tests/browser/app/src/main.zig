@@ -29,6 +29,7 @@ pub export fn init() void {
     Vapor.Page(.{ .route = "/users/:id/edit" }, userEditPage, null);
     Vapor.Page(.{ .route = "/users/new" }, newUserPage, null);
     Vapor.Page(.{ .route = "/hide" }, hidePage, null);
+    Vapor.Page(.{ .route = "/focus" }, focusPage, null);
     Vapor.Page(.{ .route = "/error" }, notFound, null);
 }
 
@@ -138,6 +139,41 @@ fn hidePage() void {
             Text("Toggle").end();
         });
         Text("Panel").id("panel").hide(panel_hidden).end();
+    });
+}
+
+// ── /focus : onFocus and onBlur on ordinary elements ───────────────────────
+
+var focus_count: u32 = 0;
+var blur_count: u32 = 0;
+
+fn focused(_: *Vapor.Event) void {
+    focus_count += 1;
+}
+
+fn blurred(_: *Vapor.Event) void {
+    blur_count += 1;
+}
+
+var field_focus_count: u32 = 0;
+var field_change_count: u32 = 0;
+
+fn fieldFocused(_: *Vapor.Event) void {
+    field_focus_count += 1;
+}
+
+fn fieldChanged(_: *Vapor.Event) void {
+    field_change_count += 1;
+}
+
+fn focusPage() void {
+    Box().id("focus-page").children({
+        Button(toggleHidden, .{}).id("focus-target").onFocus(focused).onBlur(blurred).children({
+            Text("Focus me").end();
+        });
+        TextField(.string).id("focus-field").onFocus(fieldFocused).onChange(fieldChanged, .{}).end();
+        TextFmt("{d}/{d}", .{ focus_count, blur_count }).id("focus-count").end();
+        TextFmt("{d}/{d}", .{ field_focus_count, field_change_count }).id("field-count").end();
     });
 }
 

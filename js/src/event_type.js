@@ -90,4 +90,5 @@ export const EventType = {
   animationstart: 62,
   animationend: 63,
   animationiteration: 64,
+  beforeinput: 65,
 };
