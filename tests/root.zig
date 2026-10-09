@@ -828,8 +828,20 @@ test "html escaping leaves ordinary text untouched" {
 
 fn readmeOnClick() void {}
 
+// The example in src/root.zig's module docs, verbatim.
+fn rootDocExample() void {
+    Vapor.Page(.{ .route = "/" }, rootDocRender, null);
+}
+fn rootDocRender() void {
+    Vapor.Box().padding(.all(16)).children({
+        Vapor.Text("Hello from Zig").fontSize(24).end();
+    });
+}
+
 test "README examples type-check against the real API" {
     comptime {
+        _ = &rootDocExample;
+
         // "A minimal app"
         _ = @TypeOf(Vapor.Center().size(.full));
         _ = @TypeOf(Vapor.Text("Hello, world!"));
