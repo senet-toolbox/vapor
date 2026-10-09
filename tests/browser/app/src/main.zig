@@ -30,6 +30,7 @@ pub export fn init() void {
     Vapor.Page(.{ .route = "/users/new" }, newUserPage, null);
     Vapor.Page(.{ .route = "/hide" }, hidePage, null);
     Vapor.Page(.{ .route = "/focus" }, focusPage, null);
+    Vapor.Page(.{ .route = "/hooks" }, hooksPage, null);
     Vapor.Page(.{ .route = "/error" }, notFound, null);
 }
 
@@ -174,6 +175,43 @@ fn focusPage() void {
         TextField(.string).id("focus-field").onFocus(fieldFocused).onChange(fieldChanged, .{}).end();
         TextFmt("{d}/{d}", .{ focus_count, blur_count }).id("focus-count").end();
         TextFmt("{d}/{d}", .{ field_focus_count, field_change_count }).id("field-count").end();
+    });
+}
+
+// ── /hooks : Hooks(.{ .mounted, .destroy }) fire around a block ────────────
+
+var hooked = false;
+var hook_mounts: u32 = 0;
+var hook_destroys: u32 = 0;
+
+fn toggleHooked() void {
+    hooked = !hooked;
+}
+
+fn rerenderOnly() void {}
+
+fn hooksMounted() void {
+    hook_mounts += 1;
+}
+
+fn hooksDestroyed() void {
+    hook_destroys += 1;
+}
+
+fn hooksPage() void {
+    Box().id("hooks-page").children({
+        Button(toggleHooked, .{}).id("toggle-hooks").children({
+            Text("Toggle").end();
+        });
+        Button(rerenderOnly, .{}).id("hooks-refresh").children({
+            Text("Refresh").end();
+        });
+        if (hooked) {
+            Vapor.Hooks(.{ .mounted = hooksMounted, .destroy = hooksDestroyed })({
+                Text("inside").id("hooked").end();
+            });
+        }
+        TextFmt("{d}/{d}", .{ hook_mounts, hook_destroys }).id("hooks-count").end();
     });
 }
 

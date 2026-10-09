@@ -39,7 +39,7 @@ pub fn onMount(callback: anytype, args: anytype) void {
         @compileError("onMount callback must be a function, got " ++ @typeName(@TypeOf(callback)));
     }
 
-    const callback_id: u32 = @intFromPtr(&callback);
+    const callback_id: u32 = @truncate(@intFromPtr(&callback));
 
     const ui_node = Vapor.current_ctx.currentNode() orelse {
         std.log.err("No current node found", .{});

@@ -309,6 +309,21 @@ const tests = {
     assertEqual(await p.text("field-count"), "1/1", "each event dispatched once");
   },
 
+  async "Hooks runs mounted and destroy around its block"(p) {
+    await p.goto("/hooks");
+    await p.waitForText("hooks-count", "0/0");
+    await p.click("toggle-hooks");
+    await p.waitFor(`!!document.getElementById("hooked")`, "hooked block");
+    await sleep(50);
+    await p.click("hooks-refresh");
+    await p.waitForText("hooks-count", "1/0");
+    await p.click("toggle-hooks");
+    await p.waitFor(`!document.getElementById("hooked")`, "hooked block removed");
+    await sleep(50);
+    await p.click("hooks-refresh");
+    await p.waitForText("hooks-count", "1/1");
+  },
+
   async "typing reaches Zig state"(p) {
     await p.goto("/input");
     await p.waitForText("greeting", "Hello, !");

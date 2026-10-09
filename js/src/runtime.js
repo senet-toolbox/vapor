@@ -913,10 +913,6 @@ export function removeInactiveNodes() {
       el.classList.add(exitClass);
     } else {
       // no animation, just yank it
-      if (node.elementType === COMPONENT_TYPES.HOOKS) {
-        const idPtr = allocString(nodeId);
-        wasmInstance.hooksRemoveMountedKey(idPtr);
-      }
       el.remove();
     }
   });

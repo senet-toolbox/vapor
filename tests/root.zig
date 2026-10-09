@@ -848,6 +848,65 @@ fn docEventHandler(_: *Vapor.Event) void {}
 fn docCtxHandler(_: u32, _: *Vapor.Event) void {}
 fn docHook(_: u32) void {}
 
+const DocForm = struct { name: []const u8 = "", age: u32 = 0 };
+fn docFetched(_: Vapor.Fetch.Result, _: u32) void {}
+fn docPlainFetched(_: Vapor.Fetch.Result) void {}
+fn docNoArgs() void {}
+fn docLayout(_: *const fn () void) void {}
+
+// Never called; taking its address compiles a call to every generic public
+// function, which nothing else compiles until an app happens to call it.
+fn docGenericApi() !void {
+    Vapor.timeout("doc", 100, docHook, .{@as(u32, 1)});
+    Vapor.onMount(docHook, .{@as(u32, 1)});
+    Vapor.onLayout(docHook, .{@as(u32, 1)});
+    _ = Vapor.registerHook("/doc", docNoArgs, .before);
+    _ = Vapor.addGlobalListener(.keydown, docEventHandler);
+    _ = Vapor.addGlobalListenerCtx(.keydown, docCtxHandler, .{@as(u32, 1)});
+    Vapor.store("k", @as(u32, 1));
+    Vapor.store("k", @as(i64, -1));
+    Vapor.store("k", @as(f32, 1.5));
+    Vapor.store("k", true);
+    Vapor.store("k", "text");
+    Vapor.store("k", Vapor.Arena.frame);
+    _ = Vapor.load([]const u8, "k");
+    _ = Vapor.load(u32, "k");
+    _ = Vapor.load(i64, "k");
+    _ = Vapor.load(f32, "k");
+    _ = Vapor.load(bool, "k");
+    _ = Vapor.array(u32, .frame);
+    _ = Vapor.dupe("x", .view);
+    _ = Vapor.fmtln("{d}", .{1});
+    _ = Vapor.fmtArena("{d}", .{1}, .persist);
+    _ = Vapor.cloneFrame(@as([]const u8, "x"));
+    _ = Vapor.frame.fmt("{d}", .{1});
+    _ = try Vapor.frame.alloc(u8, 4);
+    _ = Vapor.frame.HashMap(u32, u32);
+    _ = Vapor.frame.array(u32);
+    _ = Vapor.view.fmt("{d}", .{1});
+    _ = Vapor.view.HashMap(u32, u32);
+    _ = Vapor.view.array(u32);
+    _ = Vapor.persist.fmt("{d}", .{1});
+    _ = try Vapor.persist.alloc(u8, 4);
+    _ = Vapor.persist.array(u32);
+    var x: u32 = 0;
+    _ = Vapor.cast(*u32, @as(*anyopaque, @ptrCast(&x)));
+    Vapor.println("{d}", .{1});
+    Vapor.print(.info, "{d}", .{1});
+    Vapor.printErr("{d}", .{1});
+    Vapor.printErrSrc("{d}", .{1}, @src());
+    Vapor.printlnSrc("{d}", .{1}, @src());
+    Vapor.alert("{d}", .{1});
+    const req = Vapor.fetch("/doc", .{});
+    req.handle(docFetched, .{@as(u32, 1)});
+    req.handle(docPlainFetched, .{});
+    var form: DocForm = .{};
+    var event: Vapor.Event = undefined;
+    _ = event.formData(&form);
+    Vapor.Hooks(.{ .mounted = docNoArgs })({});
+    try Vapor.registerLayout("/doc", docLayout, .{});
+}
+
 // Never called; taking its address compiles every line.
 fn docEventMethods() void {
     // Event methods take callbacks, which makes them generic: neither
@@ -918,6 +977,7 @@ test "README examples type-check against the real API" {
         _ = @TypeOf(Vapor.Text("x").font(16, 600, .black));
 
         _ = &docEventMethods;
+        _ = &docGenericApi;
 
         // "A minimal app"
         _ = @TypeOf(Vapor.Center().size(.full));

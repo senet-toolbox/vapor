@@ -73,38 +73,44 @@ pub fn Header(text: []const u8, size: HeaderSize, style: Style) void {
     LifeCycle.close({});
 }
 
-pub fn Hooks(hooks: Vapor.HooksFuncs) fn (void) void {
-    var elem_decl = ElementDecl{
+pub fn Hooks(hooks: Vapor.HooksFuncs) *const fn (void) void {
+    const elem_decl = ElementDecl{
         .state_type = .static,
         .elem_type = .Hooks,
     };
     const ui_node = LifeCycle.open(elem_decl) orelse @panic("vapor: could not allocate a Hooks node");
-    if (hooks.mounted) |f| {
-        elem_decl.hooks.mounted_id = 1;
-        Vapor.mounted_funcs.put(hashKey(ui_node.uuid), f) catch |err| {
-            println("Mount Function Registry {any}\n", .{err});
-        };
+    if (hooks.created != null or hooks.mounted != null) {
+        setNodeHook(ui_node, 0, Vapor.on_mount_hash, runMountHooks, .{ hooks.created, hooks.mounted });
     }
-    if (hooks.created) |f| {
-        elem_decl.hooks.created_id += 1;
-        Vapor.created_funcs.put(hashKey(ui_node.uuid), f) catch |err| {
-            println("Mount Function Registry {any}\n", .{err});
-        };
-    }
-    if (hooks.updated) |f| {
-        elem_decl.hooks.updated_id += 1;
-        Vapor.updated_funcs.put(hashKey(ui_node.uuid), f) catch |err| {
-            println("Mount Function Registry {any}\n", .{err});
-        };
-    }
-    if (hooks.destroy) |f| {
-        elem_decl.hooks.destroy_id += 1;
-        Vapor.destroy_funcs.put(hashKey(ui_node.uuid), f) catch |err| {
-            println("Mount Function Registry {any}\n", .{err});
-        };
-    }
+    if (hooks.updated) |f| setNodeHook(ui_node, 1, Vapor.on_update_hash, runHook, .{f});
+    if (hooks.destroy) |f| setNodeHook(ui_node, 2, Vapor.on_destroy_hash, runHook, .{f});
     LifeCycle.configure(elem_decl);
-    return LifeCycle.close;
+    return &LifeCycle.close;
+}
+
+fn runHook(f: *const fn () void) void {
+    f();
+}
+
+/// `created` and `mounted` both fire once the element is on the page.
+fn runMountHooks(created: ?*const fn () void, mounted: ?*const fn () void) void {
+    if (created) |f| f();
+    if (mounted) |f| f();
+}
+
+/// Registers `cb(args)` in the node's lifecycle slot: 0 mount, 1 update,
+/// 2 destroy. Same mechanism as the builders' `.onMount` and friends.
+fn setNodeHook(ui_node: *UINode, slot: usize, comptime hook_name: []const u8, cb: anytype, args: anytype) void {
+    const erased = Vapor.ErasedCallback.make(Vapor.arena(.frame), cb, args) catch |err| {
+        Vapor.printlnErr("Hooks: could not allocate callback: {any}", .{err});
+        return;
+    };
+    const callback_id = hashKey(ui_node.uuid) +% hashKey(hook_name);
+    Vapor.erased_hooks_registry.put(callback_id, erased) catch |err| {
+        Vapor.printlnErr("Hooks: could not register callback: {any}", .{err});
+        return;
+    };
+    ui_node.on_callbacks[slot] = callback_id;
 }
 
 pub const LinkOptions = struct {
