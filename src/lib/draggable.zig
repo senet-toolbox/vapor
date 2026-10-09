@@ -67,6 +67,8 @@ pub const Draggable = struct {
     };
 
     // Initialize a draggable with fluent API
+    /// Drag state for `element` (bound with `.ref`). Attach it with the element's
+    /// `.createDraggable(d)`.
     pub fn init(element: *Vapor.Binded) *Draggable {
         const self = Vapor.arena(.persist).create(Draggable) catch |err| {
             Vapor.printlnErr("Draggable.init: allocation failed: {any}", .{err});
@@ -82,64 +84,77 @@ pub const Draggable = struct {
     }
 
     // Initialize a draggable with fluent API
+    /// Starts a drag on pointerdown on the element.
     pub fn addStartListener(self: *Draggable) void {
         // Setup listeners on the element or handle
         const target = self.element;
         target.addInstListener(.pointerdown, handlePointerDown, .{self});
     }
 
+    /// Frees the drag state.
     pub fn deinit(self: *Draggable) void {
         Vapor.arena(.persist).destroy(self);
     }
 
     // Fluent configuration API
+    /// Keeps the element inside its parent while dragging.
     pub fn constrainToParent(self: *Draggable) *Draggable {
         self.config.constrain_to_parent = true;
         return self;
     }
 
+    /// Keeps the element inside `bounds` while dragging.
     pub fn constrainToBounds(self: *Draggable, bounds: Bounds) *Draggable {
         self.config.custom_bounds = bounds;
         return self;
     }
 
+    /// Snaps positions to a `size`-pixel grid.
     pub fn snapToGrid(self: *Draggable, size: f32) *Draggable {
         self.config.snap_to_grid = true;
         self.config.grid_size = size;
         return self;
     }
 
+    /// Limits movement to one axis.
     pub fn axis(self: *Draggable, ax: Axis) *Draggable {
         self.config.axis = ax;
         return self;
     }
 
+    /// Drags only when the pointer goes down on `h`.
     pub fn handle(self: *Draggable, h: *Vapor.Binded) *Draggable {
         self.config.handle = h;
         return self;
     }
 
+    /// Calls `callback` when a drag starts.
     pub fn onStart(self: *Draggable, callback: *const fn (*Draggable, *Vapor.Event) void) *Draggable {
         self.on_drag_start = callback;
         return self;
     }
 
+    /// Calls `callback` on every move during a drag.
     pub fn onDrag(self: *Draggable, callback: *const fn (*Draggable, *Vapor.Event) void) *Draggable {
         self.on_drag = callback;
         return self;
     }
 
+    /// Calls `callback` when a drag ends.
     pub fn onEnd(self: *Draggable, callback: *const fn (*Draggable, *Vapor.Event) void) *Draggable {
         self.on_drag_end = callback;
         return self;
     }
 
+    /// Calls `callback` when the element is dropped, with the element under the
+    /// pointer, if any.
     pub fn onDrop(self: *Draggable, callback: *const fn (*Draggable, *Vapor.Event, ?*Vapor.Binded) void) *Draggable {
         self.on_drop = callback;
         return self;
     }
 
     // Internal handlers
+    /// Internal: starts a drag; attached to pointerdown.
     pub fn handlePointerDown(self: *Draggable, evt: *Vapor.Event) void {
         if (self.config.disabled) return;
 
@@ -230,11 +245,13 @@ pub const Draggable = struct {
         }
     }
 
+    /// Moves the element to `x`, `y` without recording the position.
     pub fn updatePosition(self: *Draggable, x: f32, y: f32) void {
         _ = self.element.translate3d(.{ .x = x, .y = y });
     }
 
     // Public methods
+    /// Moves the element to `x`, `y` and records it as the current position.
     pub fn setPosition(self: *Draggable, x: f32, y: f32) void {
         self.current_x = x;
         self.current_y = y;
@@ -243,18 +260,22 @@ pub const Draggable = struct {
         self.updatePosition(x, y);
     }
 
+    /// The current position.
     pub fn getPosition(self: *const Draggable) struct { x: f32, y: f32 } {
         return .{ .x = self.x, .y = self.y };
     }
 
+    /// Allows dragging again after `disable`.
     pub fn enable(self: *Draggable) void {
         self.config.disabled = false;
     }
 
+    /// Ignores drags until `enable`.
     pub fn disable(self: *Draggable) void {
         self.config.disabled = true;
     }
 
+    /// Removes the drag listeners.
     pub fn destroy(self: *Draggable) void {
         // Clean up listeners
         if (self.move_listener_id) |id| {
@@ -270,6 +291,7 @@ pub const Draggable = struct {
 };
 
 // Extension method for Vapor.Binded
+/// Same as `Draggable.init`.
 pub fn draggable(element: *Vapor.Binded) *Draggable {
     return Draggable.init(element);
 }

@@ -33,16 +33,20 @@ pub fn isMobile() bool {
     }
 }
 
+/// 32-bit hash of `key` (xxHash32), used for ids and registry keys.
 pub fn hashKey(key: []const u8) u32 {
     return std.hash.XxHash32.hash(0, key);
 }
 
+/// Same as `hashKey`.
 pub fn hash(value: []const u8) u32 {
     return std.hash.XxHash32.hash(0, value);
 }
 
 const base62_chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 
+/// Writes `hash_value` in base 62 into `out` (up to 6 characters) and returns
+/// the length.
 pub fn hashToBufferBase62(hash_value: u32, out: []u8) usize {
     var h = hash_value;
     var i: usize = 0;
@@ -57,21 +61,28 @@ pub fn hashToBufferBase62(hash_value: u32, out: []u8) usize {
     return i;
 }
 
+/// `hash_value` in base 62 (up to 6 characters), written into `buf`.
 pub fn hashToBase62(hash_value: u32, buf: *[6]u8) []const u8 {
     var h = hash_value;
     var i: usize = 0;
+    if (h == 0) {
+        buf[0] = '0';
+        return buf[0..1];
+    }
     while (h > 0 and i < 6) : (i += 1) {
         buf[i] = base62_chars[@intCast(h % 62)];
         h /= 62;
     }
-    return buf[0..@max(i, 1)];
+    return buf[0..i];
 }
 
 const any = *anyopaque;
+/// Casts an opaque pointer back to `T`: `cast(*State, ctx)`.
 pub fn cast(comptime T: type, opaque_ptr: any) T {
     return @ptrCast(@alignCast(opaque_ptr));
 }
 
+/// `T` without its optional, if any.
 pub fn getUnderlyingType(comptime T: type) type {
     return switch (@typeInfo(T)) {
         .optional => std.meta.Child(T),
@@ -79,6 +90,7 @@ pub fn getUnderlyingType(comptime T: type) type {
     };
 }
 
+/// `v` unwrapped from its optional, if any.
 pub fn getUnderlyingValue(comptime T: type, comptime OT: type, v: OT) T {
     return switch (@typeInfo(OT)) {
         .optional => v.?,
@@ -87,43 +99,53 @@ pub fn getUnderlyingValue(comptime T: type, comptime OT: type, v: OT) T {
 }
 
 // Trim whitespace
+/// `str` without leading and trailing whitespace.
 pub fn trim(str: []const u8) []const u8 {
     return std.mem.trim(u8, str, " \t\n\r");
 }
 
 // Check contains / startsWith / endsWith
+/// Whether `haystack` contains `needle`.
 pub fn contains(haystack: []const u8, needle: []const u8) bool {
     return std.mem.indexOf(u8, haystack, needle) != null;
 }
 
+/// Whether `str` starts with `prefix`.
 pub fn startsWith(str: []const u8, prefix: []const u8) bool {
     return std.mem.startsWith(u8, str, prefix);
 }
 
 // Clamp a number
+/// `val` limited to `min_val`..`max_val`.
 pub fn clamp(val: anytype, min_val: anytype, max_val: anytype) @TypeOf(val) {
     return @max(min_val, @min(max_val, val));
 }
 
 // Linear interpolation — great for animations
+/// Linear interpolation from `a` to `b`, with `t` clamped to 0..1.
 pub fn lerp(a: f64, b: f64, t: f64) f64 {
     return a + (b - a) * clamp(t, 0.0, 1.0);
 }
 
+/// Lowercase copy of `str` (ASCII) in `arena_type` memory.
 pub fn toLowerCase(str: []const u8, arena_type: Vapor.ArenaType) []const u8 {
     return std.ascii.allocLowerString(Vapor.arena(arena_type), str) catch return str;
 }
 
+/// Uppercase copy of `str` (ASCII) in `arena_type` memory.
 pub fn toUpperCase(str: []const u8, arena_type: Vapor.ArenaType) []const u8 {
     return std.ascii.allocUpperString(Vapor.arena(arena_type), str) catch return str;
 }
 
+/// Copy of `str` with its first letter uppercased, in `arena_type` memory.
 pub fn firstLetterToUpper(str: []const u8, arena_type: Vapor.ArenaType) []const u8 {
+    if (str.len == 0) return str;
     const capital = std.ascii.allocUpperString(Vapor.allocator_global, str[0..1]) catch return str;
     defer Vapor.allocator_global.free(capital);
     return std.fmt.allocPrint(Vapor.arena(arena_type), "{s}{s}", .{ capital, str[1..] }) catch return str;
 }
 
+/// Copy of `str` with every `needle` replaced by `replacement`.
 pub fn stringReplace(str: []const u8, needle: []const u8, replacement: []const u8, arena_type: Vapor.ArenaType) []const u8 {
     const size = std.mem.replacementSize(u8, str, needle, replacement);
     const buf = Vapor.arena(arena_type).alloc(u8, size) catch return str;
@@ -131,6 +153,7 @@ pub fn stringReplace(str: []const u8, needle: []const u8, replacement: []const u
     return buf;
 }
 
+/// `value` as JSON, in `arena_type` memory.
 pub fn stringify(value: anytype, arena_type: Vapor.ArenaType) ![]const u8 {
     var writer = std.Io.Writer.Allocating.init(Vapor.arena(arena_type));
     try std.json.Stringify.value(value, .{ .emit_null_optional_fields = true, .escape_unicode = true }, &writer.writer);
@@ -138,6 +161,7 @@ pub fn stringify(value: anytype, arena_type: Vapor.ArenaType) ![]const u8 {
     return payload;
 }
 
+/// `input` (JSON) pretty-printed with two-space indents.
 pub fn formatJson(input: []const u8) []const u8 {
     var result = std.array_list.Managed(u8).init(Vapor.arena(.persist));
     var indent_level: usize = 0;
@@ -280,6 +304,7 @@ const SerializeConfig = struct {
     max_depth: usize = 8,
 };
 
+/// `value` serialized as text for the JS runtime, allocated with `allocator`.
 pub fn serializeArgs(allocator: std.mem.Allocator, value: anytype, config: SerializeConfig) ![]const u8 {
     var buf = Vapor.Array(u8).init(allocator);
     errdefer buf.deinit();
@@ -409,4 +434,11 @@ fn serializeValue(writer: anytype, value: anytype, config: SerializeConfig, dept
 
         else => try writer.writeAll("\"<unsupported>\""),
     }
+}
+
+test "hashToBase62 encodes zero as \"0\"" {
+    var buf: [6]u8 = undefined;
+    try std.testing.expectEqualStrings("0", hashToBase62(0, &buf));
+    var out: [6]u8 = undefined;
+    try std.testing.expectEqualStrings("0", out[0..hashToBufferBase62(0, &out)]);
 }

@@ -21,6 +21,7 @@ pub const Methods = FetchModule.Method;
 
 pub const Kit = @This();
 
+/// Current time in seconds since the Unix epoch.
 pub fn timestamp() i64 {
     var threaded: std.Io.Threaded = .init_single_threaded;
     const io = threaded.io();
@@ -28,6 +29,7 @@ pub fn timestamp() i64 {
     return ts.toSeconds();
 }
 
+/// A millisecond clock for measuring intervals (see `throttle`).
 pub fn milliTimestamp() i64 {
     var threaded: std.Io.Threaded = .init_single_threaded;
     const io = threaded.io();
@@ -36,12 +38,14 @@ pub fn milliTimestamp() i64 {
 }
 
 pub const Window = struct {
+    /// Opens `url` in a new tab.
     pub fn openTab(url: []const u8) void {
         if (isWasi) {
             Wasm.windowOpenWasm(url.ptr, url.len);
         }
     }
 
+    /// The URL's query string, or `null` if it has none.
     pub fn paramsStr() ?[]const u8 {
         if (isWasi) {
             const _params = getWindowParamsWasm();
@@ -57,6 +61,7 @@ pub const Window = struct {
         }
     }
 
+    /// The URL's query parameters as a map (frame memory), or `null`.
     pub fn params() ?std.StringHashMap([]const u8) {
         if (isWasi) {
             const params_str = paramsStr() orelse return null;
@@ -65,6 +70,7 @@ pub const Window = struct {
         return null;
     }
 
+    /// The page's origin, e.g. "https://example.com".
     pub fn origin() []const u8 {
         if (isWasi) {
             const _origin = Wasm.getWindowOriginWasm();
@@ -75,6 +81,7 @@ pub const Window = struct {
             return "";
         }
     }
+    /// The current URL path.
     pub fn path() []const u8 {
         if (isWasi) {
             return std.mem.span(getWindowInformationWasm());
@@ -120,6 +127,7 @@ pub const String = struct {
     capacity: usize,
     contents: [65535]u8 = undefined,
 
+    /// An empty string builder.
     pub fn new() String {
         return String{
             .start = 0,
@@ -128,12 +136,14 @@ pub const String = struct {
         };
     }
 
+    /// A string builder holding `initial`.
     pub fn init(initial: []const u8) String {
         var new_string = String.new();
         new_string.append_str(initial);
         return new_string;
     }
 
+    /// Appends `input`.
     pub fn append_str(self: *String, input: []const u8) void {
         const required_len = self.len + input.len;
         const required_capacity = required_len + (10 - required_len % 10);
@@ -146,6 +156,7 @@ pub const String = struct {
     }
 };
 
+/// Writes `data` (a struct) as JSON into `writer`.
 pub fn fastJson(comptime T: type, data: T, writer: *String) !void {
     const fields = @typeInfo(T).@"struct".fields;
     writer.append_str("{");
@@ -218,6 +229,8 @@ pub fn fastJson(comptime T: type, data: T, writer: *String) !void {
 }
 
 var last_time: i64 = 0;
+/// Returns true if less than `delay` ms passed since the last call that
+/// returned false; use it to skip work in rapid-fire handlers.
 pub fn throttle(delay: i64) bool {
     const current_time = milliTimestamp();
     if (current_time - last_time < delay) {
@@ -232,6 +245,7 @@ extern fn setWindowLocationWasm(
     url_len: usize,
 ) void;
 
+/// Navigates the browser to `url` with a full page load.
 pub fn setWindowLocation(url: []const u8) void {
     if (isWasi) {
         setWindowLocationWasm(url.ptr, url.len);
@@ -245,6 +259,7 @@ extern fn navigateWasm(
     path_len: usize,
 ) void;
 
+/// Navigates within the app to `path`, without a page load.
 pub fn navigate(path: []const u8) void {
     if (isWasi) {
         navigateWasm(path.ptr, path.len);
@@ -255,6 +270,7 @@ pub fn navigate(path: []const u8) void {
 
 extern fn backWasm() void;
 
+/// Goes back one entry in the browser history.
 pub fn back() void {
     if (isWasi) {
         backWasm();
@@ -268,6 +284,7 @@ extern fn routePushWASM(
     path_len: usize,
 ) void;
 
+/// Adds `path` to the browser history without navigating.
 pub fn routePush(path: []const u8) void {
     if (isWasi) {
         routePushWASM(path.ptr, path.len);
@@ -278,6 +295,7 @@ pub fn routePush(path: []const u8) void {
 
 extern fn getWindowInformationWasm() [*:0]u8;
 
+/// The current URL path, or `null`.
 pub fn getWindowPath() ?[]const u8 {
     if (isWasi) {
         return std.mem.span(getWindowInformationWasm());
@@ -294,6 +312,7 @@ pub fn getWindowPath() ?[]const u8 {
 
 extern fn getWindowParamsWasm() [*:0]u8;
 
+/// The URL's query string, or `null` if it has none.
 pub fn getWindowParams() ?[]const u8 {
     if (isWasi) {
         const params = getWindowParamsWasm();
@@ -331,6 +350,8 @@ fn decoder(encoded: []const u8, decoded: *std.array_list.Managed(u8)) !void {
     }
 }
 
+/// Parses the query string of `url` into a map allocated with `allocator`;
+/// `null` if it has none.
 pub fn parseParams(url: []const u8, allocator: std.mem.Allocator) !?std.StringHashMap([]const u8) {
     const params_start = std.mem.find(u8, url, "?") orelse return null;
 
@@ -389,6 +410,7 @@ const Param = struct {
     value: []const u8,
 };
 
+/// Scrolls the window to `x`, `y` pixels.
 pub fn scrollTo(x: f32, y: f32) void {
     if (isWasi) {
         Wasm.scrollToWasm(x, y);
@@ -553,6 +575,7 @@ pub const QueryBuilder = struct {
     }
 
     // Helper function to get parameters in order
+    /// The parameters added so far.
     pub fn getParams(query_builder: *QueryBuilder) []const Param {
         return query_builder.params.items;
     }
@@ -594,6 +617,7 @@ pub const FieldDescriptor = packed struct {
 pub fn StructSchema(comptime T: type) type {
     return struct {
         pub var fields: []FieldDescriptor = undefined;
+        /// Internal: records the struct's field layout for the JS runtime.
         pub fn init() void {
             const type_info = @typeInfo(T);
             if (type_info != .@"struct") {
@@ -618,10 +642,12 @@ pub fn StructSchema(comptime T: type) type {
             }
         }
 
+        /// Internal: the recorded field layout.
         pub fn getSchema() []FieldDescriptor {
             return fields;
         }
 
+        /// Internal: the number of recorded fields.
         pub fn getSchemaLength() usize {
             return fields.len;
         }
@@ -691,6 +717,8 @@ pub const Observer = struct {
     callback: *const fn (Target) void,
     oberver_nodes: std.array_list.Managed(Vapor.ObserverNode),
 
+    /// An IntersectionObserver named `name` that calls `callback` when an observed
+    /// element enters or leaves the viewport.
     pub fn new(name: []const u8, callback: fn (Target) void, options: ObserverOptions) Observer {
         const Closure = struct {
             run_node: Vapor.Node = .{ .data = .{ .runFn = runFn, .deinitFn = deinitFn } },
@@ -729,17 +757,20 @@ pub const Observer = struct {
         };
     }
 
+    /// Stops observing every element, keeping the observer.
     pub fn disconnect(self: *Observer) void {
         if (!isWasi) return;
         const hash = hashKey(self.name);
         Wasm.reinitObserverWasm(hash);
     }
 
+    /// Removes the observer named `name`.
     pub fn destroy(name: []const u8) void {
         if (!isWasi) return;
         Wasm.destroyObserverWasm(name.ptr, name.len);
     }
 
+    /// Starts observing `item`.
     pub fn observe(self: *Observer, item: Vapor.ObserverNode, index: ?usize) void {
         if (!isWasi) return;
         self.oberver_nodes.append(item) catch |err| {
@@ -764,6 +795,7 @@ const ObserverExport = DynamicObject.exportStruct(ObserverOptions);
 // --- THE EXPORTS ---
 // Everything inside here gets auto-exported to JS
 pub const API = struct {
+    /// Internal: runs a `registerHook` callback for a navigation.
     pub fn hookInstCallback(id: u32) callconv(.c) void {
         const hook_cb = Vapor.hooks_inst_callbacks.get(id).?;
         const params_str = Kit.getWindowParams() orelse "";
@@ -784,26 +816,31 @@ pub const API = struct {
         @call(.auto, hook_cb, .{context});
     }
 
+    /// Internal: exposes observer options to the JS runtime.
     pub fn getObserverOptions(options: *ObserverOptions) callconv(.c) [*]const u8 {
         ObserverExport.init();
         ObserverExport.instance = options.*;
         return ObserverExport.getInstancePtr();
     }
 
+    /// Internal: field count of the observer options layout.
     pub fn getObserverFieldCount() callconv(.c) u32 {
         return ObserverExport.getFieldCount();
     }
 
+    /// Internal: one field of the observer options layout.
     pub fn getObserverFieldDescriptor(index: u32) callconv(.c) ?*const DynamicObject.FieldDescriptor() {
         return ObserverExport.getFieldDescriptor(index);
     }
 
+    /// Internal: number of elements an observer watches.
     pub fn getObserverNodeCount(observer_name: [*:0]u8) callconv(.c) usize {
         const name = std.mem.span(observer_name);
         const nodes = Vapor.observer_nodes.get(name) orelse return 0;
         return nodes.items.len;
     }
 
+    /// Internal: id of the `index`-th element an observer watches.
     pub fn getObserverNode(observer_name: [*:0]u8, index: usize) callconv(.c) ?[*]const u8 {
         const name = std.mem.span(observer_name);
         const nodes = Vapor.observer_nodes.get(name) orelse return null;
@@ -811,6 +848,7 @@ pub const API = struct {
         return node.uuid.ptr;
     }
 
+    /// Internal: length of that id.
     pub fn getObserverNodeLength(observer_name: [*:0]u8, index: usize) callconv(.c) usize {
         const name = std.mem.span(observer_name);
         const nodes = Vapor.observer_nodes.get(name) orelse return 0;
@@ -818,16 +856,19 @@ pub const API = struct {
         return node.uuid.len;
     }
 
+    /// Internal: exposes resize observer options to the JS runtime.
     pub fn getResizeOptions(options: *ResizeOptions) callconv(.c) [*]const u8 {
         ResizeOptionsExport.init();
         ResizeOptionsExport.instance = options.*;
         return ResizeOptionsExport.getInstancePtr();
     }
 
+    /// Internal: field count of the resize options layout.
     pub fn getResizeOptionsFieldCount() callconv(.c) u32 {
         return ResizeOptionsExport.getFieldCount();
     }
 
+    /// Internal: one field of the resize options layout.
     pub fn getResizeOptionsFieldDescriptor(index: u32) callconv(.c) ?*const DynamicObject.FieldDescriptor() {
         return ResizeOptionsExport.getFieldDescriptor(index);
     }
@@ -866,6 +907,7 @@ fn globalResizeCallback(_: ResizeEntry) void {
     std.log.info("Resized code container", .{});
 }
 
+/// The shared ResizeObserver behind `.onResize`.
 pub fn defaultResizeObserver() *ResizeObserver {
     if (global_resizer) |*resizer| return resizer;
     const resizer = ResizeObserver.new("vapor_global_resizer", globalResizeCallback, .{});
@@ -880,10 +922,12 @@ pub const ResizeCallback = struct {
     callFn: *const fn (*anyopaque, *DynamicObject.DynamicObject) void,
     dynamic_object: ?*DynamicObject = null,
 
+    /// Internal: runs the stored callback with a resize entry.
     pub fn call(self: *const ResizeCallback, entry: *DynamicObject.DynamicObject) void {
         self.callFn(self.ctx, entry);
     }
 
+    /// Internal: wraps `cb` and `args` as a resize callback.
     pub fn make(allocator: std.mem.Allocator, cb: anytype, args: anytype) !ResizeCallback {
         const Args = @TypeOf(args);
 
@@ -915,6 +959,7 @@ pub const ResizeObserver = struct {
     callback: *const fn (Entry) void,
     observer_nodes: std.array_list.Managed(Vapor.ObserverNode),
 
+    /// A ResizeObserver named `name` that calls `callback` with each size change.
     pub fn new(name: []const u8, callback: fn (Entry) void, options: ResizeOptions) ResizeObserver {
         const Closure = struct {
             run_node: Vapor.Node = .{ .data = .{ .runFn = runFn, .deinitFn = deinitFn } },
@@ -952,6 +997,8 @@ pub const ResizeObserver = struct {
         };
     }
 
+    /// Internal: observes `item`, reporting to the callback registered under
+    /// `callback_hash`.
     pub fn observeWithCallback(self: *ResizeObserver, item: Vapor.ObserverNode, callback_hash: ?u32) void {
         if (!isWasi) return;
         self.observer_nodes.append(item) catch |err| {
@@ -970,6 +1017,7 @@ pub const ResizeObserver = struct {
         }
     }
 
+    /// Starts observing `item`.
     pub fn observe(self: *ResizeObserver, item: Vapor.ObserverNode, index: ?usize) void {
         if (!isWasi) return;
         self.observer_nodes.append(item) catch |err| {
@@ -988,18 +1036,21 @@ pub const ResizeObserver = struct {
         }
     }
 
+    /// Stops observing the element `uuid`.
     pub fn unobserve(self: *ResizeObserver, uuid: []const u8) void {
         if (!isWasi) return;
         const hash = hashKey(self.name);
         Wasm.unobserveResizeWasm(hash, uuid.ptr, uuid.len);
     }
 
+    /// Stops observing every element, keeping the observer.
     pub fn disconnect(self: *ResizeObserver) void {
         if (!isWasi) return;
         const hash = hashKey(self.name);
         Wasm.disconnectResizeObserverWasm(hash);
     }
 
+    /// Removes the resize observer named `name`.
     pub fn destroy(name: []const u8) void {
         if (!isWasi) return;
         // The JS side keys observers by name hash, same as `disconnect`.
@@ -1036,12 +1087,15 @@ var wss_callbacks: ?std.AutoHashMap(u32, WssOptions) = null;
 
 pub const Wss = struct {
     id: u32,
+    /// Sends `msg` over the websocket.
     pub fn send(wss: *const Wss, msg: []const u8) void {
         if (!isWasi) return;
         sendWss(wss.id, msg.ptr, msg.len);
     }
 };
 
+/// Opens a websocket to this host on `wss_options.port`, with the given
+/// callbacks. Fails outside the browser.
 pub fn useWss(wss_options: WssOptions) !Wss {
     if (!isWasi) return error.WasiOnly;
     if (wss_callbacks == null) {
@@ -1127,14 +1181,17 @@ comptime {
 }
 
 // Split string into slice of slices
+/// Splits `str` on `delimiter` (no copy).
 pub fn split(str: []const u8, delimiter: []const u8) std.mem.SplitIterator(u8, .sequence) {
     return std.mem.splitSequence(u8, str, delimiter);
 }
 
+/// Whether `str` contains `needle`.
 pub fn contains(str: []const u8, needle: []const u8) bool {
     return utils.contains(str, needle);
 }
 
+/// Whether `str` starts with `prefix`.
 pub fn startsWith(str: []const u8, prefix: []const u8) bool {
     return utils.startsWith(str, prefix);
 }

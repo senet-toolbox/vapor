@@ -313,4 +313,5 @@ test {
     _ = Fetch;
     _ = @import("lib/storage.zig");
     _ = @import("lib/element.zig");
+    _ = @import("lib/utils.zig");
 }

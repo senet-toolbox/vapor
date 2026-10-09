@@ -26,6 +26,7 @@ file_index: usize = 0,
 file_count: usize = 0,
 files: Vapor.Array(File),
 
+/// Reads the files picked in the file input that fired `event`.
 pub fn init(event: *Event) FileReader {
     return .{
         .event = event,
@@ -51,6 +52,7 @@ pub const FileTypes = enum {
     @"text/csv",
 };
 
+/// Reads file `file_index` as text and calls `onload` with it.
 pub fn readText(file_reader: *FileReader, file_index: usize, onload: fn ([]const u8) void) void {
     if (isWasi) {
         var callback_id = file_reader.event.id;
@@ -86,6 +88,7 @@ pub fn readText(file_reader: *FileReader, file_index: usize, onload: fn ([]const
     return;
 }
 
+/// Reads file `file_index` as base64 and calls `onload` with it.
 pub fn readBase64(file_reader: *FileReader, file_index: usize, onload: fn ([]const u8) void) void {
     if (isWasi) {
         var callback_id = file_reader.event.id;
@@ -122,6 +125,7 @@ pub fn readBase64(file_reader: *FileReader, file_index: usize, onload: fn ([]con
     return;
 }
 
+/// Offers `data` to the user as a download named `file_name`.
 pub fn downloadFile(file_name: []const u8, data: []const u8, mime_type: FileTypes) void {
     const file_type = @tagName(mime_type);
     if (isWasi) {
@@ -129,6 +133,7 @@ pub fn downloadFile(file_name: []const u8, data: []const u8, mime_type: FileType
     }
 }
 
+/// An object URL for file `file_index`, for `Image` or `Video` sources.
 pub fn createURLfromFile(file_reader: *FileReader, file_index: usize) ![]const u8 {
     if (isWasi) {
         const ptr = Wasm.createObjectURLWasm(file_reader.event.id, file_index);
@@ -137,6 +142,7 @@ pub fn createURLfromFile(file_reader: *FileReader, file_index: usize) ![]const u
     return error.NonWasi;
 }
 
+/// Name, size and type of file `file_index`.
 pub fn fileInfo(file_reader: *FileReader, file_index: usize) !FileInfo {
     if (isWasi) {
         const handle = Wasm.getFileInfoWasm(file_reader.event.id, file_index);
