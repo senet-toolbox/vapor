@@ -4,12 +4,14 @@ const std = @import("std");
 const Vapor = @import("../vapor.zig");
 const Accessibility = @import("../accessibility.zig").Accessibility;
 
+/// All accessibility attributes at once; see `Vapor.Accessibility`.
 pub fn a11y(self: *const Self, accessibility: Accessibility) Self {
     var n = self.*;
     n._accessibility = accessibility;
     return n;
 }
 
+/// Accessible name for screen readers (`aria-label`).
 pub fn ariaLabel(self: *const Self, label: []const u8) Self {
     var n = self.*;
     var acc = n._accessibility orelse Accessibility{};
@@ -18,6 +20,7 @@ pub fn ariaLabel(self: *const Self, label: []const u8) Self {
     return n;
 }
 
+/// ARIA role, e.g. `.button`, `.dialog`.
 pub fn role(self: *const Self, r: Accessibility.Role) Self {
     var n = self.*;
     var acc = n._accessibility orelse Accessibility{};
@@ -26,6 +29,7 @@ pub fn role(self: *const Self, r: Accessibility.Role) Self {
     return n;
 }
 
+/// Whether the control's popup or section is open (`aria-expanded`).
 pub fn ariaExpanded(self: *const Self, expanded: bool) Self {
     var n = self.*;
     var acc = n._accessibility orelse Accessibility{};
@@ -34,6 +38,7 @@ pub fn ariaExpanded(self: *const Self, expanded: bool) Self {
     return n;
 }
 
+/// Whether the item is selected (`aria-selected`).
 pub fn ariaSelected(self: *const Self, selected: bool) Self {
     var n = self.*;
     var acc = n._accessibility orelse Accessibility{};
@@ -42,6 +47,7 @@ pub fn ariaSelected(self: *const Self, selected: bool) Self {
     return n;
 }
 
+/// Id of the element this one controls (`aria-controls`).
 pub fn ariaControls(self: *const Self, uuid: []const u8) Self {
     var n = self.*;
     var acc = n._accessibility orelse Accessibility{};
@@ -50,6 +56,8 @@ pub fn ariaControls(self: *const Self, uuid: []const u8) Self {
     return n;
 }
 
+/// Id of the focused descendant in a composite widget
+/// (`aria-activedescendant`). `null` clears it.
 pub fn ariaActiveDescendant(self: *const Self, uuid: ?[]const u8) Self {
     var n = self.*;
     var acc = n._accessibility orelse Accessibility{};
@@ -58,6 +66,7 @@ pub fn ariaActiveDescendant(self: *const Self, uuid: ?[]const u8) Self {
     return n;
 }
 
+/// Hides the element from assistive technology (`aria-hidden`).
 pub fn ariaHidden(self: *const Self, hidden_val: bool) Self {
     var n = self.*;
     var acc = n._accessibility orelse Accessibility{};
@@ -66,6 +75,7 @@ pub fn ariaHidden(self: *const Self, hidden_val: bool) Self {
     return n;
 }
 
+/// Tab order: 0 joins the normal order, -1 makes it focusable only from code.
 pub fn tabIndex(self: *const Self, index: i16) Self {
     var n = self.*;
     var acc = n._accessibility orelse Accessibility{};
@@ -74,21 +84,26 @@ pub fn tabIndex(self: *const Self, index: i16) Self {
     return n;
 }
 
+/// The form field name (`name` attribute) a `Form` submits it under.
 pub fn fieldName(self: *const Self, name: []const u8) Self {
     var n = self.*;
     n._name = name;
     return n;
 }
 
+/// Uses the text as given instead of copying it. Only for strings that outlive
+/// the page, such as literals and globals.
 pub fn unmanaged(self: *const Self) Self {
     var n = self.*;
     n._persisted_text = false;
     return n;
 }
 
-pub fn hidden(self: *const Self, shown: bool) Self {
+/// Leaves the element out of the layout (`display: none`) while `is_hidden` is
+/// true. Unlike `.hide`, this works on every render, the first included.
+pub fn hidden(self: *const Self, is_hidden: bool) Self {
     var n = self.*;
-    if (!shown) return n;
+    if (!is_hidden) return n;
     n._flex_type = .hidden;
     return n;
 }
@@ -107,6 +122,7 @@ pub fn id(self: *const Self, element_id: []const u8) Self {
     return n;
 }
 
+/// Gives the element an id made from a source location: `.src(@src())`.
 pub fn src(self: *const Self, source_location: std.builtin.SourceLocation) Self {
     var n = self.*;
     n._id = Vapor.frame.fmt("{s}-{d}", .{ source_location.file, source_location.line });
@@ -114,12 +130,16 @@ pub fn src(self: *const Self, source_location: std.builtin.SourceLocation) Self 
     return n;
 }
 
+/// Makes this element the CSS anchor named `name`, for elements positioned
+/// with `anchorPlacement`.
 pub fn anchorSource(self: *const Self, name: []const u8) Self {
     var n = self.*;
     n._anchor = name;
     return n;
 }
 
+/// Sets the DOM attribute `attribute_name` once the element is on the page. Both
+/// strings must stay valid until then (literals, or frame allocations).
 pub fn attribute(self: *const Self, attribute_name: []const u8, value: []const u8) *const Self {
     const ui_node = self._ui_node orelse {
         Vapor.printlnSrcErr("Node is null", .{}, @src());

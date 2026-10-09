@@ -566,6 +566,28 @@ test "an oversized Svg renders empty instead of panicking" {
     _ = try renderRoute("/root/big-svg");
 }
 
+fn ItemsPage() void {
+    Vapor.Box().id("items-box").items(.{ Vapor.Text("a"), Vapor.Heading(2, "b") });
+    Vapor.Box().id("child-box").child(Vapor.Text("c"));
+}
+
+// Text and Center return *Builder; items()/child() only finished children
+// of type Builder, so a Text passed to them was left unconfigured.
+test "items and child finish every child builder, pointers included" {
+    Vapor.init(.{});
+    Vapor.Animation.new();
+    Vapor.lib.resetRerender();
+    Vapor.Animation.removal_queue.clearRetainingCapacity();
+    Vapor.Page(.{ .route = "/items" }, ItemsPage, null);
+    const root = try renderRoute("/root/items");
+    const items_box = Vapor.lib.getUINodeChild(root, 0) orelse return error.MissingItemsBox;
+    const a = Vapor.lib.getUINodeChild(items_box, 0) orelse return error.MissingA;
+    try std.testing.expectEqualStrings("a", a.text orelse return error.TextNotConfigured);
+    const child_box = Vapor.lib.getUINodeChild(root, 1) orelse return error.MissingChildBox;
+    const c = Vapor.lib.getUINodeChild(child_box, 0) orelse return error.MissingC;
+    try std.testing.expectEqualStrings("c", c.text orelse return error.TextNotConfigured);
+}
+
 test "renderCycle leaves stable same-route rerenders clean" {
     initRenderCycleRuntime("/cycle-stable");
 
@@ -928,6 +950,12 @@ fn docEventMethods() void {
     _ = box.onUpdate(docHook, .{@as(u32, 1)});
     _ = box.onDestroy(docHook, .{@as(u32, 1)});
     _ = box.onMountCtx(docHook, .{@as(u32, 1)});
+    _ = box.onEvent(.keydown, docCtxHandler, .{@as(u32, 1)});
+    Vapor.Box().child(Vapor.Text("x"));
+    Vapor.Row().items(.{ Vapor.Text("a"), Vapor.Text("b") });
+    Vapor.Box().children({
+        Vapor.Text("a").end();
+    });
     const field = Vapor.TextField(.string);
     _ = field.onFocus(docEventHandler);
     _ = field.onBlur(docEventHandler);
@@ -975,6 +1003,8 @@ test "README examples type-check against the real API" {
         _ = @TypeOf(Vapor.Box().inlineStyle("grid-area: {s};", .{"main"}));
         _ = @TypeOf(Vapor.Box().classFmt("col-{d}", .{2}));
         _ = @TypeOf(Vapor.Text("x").font(16, 600, .black));
+        _ = @TypeOf(Vapor.Box().src(@src()));
+        _ = @TypeOf(Vapor.Box().role(.button));
 
         _ = &docEventMethods;
         _ = &docGenericApi;

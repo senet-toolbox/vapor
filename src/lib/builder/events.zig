@@ -9,6 +9,8 @@ const utils = @import("../utils.zig");
 const hashKey = utils.hashKey;
 const Draggable = @import("../draggable.zig").Draggable;
 
+/// Has no effect on these elements: binding a value is for `TextField` and
+/// `TextArea` (see their `.bind`).
 pub fn bind(self: *const Self, value: anytype) Self {
     var n = self.*;
     if (self._elem_type != .TextField) {
@@ -23,6 +25,7 @@ pub fn bind(self: *const Self, value: anytype) Self {
     return n;
 }
 
+/// Calls `cb` with the event when the element gains focus.
 pub fn onFocus(self: *const Self, cb: fn (*Vapor.Event) void) Self {
     var n = self.*;
     const ui_node = self.getOrCreateNode(&n);
@@ -33,6 +36,7 @@ pub fn onFocus(self: *const Self, cb: fn (*Vapor.Event) void) Self {
     return n;
 }
 
+/// Calls `cb` with the event when the element loses focus.
 pub fn onBlur(self: *const Self, cb: fn (*Vapor.Event) void) Self {
     var n = self.*;
     const ui_node = self.getOrCreateNode(&n);
@@ -43,6 +47,8 @@ pub fn onBlur(self: *const Self, cb: fn (*Vapor.Event) void) Self {
     return n;
 }
 
+/// Calls `func` with `args` and then the event whenever the element's value
+/// changes (the DOM `input` event).
 pub fn onChange(self: *const Self, func: anytype, args: anytype) *const Self {
     const ui_node = self._ui_node orelse {
         Vapor.printlnSrcErr("Node is null", .{}, @src());
@@ -56,6 +62,8 @@ pub fn onChange(self: *const Self, func: anytype, args: anytype) *const Self {
     return self;
 }
 
+/// Calls `callback` whenever the element resizes (a ResizeObserver). The
+/// callback takes `args` and a `Vapor.Kit.ResizeEntry` with the new size.
 pub fn onResize(self: *const Self, callback: anytype, args: anytype) *const Self {
     const resizer = Vapor.Kit.defaultResizeObserver();
 
@@ -90,6 +98,7 @@ pub fn onResize(self: *const Self, callback: anytype, args: anytype) *const Self
     return self;
 }
 
+/// Calls `callback` with `args` once the element is on the page.
 pub fn onMount(self: *const Self, callback: anytype, args: anytype) *const Self {
     if (@typeInfo(@TypeOf(callback)) != .@"fn") {
         @compileError("onMount callback must be a function, got " ++ @typeName(@TypeOf(callback)));
@@ -118,6 +127,7 @@ pub fn onMount(self: *const Self, callback: anytype, args: anytype) *const Self 
     return self;
 }
 
+/// Calls `callback` with `args` when a render changes the element.
 pub fn onUpdate(self: *const Self, callback: anytype, args: anytype) *const Self {
     if (@typeInfo(@TypeOf(callback)) != .@"fn") {
         @compileError("onUpdate callback must be a function, got " ++ @typeName(@TypeOf(callback)));
@@ -146,6 +156,7 @@ pub fn onUpdate(self: *const Self, callback: anytype, args: anytype) *const Self
     return self;
 }
 
+/// Calls `callback` with `args` when the element is removed from the page.
 pub fn onDestroy(self: *const Self, callback: anytype, args: anytype) *const Self {
     if (@typeInfo(@TypeOf(callback)) != .@"fn") {
         @compileError("onDestroy callback must be a function, got " ++ @typeName(@TypeOf(callback)));
@@ -175,6 +186,8 @@ pub fn onDestroy(self: *const Self, callback: anytype, args: anytype) *const Sel
     return self;
 }
 
+/// Calls `func` with `args` and the event when the pointer moves onto the
+/// element and again when it leaves (mouseover and mouseout).
 pub fn ifMouseOver(self: *const Self, func: anytype, args: anytype) *const Self {
     const ui_node = self._ui_node orelse {
         Vapor.printlnSrcErr("Node is null", .{}, @src());
@@ -193,6 +206,7 @@ pub fn ifMouseOver(self: *const Self, func: anytype, args: anytype) *const Self 
     return self;
 }
 
+/// Calls `func` with `args` and the event when the pointer enters the element.
 pub fn onHover(self: *const Self, func: anytype, args: anytype) *const Self {
     const ui_node = self._ui_node orelse {
         Vapor.printlnSrcErr("Node is null", .{}, @src());
@@ -205,6 +219,7 @@ pub fn onHover(self: *const Self, func: anytype, args: anytype) *const Self {
     return self;
 }
 
+/// Calls `func` with `args` and the event when the pointer leaves the element.
 pub fn onLeave(self: *const Self, func: anytype, args: anytype) *const Self {
     const ui_node = self._ui_node orelse {
         Vapor.printlnSrcErr("Node is null", .{}, @src());
@@ -217,6 +232,8 @@ pub fn onLeave(self: *const Self, func: anytype, args: anytype) *const Self {
     return self;
 }
 
+/// Whether this element's events trigger a rerender (default `true`). Turn it
+/// off for handlers that change no state, such as pointer tracking.
 pub fn cycle(self: *const Self, should_cycle: bool) *const Self {
     const ui_node = self._ui_node orelse {
         Vapor.printlnSrcErr("Node is null", .{}, @src());
@@ -226,6 +243,8 @@ pub fn cycle(self: *const Self, should_cycle: bool) *const Self {
     return self;
 }
 
+/// Calls `func` with `args` and the event whenever `event` fires on the element:
+/// `.onEvent(.keydown, onKey, .{&state})`.
 pub fn onEvent(self: *const Self, event: types.EventType, func: anytype, args: anytype) Self {
     const ui_node = self._ui_node orelse {
         Vapor.printlnSrcErr("Node is null", .{}, @src());
@@ -238,6 +257,7 @@ pub fn onEvent(self: *const Self, event: types.EventType, func: anytype, args: a
     return self.*;
 }
 
+/// Same as `onEvent`, but returns a pointer to the builder.
 pub fn onEventCtx(self: *const Self, event: types.EventType, func: anytype, args: anytype) *const Self {
     const ui_node = self._ui_node orelse {
         Vapor.printlnSrcErr("Node is null", .{}, @src());
@@ -250,10 +270,13 @@ pub fn onEventCtx(self: *const Self, event: types.EventType, func: anytype, args
     return self;
 }
 
+/// Same as `onMount`.
 pub fn onMountCtx(self: *const Self, cb: anytype, args: anytype) Self {
     return self.onMount(cb, args).*;
 }
 
+/// Calls `cb` with `args` and the event when the pointer enters the element
+/// (mouseenter).
 pub fn onHoverCtx(self: *const Self, cb: anytype, args: anytype) Self {
     var n = self.*;
     const ui_node = self.getOrCreateNode(&n);
@@ -264,6 +287,7 @@ pub fn onHoverCtx(self: *const Self, cb: anytype, args: anytype) Self {
     return n;
 }
 
+/// Calls `cb` with the event when a pointer is pressed on the element.
 pub fn onDragStart(self: *const Self, cb: fn (*Vapor.Event) void) Self {
     var n = self.*;
     const ui_node = self.getOrCreateNode(&n);
@@ -274,6 +298,7 @@ pub fn onDragStart(self: *const Self, cb: fn (*Vapor.Event) void) Self {
     return n;
 }
 
+/// Makes the element draggable with the drag state in `draggable_ptr`.
 pub fn createDraggable(self: *const Self, draggable_ptr: *Draggable) *const Self {
     var element = draggable_ptr.element;
     var ui_node = self._ui_node orelse {
@@ -297,6 +322,8 @@ pub fn createDraggable(self: *const Self, draggable_ptr: *Draggable) *const Self
     return self;
 }
 
+/// Fills `element` with a handle to this element, for reading its size, scroll
+/// position or attributes after it is on the page.
 pub fn ref(self: *const Self, element: *Element) Self {
     var n = self.*;
     const ui_node = self.getOrCreateNode(&n);

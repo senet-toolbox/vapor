@@ -4,12 +4,16 @@ const Vapor = @import("../vapor.zig");
 const UINode = @import("../UITree.zig").UINode;
 const LifeCycle = @import("../vapor.zig").LifeCycle;
 
+/// Finishes a child passed to `child`/`items`. Builders come by value or, from
+/// `Text` and `Center`, by pointer.
+fn endChild(item: anytype) void {
+    const T = @TypeOf(item);
+    if (T == Self or T == *Self or T == *const Self) item.end();
+}
+
+/// Closes a container with exactly one child builder: `Box().child(Text("x"))`.
 pub fn child(self: *const Self, item: anytype) void {
-    if (@TypeOf(item) == Self) {
-        var added_node: Self = item;
-        added_node._ui_node = item._ui_node;
-        added_node.end();
-    }
+    endChild(item);
 
     var inline_style = self._inlineStyle;
     if (self._element) |el| blk: {
@@ -25,14 +29,10 @@ pub fn child(self: *const Self, item: anytype) void {
     return Vapor.LifeCycle.close({});
 }
 
+/// Closes a container with the child builders in a tuple:
+/// `Row().items(.{ Text("a"), Text("b") })`.
 pub fn items(self: *const Self, nodes: anytype) void {
-    inline for (nodes) |kid| {
-        if (@TypeOf(kid) == Self) {
-            var added_node: Self = kid;
-            added_node._ui_node = kid._ui_node;
-            added_node.end();
-        }
-    }
+    inline for (nodes) |kid| endChild(kid);
 
     var inline_style = self._inlineStyle;
     if (self._element) |el| blk: {
@@ -47,6 +47,9 @@ pub fn items(self: *const Self, nodes: anytype) void {
     return Vapor.LifeCycle.close({});
 }
 
+/// Closes a container. Write its children as the block argument:
+/// `Box().children({ Text("a").end(); })`. The block runs first, so the
+/// children are built inside this element.
 pub fn children(self: *const Self, _: void) void {
     if (self._used_style) return Vapor.LifeCycle.close({});
     var mutable_style = Components.mergeStyles(self.getStyleMergeParams(true, false));
@@ -63,6 +66,7 @@ pub fn children(self: *const Self, _: void) void {
     return Vapor.LifeCycle.close({});
 }
 
+/// Internal: copies a node's rendered fields for `clone`.
 pub fn copyFields(dst: *UINode, node_src: *const UINode) void {
     dst.text = node_src.text;
     dst.href = node_src.href;
@@ -88,6 +92,7 @@ pub fn copyFields(dst: *UINode, node_src: *const UINode) void {
     dst.hover_style_fields = node_src.hover_style_fields;
 }
 
+/// Internal: clones a node's subtree for `clone`.
 pub fn cloneRecurse(ui_node: *UINode) void {
     var itr = ui_node.children();
     while (itr.next()) |og_child| {
@@ -101,6 +106,7 @@ pub fn cloneRecurse(ui_node: *UINode) void {
     }
 }
 
+/// Renders a copy of this already-built element and its subtree.
 pub fn clone(self: *const Self) void {
     const ui_node = self._ui_node orelse @panic("vapor: builder has no node");
     const cloned_ui_node = Components.createNode(.{
@@ -112,6 +118,7 @@ pub fn clone(self: *const Self) void {
     return Vapor.LifeCycle.close({});
 }
 
+/// Closes the element without children. Same as `.children({})`.
 pub fn close(self: *const Self) void {
     if (self._used_style) return Vapor.LifeCycle.close({});
     var mutable_style = Components.mergeStyles(self.getStyleMergeParams(true, false));
@@ -128,6 +135,8 @@ pub fn close(self: *const Self) void {
     return Vapor.LifeCycle.close({});
 }
 
+/// Finishes a leaf element (`Text`, `Image`, `Icon`, ...). On a container,
+/// closes it with no children.
 pub fn end(self: *const Self) void {
     const ui_node = self._ui_node orelse @panic("vapor: builder has no node");
     if (self._used_style) {
@@ -150,6 +159,7 @@ pub fn end(self: *const Self) void {
     if (ui_node.can_have_children) LifeCycle.close({});
 }
 
+/// The element's id: the one set with `.id`, or the generated one.
 pub fn getUUID(self: *const Self) []const u8 {
     if (self._ui_node == null) {
         Vapor.printlnSrcErr("getUUID Failed: Node is null", .{}, @src());
