@@ -869,6 +869,9 @@ test "README examples type-check against the real API" {
         _ = @TypeOf(Vapor.Box().width(.px(320)).width(.percent(50)).width(.expand));
         _ = @TypeOf(Vapor.Heading(2, "Settings"));
         _ = @TypeOf(Vapor.TextFmt("{d} items", .{3}));
+        _ = @TypeOf(Vapor.Box().inlineStyle("grid-area: {s};", .{"main"}));
+        _ = @TypeOf(Vapor.Box().classFmt("col-{d}", .{2}));
+        _ = @TypeOf(Vapor.Text("x").font(16, 600, .black));
 
         // "A minimal app"
         _ = @TypeOf(Vapor.Center().size(.full));
