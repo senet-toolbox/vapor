@@ -17,13 +17,16 @@ pub export fn getAriaLabelLen() usize {
     return current_label_len;
 }
 
+/// The opposite of `isMobile`.
 pub fn isDesktop() bool {
     return !isMobile();
 }
 
+/// Whether the window is narrower than 768px, the same breakpoint the
+/// `.responsive(.mobile, ...)` styles use. Always false outside the browser.
 pub fn isMobile() bool {
     if (!Vapor.isWasi) return false;
-    if (Vapor.browser_width < 786) {
+    if (Vapor.browser_width < 768) {
         return true;
     } else {
         return false;

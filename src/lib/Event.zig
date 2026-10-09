@@ -10,18 +10,23 @@ pub const Event = @This();
 id: u32,
 type: Vapor.Types.EventType,
 
+/// The key pressed (`KeyboardEvent.key`): "a", "Enter", "ArrowUp", ... Valid
+/// for this render; copy it with `Vapor.dupe` to keep it.
 pub fn key(evt: *Event) []const u8 {
     const key_str: []const u8 = "key";
     const resp = getEventData(evt.id, key_str.ptr, key_str.len);
     return std.mem.span(resp);
 }
 
+/// The kind of edit (`InputEvent.inputType`), e.g. "insertText",
+/// "deleteContentBackward".
 pub fn inputType(evt: *Event) []const u8 {
     const key_str: []const u8 = "inputType";
     const resp = getEventData(evt.id, key_str.ptr, key_str.len);
     return std.mem.span(resp);
 }
 
+/// Whether the Meta (Cmd / Windows) key was held.
 pub fn metaKey(evt: *Event) bool {
     const key_str: []const u8 = "metaKey";
     const resp = getEventData(evt.id, key_str.ptr, key_str.len);
@@ -31,6 +36,7 @@ pub fn metaKey(evt: *Event) bool {
         else => return false,
     }
 }
+/// Whether Shift was held.
 pub fn shiftKey(evt: *Event) bool {
     const key_str: []const u8 = "shiftKey";
     const resp = getEventData(evt.id, key_str.ptr, key_str.len);
@@ -41,6 +47,7 @@ pub fn shiftKey(evt: *Event) bool {
     }
 }
 
+/// Whether Control was held.
 pub fn ctrlKey(evt: *Event) bool {
     const key_str: []const u8 = "ctrlKey";
     const resp = getEventData(evt.id, key_str.ptr, key_str.len);
@@ -51,6 +58,7 @@ pub fn ctrlKey(evt: *Event) bool {
     }
 }
 
+/// Whether Alt (Option) was held.
 pub fn altKey(evt: *Event) bool {
     const key_str: []const u8 = "altKey";
     const resp = getEventData(evt.id, key_str.ptr, key_str.len);
@@ -61,11 +69,14 @@ pub fn altKey(evt: *Event) bool {
     }
 }
 
+/// The target field's current value. Valid for this render; copy it with
+/// `Vapor.dupe` to keep it.
 pub fn text(evt: *Event) []const u8 {
     const resp = getEventDataInput(evt.id);
     return std.mem.span(resp);
 }
 
+/// The target field's value parsed as an `i32`; `error.EmptyString` when empty.
 pub fn number(evt: *Event) !i32 {
     const resp = getEventDataInput(evt.id);
     const num_str = std.mem.span(resp);
@@ -73,6 +84,7 @@ pub fn number(evt: *Event) !i32 {
     return try std.fmt.parseInt(i32, num_str, 10);
 }
 
+/// The target field's value parsed as an `i64`; `error.EmptyString` when empty.
 pub fn int64(evt: *Event) !i64 {
     const resp = getEventDataInput(evt.id);
     const num_str = std.mem.span(resp);
@@ -80,6 +92,7 @@ pub fn int64(evt: *Event) !i64 {
     return try std.fmt.parseInt(i64, num_str, 10);
 }
 
+/// The target field's value parsed as an `f32`; `error.EmptyString` when empty.
 pub fn float(evt: *Event) !f32 {
     const resp = getEventDataInput(evt.id);
     const num_str = std.mem.span(resp);
@@ -87,6 +100,10 @@ pub fn float(evt: *Event) !f32 {
     return try std.fmt.parseFloat(f32, num_str);
 }
 
+/// The submitted form's fields as a copy of `form_value.*` with each field
+/// filled in from the form control of the same name; `null` if the form is
+/// empty. Pass a pointer to a struct whose field names match the controls'
+/// `.fieldName(...)`.
 pub fn formData(evt: *Event, form_value: anytype) ?@typeInfo(@TypeOf(form_value)).pointer.child {
     if (isWasi) {
         const handle = Wasm.formDataWasm(evt.id);
@@ -190,48 +207,58 @@ fn fillStruct(comptime T: type, cloned_form: *T, obj: *DynamicObject.DynamicObje
     }
 }
 
+/// Stops the browser's default action, e.g. a form submission reloading the
+/// page.
 pub fn preventDefault(evt: *Event) void {
     if (isWasi) {
         Wasm.eventPreventDefault(evt.id);
     }
 }
 
+/// Stops the event reaching handlers on parent elements.
 pub fn stopPropagation(evt: *Event) void {
     if (isWasi) {
         Wasm.eventStopPropagation(evt.id);
     }
 }
 
+/// The target's vertical scroll offset in pixels.
 pub fn scrollTop(evt: *Event) f32 {
     const key_str: []const u8 = "scrollTop";
     return getEventDataNumber(evt.id, key_str.ptr, key_str.len);
 }
 
+/// Pointer x in pixels, relative to the viewport.
 pub fn clientX(evt: *Event) f32 {
     const key_str: []const u8 = "clientX";
     return getEventDataNumber(evt.id, key_str.ptr, key_str.len);
 }
 
+/// Pointer y in pixels, relative to the viewport.
 pub fn clientY(evt: *Event) f32 {
     const key_str: []const u8 = "clientY";
     return getEventDataNumber(evt.id, key_str.ptr, key_str.len);
 }
 
+/// Pointer x in pixels, relative to the target element.
 pub fn offsetX(evt: *Event) f32 {
     const key_str: []const u8 = "offsetX";
     return getEventDataNumber(evt.id, key_str.ptr, key_str.len);
 }
 
+/// Pointer y in pixels, relative to the target element.
 pub fn offsetY(evt: *Event) f32 {
     const key_str: []const u8 = "offsetY";
     return getEventDataNumber(evt.id, key_str.ptr, key_str.len);
 }
 
+/// Pointer x in pixels, relative to the whole page.
 pub fn pageX(evt: *Event) f32 {
     const key_str: []const u8 = "pageX";
     return getEventDataNumber(evt.id, key_str.ptr, key_str.len);
 }
 
+/// Pointer y in pixels, relative to the whole page.
 pub fn pageY(evt: *Event) f32 {
     const key_str: []const u8 = "pageY";
     return getEventDataNumber(evt.id, key_str.ptr, key_str.len);
@@ -255,12 +282,14 @@ pub const ScrollBlock = enum(u8) {
     nearest,
 };
 
+/// Scrolls the element with id `uuid` into view.
 pub fn scrollIntoView(uuid: []const u8, options: ScrollIntoViewOptions) void {
     if (Vapor.isWasi) {
         Wasm.scrollIntoViewWasm(uuid.ptr, uuid.len, options.behavior, options.block);
     }
 }
 
+/// Pointer movement in x since the previous move event, in pixels.
 pub fn movementX(evt: *Event) f32 {
     const key_str: []const u8 = "movementX";
     if (Vapor.isWasi) {
@@ -269,6 +298,7 @@ pub fn movementX(evt: *Event) f32 {
     return 0;
 }
 
+/// Pointer movement in y since the previous move event, in pixels.
 pub fn movementY(evt: *Event) f32 {
     const key_str: []const u8 = "movementY";
     if (Vapor.isWasi) {
@@ -279,6 +309,7 @@ pub fn movementY(evt: *Event) f32 {
 
 // Static buffers for the dummy returns
 var dummy_string_buffer: [256:0]u8 = undefined;
+/// Internal: reads the named property of event `id` from the runtime.
 pub fn getEventData(id: u32, ptr: [*]const u8, len: u32) [*:0]u8 {
     if (isWasi) {
         return Wasm.getEventDataWasm(id, ptr, len);
@@ -291,6 +322,7 @@ pub fn getEventData(id: u32, ptr: [*]const u8, len: u32) [*:0]u8 {
     }
 }
 
+/// Internal: reads the value of event `id`'s target from the runtime.
 pub fn getEventDataInput(id: u32) [*:0]u8 {
     if (isWasi) {
         return Wasm.getEventDataInputWasm(id);
@@ -303,6 +335,7 @@ pub fn getEventDataInput(id: u32) [*:0]u8 {
     }
 }
 
+/// Internal: reads the named numeric property of event `id` from the runtime.
 pub fn getEventDataNumber(id: u32, ptr: [*]const u8, len: u32) f32 {
     if (isWasi) {
         return Wasm.getEventDataNumberWasm(id, ptr, len);

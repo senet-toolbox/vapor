@@ -1036,6 +1036,8 @@ test "README examples type-check against the real API" {
         _ = @TypeOf(Vapor.Text("x").font(16, 600, .black));
         _ = @TypeOf(Vapor.Box().src(@src()));
         _ = @TypeOf(Vapor.Box().role(.button));
+        _ = @TypeOf(Vapor.Box().background(.palette(.primary)));
+        _ = @TypeOf(Vapor.Box().background(.hex("#4400ff")));
 
         _ = &docEventMethods;
         _ = &docGenericApi;
@@ -1230,6 +1232,24 @@ test "style compiler emits padding and margin declarations" {
         writer.getAll(),
     );
     try std.testing.expect(!writer.overflowed);
+}
+
+// min_max_vp and elastic_percent widths wrote min-width from the max value.
+test "style compiler keeps min and max apart for vp and elastic widths" {
+    var buf: [1024]u8 = undefined;
+    var writer: Vapor.Writer = undefined;
+
+    writer.init(&buf);
+    const vp = Vapor.Types.PackedLayout{ .size = .{ .width = .min_max_vp(10, 90) } };
+    StyleCompiler.generateLayout(&vp, &writer);
+    try std.testing.expect(std.mem.indexOf(u8, writer.getAll(), "min-width:10.00vw;") != null);
+    try std.testing.expect(std.mem.indexOf(u8, writer.getAll(), "max-width:90.00vw;") != null);
+
+    writer.init(&buf);
+    const elastic = Vapor.Types.PackedLayout{ .size = .{ .width = .{ .type = .elastic_percent, .size = .{ .min = 20, .max = 80 } } } };
+    StyleCompiler.generateLayout(&elastic, &writer);
+    try std.testing.expect(std.mem.indexOf(u8, writer.getAll(), "min-width:20.00%;") != null);
+    try std.testing.expect(std.mem.indexOf(u8, writer.getAll(), "max-width:80.00%;") != null);
 }
 
 test "style compiler truncates instead of running past its buffer" {

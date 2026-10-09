@@ -41,12 +41,14 @@ pub const Size = packed struct {
     height: Sizing = .{},
     pub const full = Size{ .width = .percent(100), .height = .percent(100) };
     pub const expand = Size{ .width = .expand, .height = .expand };
+    /// `size` pixels wide and high.
     pub fn square_px(size: f32) Size {
         return .{
             .width = .px(size),
             .height = .px(size),
         };
     }
+    /// `size` percent of the parent's width and height.
     pub fn square_percent(size: f32) Size {
         return .{
             .width = .percent(size),
@@ -54,6 +56,7 @@ pub const Size = packed struct {
         };
     }
 
+    /// `size` pixels wide and high. Same as `square_px`.
     pub fn px(size: f32) Size {
         return .{
             .width = .px(size),
@@ -61,6 +64,7 @@ pub const Size = packed struct {
         };
     }
 
+    /// `size` percent of the parent's width and height. Same as `square_percent`.
     pub fn percent(size: f32) Size {
         return .{
             .width = .percent(size),
@@ -113,6 +117,7 @@ pub const Sizing = packed struct {
     pub const fit = Sizing{ .type = .fit, .size = .{ .min = 0, .max = 0 } };
     pub const full = percent(100);
 
+    /// A fixed length in pixels.
     pub fn px(size: f32) Sizing {
         return .{ .type = .fixed, .size = .{
             .min = size,
@@ -120,6 +125,7 @@ pub const Sizing = packed struct {
         } };
     }
 
+    /// A length in viewport units (`vw` for widths, `vh` for heights).
     pub fn vp(size: f32) Sizing {
         return .{ .type = .vp, .size = .{
             .min = size,
@@ -127,6 +133,7 @@ pub const Sizing = packed struct {
         } };
     }
 
+    /// Free to size itself between `min` and `max` pixels.
     pub fn elastic(min: f32, max: f32) Sizing {
         return .{ .type = .elastic, .size = .{
             .min = min,
@@ -134,6 +141,7 @@ pub const Sizing = packed struct {
         } };
     }
 
+    /// A percentage of the parent's size.
     pub fn percent(size: f32) Sizing {
         return .{ .type = .percent, .size = .{
             .min = size,
@@ -141,6 +149,7 @@ pub const Sizing = packed struct {
         } };
     }
 
+    /// Between `min` and `max` viewport units.
     pub fn min_max_vp(min: f32, max: f32) Sizing {
         return .{ .type = .min_max_vp, .size = .{
             .min = min,
@@ -148,6 +157,8 @@ pub const Sizing = packed struct {
         } };
     }
 
+    /// `mobile` percent on mobile, `desktop` percent otherwise, decided when the
+    /// style is built (see `Vapor.isMobile`).
     pub fn at(mobile: f32, desktop: f32) Sizing {
         if (isMobile()) {
             return .{ .type = .percent, .size = .{
@@ -161,6 +172,7 @@ pub const Sizing = packed struct {
         } };
     }
 
+    /// Same as `at`.
     pub fn mobile_desktop_percent(mobile: f32, desktop: f32) Sizing {
         if (isMobile()) {
             return .{ .type = .percent, .size = .{
@@ -174,6 +186,7 @@ pub const Sizing = packed struct {
         } };
     }
     //
+    /// `mobile` on mobile, `desktop` otherwise, decided when the style is built.
     pub fn mobile_desktop(mobile: Sizing, desktop: Sizing) Sizing {
         if (isMobile()) {
             return mobile;
@@ -182,6 +195,9 @@ pub const Sizing = packed struct {
         }
     }
 
+    /// Between `min` and `max` in `unit`. With `.percent` this is CSS
+    /// `clamp(min, preferred, max)`; with `.px` the element sizes to its
+    /// content between the bounds and `preferred` is ignored.
     pub fn clamp(min: f32, preferred: f32, max: f32, unit: types.SizingUnit) Sizing {
         switch (unit) {
             .px => return .{ .type = .clamp_px, .size = .{ .min = min, .max = max, .preferred = preferred } },
@@ -202,14 +218,17 @@ pub const Pos = packed struct {
     value: f32 = 0,
 
     pub const grow = Pos{ .type = .grow, .value = 0 };
+    /// An offset in pixels.
     pub fn px(pos: f32) Pos {
         return .{ .type = .fixed, .value = pos };
     }
 
+    /// An offset as a percentage of the containing block.
     pub fn percent(pos: f32) Pos {
         return .{ .type = .percent, .value = pos };
     }
 
+    /// `mobile` percent on mobile, `desktop` percent otherwise.
     pub fn mobile_desktop_percent(mobile: f32, desktop: f32) Pos {
         if (isMobile()) {
             return .{ .type = .percent, .value = mobile };
@@ -217,6 +236,7 @@ pub const Pos = packed struct {
         return .{ .type = .percent, .value = desktop };
     }
     //
+    /// `mobile` on mobile, `desktop` otherwise.
     pub fn mobile_desktop(mobile: Pos, desktop: Pos) Pos {
         if (isMobile()) {
             return mobile;

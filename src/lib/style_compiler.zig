@@ -374,7 +374,7 @@ pub fn generateLayout(layout_ptr: *const Types.PackedLayout, writer: *Writer) vo
             writer.writeF32(size.width.size.max) catch {};
             writer.write("vw;\n") catch {};
             writer.write("min-width:") catch {};
-            writer.writeF32(size.width.size.max) catch {};
+            writer.writeF32(size.width.size.min) catch {};
             writer.write("vw;\n") catch {};
         } else if (size.width.type == .max_px) {
             writer.write("max-width:") catch {};
@@ -397,7 +397,7 @@ pub fn generateLayout(layout_ptr: *const Types.PackedLayout, writer: *Writer) vo
             writer.writeF32(size.width.size.max) catch {};
             writer.write("%;\n") catch {};
             writer.write("min-width:") catch {};
-            writer.writeF32(size.width.size.max) catch {};
+            writer.writeF32(size.width.size.min) catch {};
             writer.write("%;\n") catch {};
         } else if (size.width.type == .elastic) {
             writer.write("max-width:") catch {};

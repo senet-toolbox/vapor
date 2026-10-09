@@ -25,9 +25,13 @@ pub const Color = union(enum) {
     pub const cyan = Color{ .Literal = .{ .r = 0, .g = 255, .b = 255, .a = 1 } };
     pub const magenta = Color{ .Literal = .{ .r = 255, .g = 0, .b = 255, .a = 1 } };
     pub const vapor_blue = Color.hex("#4400FF");
+    /// A colour from your theme, by token: `.palette(.primary)`. It follows the
+    /// light/dark theme.
     pub fn palette(thematic: ThemeTokens) Color {
         return .{ .Thematic = .{ .token = thematic } };
     }
+    /// A colour from CSS hex: `.hex("#4400ff")`, also `#rgb`, `#rgba` and
+    /// `#rrggbbaa`.
     pub fn hex(hex_str: []const u8) Color {
         const rgba_arr = Vapor.hexToRgba(hex_str);
         return .{ .Literal = .{
@@ -39,6 +43,8 @@ pub const Color = union(enum) {
     }
 
     // // Function to lighten a hex color string by a percentage and return Color struct
+    /// The hex colour `hex_str` mixed `percentage` percent (0 to 100) towards white.
+    /// Panics outside that range.
     pub fn lighten(hex_str: []const u8, percentage: f32) Color {
         if (percentage < 0.0 or percentage > 100.0) {
             @panic("Percentage must be between 0 and 100");
@@ -58,6 +64,7 @@ pub const Color = union(enum) {
             },
         };
     }
+    /// Red, green and blue (0 to 255) and alpha (0 to 1).
     pub fn rgba(r: u8, g: u8, b: u8, a: f32) Color {
         return .{ .Literal = .{
             .r = r,
@@ -66,6 +73,7 @@ pub const Color = union(enum) {
             .a = a,
         } };
     }
+    /// Red, green and blue (0 to 255), fully opaque.
     pub fn rgb(r: u8, g: u8, b: u8) Color {
         return .{ .Literal = .{
             .r = r,
@@ -74,6 +82,7 @@ pub const Color = union(enum) {
             .a = 1,
         } };
     }
+    /// `color` with its alpha replaced by `alpha` (0 to 1).
     pub fn transparentize(color: Color, alpha: f32) Color {
         if (color == .Thematic) return Color{ .Thematic = .{
             .token = color.Thematic.token,
@@ -90,6 +99,7 @@ pub const Color = union(enum) {
         } };
     }
 
+    /// Same as `transparentize`.
     pub fn transparentizeHex(color: Color, alpha: f32) Color {
         if (color == .Thematic) return Color{ .Thematic = .{
             .token = color.Thematic.token,
@@ -106,6 +116,7 @@ pub const Color = union(enum) {
         } };
     }
 
+    /// Writes the colour as CSS (`rgba(...)` or a theme variable) to `writer`.
     pub fn toCss(self: Color, writer: anytype) !void {
         switch (self) {
             .Thematic => |thematic| {
@@ -145,6 +156,7 @@ pub const Color = union(enum) {
             },
         }
     }
+    /// A theme colour darkened by `percentage`. Literal colours come back unchanged.
     pub fn darken(color: Color, percentage: f32) Color {
         switch (color) {
             .Thematic => |thematic| {
@@ -172,6 +184,8 @@ pub const ColorMix = struct {
     color: ?Color = null,
     color_prop: ColorProp = .default,
     percentage: f32 = 0,
+    /// Mixes `color` into the element's `color_prop` (text, background, ...) by
+    /// `percentage`.
     pub fn darken(color_prop: ColorProp, color: ?Color, percentage: f32) ColorMix {
         return .{ .color_prop = color_prop, .color = color, .percentage = percentage };
     }
