@@ -363,7 +363,7 @@ pub fn createString(pool: *Pool, data: []const u8) !StringData {
 
 test "string pool" {
     var gpa = std.heap.DebugAllocator(.{}){};
-    defer if (gpa.deinit() != .ok) @panic("Memmory leak...");
+    defer if (gpa.deinit() != .ok) @panic("Memory leak...");
     const allocator = gpa.allocator();
 
     var pool = try Pool.init(allocator, 10);

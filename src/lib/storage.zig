@@ -2,7 +2,7 @@ const Vapor = @import("vapor.zig");
 const Wasm = @import("wasm.zig");
 const std = @import("std");
 
-pub fn clearPersitantStorage() void {
+pub fn clearPersistentStorage() void {
     if (Vapor.isWasi) {
         Wasm.clearLocalStorageWasm();
     } else {}

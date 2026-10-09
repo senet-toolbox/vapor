@@ -1,6 +1,6 @@
 /** Reading render commands, UINodes and strings out of wasm memory. */
 import { COMPONENT_TYPES } from "./traversal.js";
-import { UINodelayoutInfo, layoutInfo, wasmInstance } from "./runtime.js";
+import { uiNodeLayoutInfo, layoutInfo, wasmInstance } from "./runtime.js";
 import { styleClassCache } from "./styling.js";
 
 // Function to read a RenderCommand from memory
@@ -124,31 +124,31 @@ function getMemoryView() {
 export function readUINode(offset) {
   const view = getMemoryView();
 
-  const isDirty = view.getUint8(offset + UINodelayoutInfo.dirtyOffset);
+  const isDirty = view.getUint8(offset + uiNodeLayoutInfo.dirtyOffset);
 
   const onCallbacksOffsetMount = view.getUint32(
-    offset + UINodelayoutInfo.onCallbacksOffset,
+    offset + uiNodeLayoutInfo.onCallbacksOffset,
     true,
   );
 
   const onCallbacksOffsetUpdate = view.getUint32(
-    offset + UINodelayoutInfo.onCallbacksOffset + 4,
+    offset + uiNodeLayoutInfo.onCallbacksOffset + 4,
     true,
   );
 
   const onCallbacksOffsetDestroy = view.getUint32(
-    offset + UINodelayoutInfo.onCallbacksOffset + 8,
+    offset + uiNodeLayoutInfo.onCallbacksOffset + 8,
     true,
   );
 
   // Fast path for non-dirty nodes
   if (!isDirty) {
     const hash = Number(
-      view.getUint32(offset + UINodelayoutInfo.hashOffset, true),
+      view.getUint32(offset + uiNodeLayoutInfo.hashOffset, true),
     );
-    const idPtr = view.getUint32(offset + UINodelayoutInfo.idPtrOffset, true);
+    const idPtr = view.getUint32(offset + uiNodeLayoutInfo.idPtrOffset, true);
     const idLen = view.getUint32(
-      offset + UINodelayoutInfo.idPtrOffset + 4,
+      offset + uiNodeLayoutInfo.idPtrOffset + 4,
       true,
     );
     const id = idPtr ? readWasmString(idPtr, idLen) : "";
@@ -180,13 +180,13 @@ export function readUINode(offset) {
   }
 
   // Full read for dirty nodes
-  const elemType = view.getUint8(offset + UINodelayoutInfo.elemTypeOffset);
-  const index = view.getUint32(offset + UINodelayoutInfo.indexOffset, true);
-  const idPtr = view.getUint32(offset + UINodelayoutInfo.idPtrOffset, true);
-  const idLen = view.getUint32(offset + UINodelayoutInfo.idPtrOffset + 4, true);
+  const elemType = view.getUint8(offset + uiNodeLayoutInfo.elemTypeOffset);
+  const index = view.getUint32(offset + uiNodeLayoutInfo.indexOffset, true);
+  const idPtr = view.getUint32(offset + uiNodeLayoutInfo.idPtrOffset, true);
+  const idLen = view.getUint32(offset + uiNodeLayoutInfo.idPtrOffset + 4, true);
   const id = idPtr ? readWasmString(idPtr, idLen) : "";
   const hash = Number(
-    view.getUint32(offset + UINodelayoutInfo.hashOffset, true),
+    view.getUint32(offset + uiNodeLayoutInfo.hashOffset, true),
   );
   // const hash = id;
   // readtime += performance.now() - start;
@@ -210,8 +210,8 @@ export function readUINode(offset) {
     elemType === COMPONENT_TYPES.HTML_TEXT ||
     elemType === COMPONENT_TYPES.TEXT_AREA
   ) {
-    textPtr = view.getUint32(offset + UINodelayoutInfo.textPtrOffset, true);
-    textLen = view.getUint32(offset + UINodelayoutInfo.textPtrOffset + 4, true);
+    textPtr = view.getUint32(offset + uiNodeLayoutInfo.textPtrOffset, true);
+    textLen = view.getUint32(offset + uiNodeLayoutInfo.textPtrOffset + 4, true);
   }
 
   if (
@@ -224,8 +224,8 @@ export function readUINode(offset) {
     elemType === COMPONENT_TYPES.ICON ||
     elemType === COMPONENT_TYPES.IFRAME
   ) {
-    hrefPtr = view.getUint32(offset + UINodelayoutInfo.hrefPtrOffset, true);
-    hrefLen = view.getUint32(offset + UINodelayoutInfo.hrefPtrOffset + 4, true);
+    hrefPtr = view.getUint32(offset + uiNodeLayoutInfo.hrefPtrOffset, true);
+    hrefLen = view.getUint32(offset + uiNodeLayoutInfo.hrefPtrOffset + 4, true);
   }
 
   if (
@@ -233,29 +233,29 @@ export function readUINode(offset) {
     elemType === COMPONENT_TYPES.HOOKS_CTX
   ) {
     hooks = {
-      createdId: view.getUint32(offset + UINodelayoutInfo.hooksOffset, true),
+      createdId: view.getUint32(offset + uiNodeLayoutInfo.hooksOffset, true),
       mountedId: view.getUint32(
-        offset + UINodelayoutInfo.hooksOffset + 4,
+        offset + uiNodeLayoutInfo.hooksOffset + 4,
         true,
       ),
       updatedId: view.getUint32(
-        offset + UINodelayoutInfo.hooksOffset + 8,
+        offset + uiNodeLayoutInfo.hooksOffset + 8,
         true,
       ),
       destroyId: view.getUint32(
-        offset + UINodelayoutInfo.hooksOffset + 12,
+        offset + uiNodeLayoutInfo.hooksOffset + 12,
         true,
       ),
     };
   }
 
   const style_hash = view.getUint32(
-    offset + UINodelayoutInfo.styleHashOffset,
+    offset + uiNodeLayoutInfo.styleHashOffset,
     true,
   );
 
   const accessibility = view.getUint8(
-    offset + UINodelayoutInfo.accessibilityOffset,
+    offset + uiNodeLayoutInfo.accessibilityOffset,
     true,
   );
 
@@ -265,12 +265,12 @@ export function readUINode(offset) {
     styleId = styleClassCache[style_hash]; // Direct property access
     if (styleId === undefined) {
       const classnamePtr = view.getUint32(
-        offset + UINodelayoutInfo.classnamePtrOffset,
+        offset + uiNodeLayoutInfo.classnamePtrOffset,
         true,
       );
       if (classnamePtr) {
         const classnameLen = view.getUint32(
-          offset + UINodelayoutInfo.classnamePtrOffset + 4,
+          offset + uiNodeLayoutInfo.classnamePtrOffset + 4,
           true,
         );
         styleId = readWasmString(classnamePtr, classnameLen);
@@ -290,8 +290,8 @@ export function readUINode(offset) {
     offset,
     styleId,
     isDirty: true,
-    changedStyle: view.getUint8(offset + UINodelayoutInfo.styleChangedOffset),
-    changedProps: view.getUint8(offset + UINodelayoutInfo.propsChangedOffset),
+    changedStyle: view.getUint8(offset + uiNodeLayoutInfo.styleChangedOffset),
+    changedProps: view.getUint8(offset + uiNodeLayoutInfo.propsChangedOffset),
     hooks,
     hash,
     accessibility,
@@ -300,10 +300,10 @@ export function readUINode(offset) {
       onCallbacksOffsetUpdate >>> 0,
       onCallbacksOffsetDestroy >>> 0,
     ],
-    hooksChanged: view.getUint8(offset + UINodelayoutInfo.hooksChangedOffset),
+    hooksChanged: view.getUint8(offset + uiNodeLayoutInfo.hooksChangedOffset),
     morph:
-      view.getUint8(offset + UINodelayoutInfo.morphOffset) > 0 ? true : false,
-    layer: view.getUint8(offset + UINodelayoutInfo.layerOffset),
+      view.getUint8(offset + uiNodeLayoutInfo.morphOffset) > 0 ? true : false,
+    layer: view.getUint8(offset + uiNodeLayoutInfo.layerOffset),
   };
 }
 

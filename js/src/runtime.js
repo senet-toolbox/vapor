@@ -6,7 +6,7 @@ import {
   moduleCache,
   moduleRoutes,
   beforeHooksHandlers,
-  observeredSections,
+  observedSections,
   loadedSections,
   afterHooksHandlers,
   eventStorage,
@@ -29,7 +29,7 @@ export let wasmInstance;
 export let activeNodeIds = new Set();
 export let rootNodeId = "root";
 export let layoutInfo;
-export let UINodelayoutInfo;
+export let uiNodeLayoutInfo;
 
 let tree_node;
 
@@ -222,7 +222,7 @@ function setupLayoutInfo() {
   // layoutInfoPtr = wasmInstance.allocateLayoutInfo();
   uiNodeLayoutInfoPtr = wasmInstance.allocateUINodeLayoutInfo();
 
-  UINodelayoutInfo = {
+  uiNodeLayoutInfo = {
     // Corresponds directly to the corrected Zig struct order
     UINodeSize: new DataView(
       wasmInstance.memory.buffer,
@@ -730,10 +730,10 @@ async function init() {
 export function loadSection(element) {
   const id = element.id;
   // if it does not include the id then we have already loaded this section
-  if (!observeredSections.has(id)) {
+  if (!observedSections.has(id)) {
     return;
   }
-  const section = observeredSections.get(id);
+  const section = observedSections.get(id);
   wasmInstance.markUINodeTreeDirty(section.renderCmd.nodePtr);
   traverse(element, true, section.treeNodePtr, layoutInfo);
 }

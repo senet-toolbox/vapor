@@ -462,7 +462,7 @@ pub fn buildClassString(
     hash_t: u32,
     hash_r: u32,
     hash_tv: u32,
-    additonal_classes: ?[]const u8,
+    additional_classes: ?[]const u8,
 ) !void {
     const hashes = [10]u32{ 0, hash_l, hash_p, hash_m, hash_v, hash_a, hash_i, hash_t, hash_r, hash_tv };
     const old = current_open.style_hashes;
@@ -568,7 +568,7 @@ pub fn buildClassString(
 
     current_open.style_hashes = global_classes;
 
-    const full_class = std.fmt.allocPrint(Vapor.arena(.persist), "{s}{s}", .{ writer.buffer[0..writer.pos], additonal_classes orelse "" }) catch |err| {
+    const full_class = std.fmt.allocPrint(Vapor.arena(.persist), "{s}{s}", .{ writer.buffer[0..writer.pos], additional_classes orelse "" }) catch |err| {
         Vapor.printlnErr("Could not create string {any} To many classes have been created\n", .{err});
         return err;
     };

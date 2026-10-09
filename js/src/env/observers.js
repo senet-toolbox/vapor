@@ -15,13 +15,13 @@ export const observersBindings = {
     const id = id_ptr >>> 0;
     optionsPtr = optionsPtr >>> 0;
 
-    const instansePtr = wasmInstance.getObserverOptions(optionsPtr);
-    if (instansePtr) {
+    const instancePtr = wasmInstance.getObserverOptions(optionsPtr);
+    if (instancePtr) {
       const fieldCount = wasmInstance.getObserverFieldCount();
       const reader = new DynamicStructReader(wasmInstance, wasmInstance.memory);
       const fieldStruct = reader.readStruct(
         null,
-        instansePtr,
+        instancePtr,
         fieldCount,
         "getObserverFieldDescriptor",
       );

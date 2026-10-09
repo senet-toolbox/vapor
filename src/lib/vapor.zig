@@ -102,7 +102,9 @@ pub const Edges = @import("Edges.zig").Edges;
 pub const Transition = @import("transition.zig");
 
 const StorageModule = @import("storage.zig");
-pub const clearPersitantStorage = StorageModule.clearPersitantStorage;
+pub const clearPersistentStorage = StorageModule.clearPersistentStorage;
+/// Deprecated: misspelled; use `clearPersistentStorage`.
+pub const clearPersitantStorage = clearPersistentStorage;
 pub const store = StorageModule.store;
 pub const getStore = StorageModule.getStore;
 pub const setCookie = StorageModule.setCookie;

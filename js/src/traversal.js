@@ -20,7 +20,7 @@ import {
   hooksMountedCtx,
   invokedHooks,
   loadedSections,
-  observeredSections,
+  observedSections,
   pureNodeRegistry,
 } from "./maps.js";
 import { state } from "./state.js";
@@ -179,8 +179,8 @@ export function updateElement(element, uinode, force = false) {
       uinode.elemType === COMPONENT_TYPES.TEXT_FIELD ||
       uinode.elemType === COMPONENT_TYPES.TEXT_AREA
     ) {
-      const instansePtr = wasmInstance.getTextFieldParams(uinode.offset) >>> 0;
-      if (instansePtr) {
+      const instancePtr = wasmInstance.getTextFieldParams(uinode.offset) >>> 0;
+      if (instancePtr) {
         const fieldCount = wasmInstance.getTextFieldCount(uinode.offset);
         const reader = new DynamicStructReader(
           wasmInstance,
@@ -188,7 +188,7 @@ export function updateElement(element, uinode, force = false) {
         );
         const fieldStruct = reader.readStruct(
           uinode.offset,
-          instansePtr,
+          instancePtr,
           fieldCount,
           "getTextFieldDescriptor",
         );
@@ -332,7 +332,7 @@ export function generateSections(virtual, virtual_ptr, layout) {
 
     // Append to parent
     virtual.appendChild(element);
-    observeredSections.set(renderCmd.id, {
+    observedSections.set(renderCmd.id, {
       renderCmd,
       treeNodePtr: child_ptr,
     });

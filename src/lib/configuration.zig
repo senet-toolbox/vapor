@@ -218,11 +218,11 @@ pub fn configure(ui_ctx: *UIContext, elem_decl: ElemDecl) *UINode {
             current_open.class = s.style_id.?;
         }
 
-        var additonal_classes: ?[]const u8 = null;
+        var additional_classes: ?[]const u8 = null;
 
         if (s.visual) |visual| {
             if (visual.edges) |e| {
-                additonal_classes = e;
+                additional_classes = e;
             }
         }
 
@@ -293,7 +293,7 @@ pub fn configure(ui_ctx: *UIContext, elem_decl: ElemDecl) *UINode {
                 hash_t,
                 hash_r,
                 hash_tv,
-                additonal_classes,
+                additional_classes,
             ) catch |err| {
                 Vapor.printlnErr("Could not build class string {any}\n", .{err});
             };
@@ -541,11 +541,11 @@ pub fn configureByNode(ui_node: ?*UINode, elem_decl: ElemDecl) *UINode {
         current_open.class = style.style_id.?;
     }
 
-    var additonal_classes: ?[]const u8 = null;
+    var additional_classes: ?[]const u8 = null;
 
     if (style.visual) |visual| {
         if (visual.edges) |e| {
-            additonal_classes = e;
+            additional_classes = e;
         }
     }
 
@@ -611,7 +611,7 @@ pub fn configureByNode(ui_node: ?*UINode, elem_decl: ElemDecl) *UINode {
             hash_t,
             hash_r,
             hash_tv,
-            additonal_classes,
+            additional_classes,
         ) catch |err| {
             Vapor.printlnErr("Could not build class string {any}\n", .{err});
         };

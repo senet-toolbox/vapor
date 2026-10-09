@@ -196,8 +196,8 @@ export function createElementByType(uinode) {
         const field = readWasmString(text_field_ptr, field_len);
         element.setAttribute("name", field);
       }
-      const text_instansePtr = wasmInstance.getTextFieldParams(uinode.offset);
-      if (text_instansePtr) {
+      const text_instancePtr = wasmInstance.getTextFieldParams(uinode.offset);
+      if (text_instancePtr) {
         const fieldCount = wasmInstance.getTextFieldCount(uinode.offset);
         const reader = new DynamicStructReader(
           wasmInstance,
@@ -205,7 +205,7 @@ export function createElementByType(uinode) {
         );
         const fieldStruct = reader.readStruct(
           uinode.offset,
-          text_instansePtr,
+          text_instancePtr,
           fieldCount,
           "getTextFieldDescriptor",
         );
@@ -311,8 +311,8 @@ export function createElementByType(uinode) {
         const field = readWasmString(field_ptr, field_len);
         element.setAttribute("name", field);
       }
-      const instansePtr = wasmInstance.getTextFieldParams(uinode.offset);
-      if (instansePtr) {
+      const instancePtr = wasmInstance.getTextFieldParams(uinode.offset);
+      if (instancePtr) {
         const fieldCount = wasmInstance.getTextFieldCount(uinode.offset);
         const reader = new DynamicStructReader(
           wasmInstance,
@@ -320,7 +320,7 @@ export function createElementByType(uinode) {
         );
         const fieldStruct = reader.readStruct(
           uinode.offset,
-          instansePtr,
+          instancePtr,
           fieldCount,
           "getTextFieldDescriptor",
         );

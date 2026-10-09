@@ -358,10 +358,10 @@ pub fn parseParams(url: []const u8, allocator: std.mem.Allocator) !?std.StringHa
         }
 
         // Find the separator
-        const seperator = std.mem.find(u8, pair, "=") orelse return error.SeperatorNotFound;
+        const separator = std.mem.find(u8, pair, "=") orelse return error.SeparatorNotFound;
 
-        const key_encoded = pair[0..seperator];
-        const value_encoded = pair[seperator + 1 ..];
+        const key_encoded = pair[0..separator];
+        const value_encoded = pair[separator + 1 ..];
 
         // Decode key (also needs decoding!)
         var key_decoded = std.array_list.Managed(u8).init(allocator);

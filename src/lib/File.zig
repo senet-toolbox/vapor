@@ -159,7 +159,7 @@ pub fn fileInfo(file_reader: *FileReader, file_index: usize) !FileInfo {
                         };
                     } else {
                         @field(cloned_form, field.name) = @intCast(obj_value.int);
-                        Vapor.printlnSrcErr("WE NEED TO CHECK THIS SO THAT THE SIGNDNESS IS OKAY", .{}, @src());
+                        Vapor.printlnSrcErr("WE NEED TO CHECK THIS SO THAT THE SIGNEDNESS IS OKAY", .{}, @src());
                     }
                 },
                 else => {

@@ -219,7 +219,7 @@ pub fn generateVisual(visual: *const Types.PackedVisual, writer: writer_t) void 
 
     if (visual.text_shadow > 0) blk: {
         const shadow = Vapor.shadows.get(visual.text_shadow) orelse {
-            std.log.err("Could not aqurie shadow", .{});
+            std.log.err("Could not acquire shadow", .{});
             break :blk;
         };
         writer.write("text-shadow:") catch {};
@@ -229,7 +229,7 @@ pub fn generateVisual(visual: *const Types.PackedVisual, writer: writer_t) void 
 
     if (visual.new_shadow > 0) blk: {
         const shadow = Vapor.shadows.get(visual.new_shadow) orelse {
-            std.log.err("Could not aqurie shadow", .{});
+            std.log.err("Could not acquire shadow", .{});
             break :blk;
         };
         writer.write("box-shadow:") catch {};
