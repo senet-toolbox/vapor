@@ -759,38 +759,61 @@ pub const ComponentBuilder = struct {
 
     // --- Chainable instance methods ---
 
-    pub fn edges(self: *const Self, edges_tag: ?[]const u8) Self {
-        if (edges_tag) |_edges| {
-            var n = self.*;
-            n._edges = _edges;
-            return n;
-        }
-        return self.*;
-    }
+    const LayoutMethods = @import("builder/layout.zig");
+    pub const edges = LayoutMethods.edges;
+    pub const aspectRatio = LayoutMethods.aspectRatio;
+    pub const pos = LayoutMethods.pos;
+    pub const zIndex = LayoutMethods.zIndex;
+    pub const layout = LayoutMethods.layout;
+    pub const anchorPlacement = LayoutMethods.anchorPlacement;
+    pub const placement = LayoutMethods.placement;
+    pub const center = LayoutMethods.center;
+    pub const spacing = LayoutMethods.spacing;
+    pub const padding = LayoutMethods.padding;
+    pub const pl = LayoutMethods.pl;
+    pub const pr = LayoutMethods.pr;
+    pub const pt = LayoutMethods.pt;
+    pub const pb = LayoutMethods.pb;
+    pub const mt = LayoutMethods.mt;
+    pub const mb = LayoutMethods.mb;
+    pub const ml = LayoutMethods.ml;
+    pub const mr = LayoutMethods.mr;
+    pub const my = LayoutMethods.my;
+    pub const mx = LayoutMethods.mx;
+    pub const margin = LayoutMethods.margin;
+    pub const size = LayoutMethods.size;
+    pub const hw = LayoutMethods.hw;
+    pub const width = LayoutMethods.width;
+    pub const minWidth = LayoutMethods.minWidth;
+    pub const maxWidth = LayoutMethods.maxWidth;
+    pub const height = LayoutMethods.height;
+    pub const minHeight = LayoutMethods.minHeight;
+    pub const maxHeight = LayoutMethods.maxHeight;
+    pub const columns = LayoutMethods.columns;
+    pub const direction = LayoutMethods.direction;
+    pub const wrap = LayoutMethods.wrap;
+    pub const scroll = LayoutMethods.scroll;
+    pub const showScrollBar = LayoutMethods.showScrollBar;
+    pub const hide = LayoutMethods.hide;
+    pub const responsive = LayoutMethods.responsive;
 
-    pub fn aspectRatio(self: *const Self, ratio: types.AspectRatio) Self {
-        var n = self.*;
-        n._aspect_ratio = ratio;
-        return n;
-    }
-
-    const Attributes = @import("builder/attributes.zig");
-    pub const id = Attributes.id;
-    pub const src = Attributes.src;
-    pub const anchorSource = Attributes.anchorSource;
-    pub const attribute = Attributes.attribute;
-    pub const fieldName = Attributes.fieldName;
-    pub const unmanaged = Attributes.unmanaged;
-    pub const hidden = Attributes.hidden;
-    pub const a11y = Attributes.a11y;
-    pub const ariaLabel = Attributes.ariaLabel;
-    pub const role = Attributes.role;
-    pub const ariaExpanded = Attributes.ariaExpanded;
-    pub const ariaSelected = Attributes.ariaSelected;
-    pub const ariaControls = Attributes.ariaControls;
-    pub const ariaActiveDescendant = Attributes.ariaActiveDescendant;
-    pub const ariaHidden = Attributes.ariaHidden;
-    pub const tabIndex = Attributes.tabIndex;
+    const AttributeMethods = @import("builder/attributes.zig");
+    pub const id = AttributeMethods.id;
+    pub const src = AttributeMethods.src;
+    pub const anchorSource = AttributeMethods.anchorSource;
+    pub const attribute = AttributeMethods.attribute;
+    pub const fieldName = AttributeMethods.fieldName;
+    pub const unmanaged = AttributeMethods.unmanaged;
+    pub const hidden = AttributeMethods.hidden;
+    pub const a11y = AttributeMethods.a11y;
+    pub const ariaLabel = AttributeMethods.ariaLabel;
+    pub const role = AttributeMethods.role;
+    pub const ariaExpanded = AttributeMethods.ariaExpanded;
+    pub const ariaSelected = AttributeMethods.ariaSelected;
+    pub const ariaControls = AttributeMethods.ariaControls;
+    pub const ariaActiveDescendant = AttributeMethods.ariaActiveDescendant;
+    pub const ariaHidden = AttributeMethods.ariaHidden;
+    pub const tabIndex = AttributeMethods.tabIndex;
 
     pub fn fontStyle(self: *const Self, font_style: types.FontStyle) Self {
         var n = self.*;
@@ -856,26 +879,26 @@ pub const ComponentBuilder = struct {
         return n;
     }
 
-    const Events = @import("builder/events.zig");
-    pub const bind = Events.bind;
-    pub const onFocus = Events.onFocus;
-    pub const onBlur = Events.onBlur;
-    pub const onChange = Events.onChange;
-    pub const onResize = Events.onResize;
-    pub const onMount = Events.onMount;
-    pub const onUpdate = Events.onUpdate;
-    pub const onDestroy = Events.onDestroy;
-    pub const ifMouseOver = Events.ifMouseOver;
-    pub const onHover = Events.onHover;
-    pub const onLeave = Events.onLeave;
-    pub const cycle = Events.cycle;
-    pub const onEvent = Events.onEvent;
-    pub const onEventCtx = Events.onEventCtx;
-    pub const onMountCtx = Events.onMountCtx;
-    pub const onHoverCtx = Events.onHoverCtx;
-    pub const onDragStart = Events.onDragStart;
-    pub const createDraggable = Events.createDraggable;
-    pub const ref = Events.ref;
+    const EventMethods = @import("builder/events.zig");
+    pub const bind = EventMethods.bind;
+    pub const onFocus = EventMethods.onFocus;
+    pub const onBlur = EventMethods.onBlur;
+    pub const onChange = EventMethods.onChange;
+    pub const onResize = EventMethods.onResize;
+    pub const onMount = EventMethods.onMount;
+    pub const onUpdate = EventMethods.onUpdate;
+    pub const onDestroy = EventMethods.onDestroy;
+    pub const ifMouseOver = EventMethods.ifMouseOver;
+    pub const onHover = EventMethods.onHover;
+    pub const onLeave = EventMethods.onLeave;
+    pub const cycle = EventMethods.cycle;
+    pub const onEvent = EventMethods.onEvent;
+    pub const onEventCtx = EventMethods.onEventCtx;
+    pub const onMountCtx = EventMethods.onMountCtx;
+    pub const onHoverCtx = EventMethods.onHoverCtx;
+    pub const onDragStart = EventMethods.onDragStart;
+    pub const createDraggable = EventMethods.createDraggable;
+    pub const ref = EventMethods.ref;
 
     pub fn inlineStyle(self: *const Self, comptime fmt: []const u8, args: anytype) Self {
         var n = self.*;
@@ -917,18 +940,6 @@ pub const ComponentBuilder = struct {
     pub fn fontFamily(self: *const Self, font_family: []const u8) Self {
         var n = self.*;
         n._font_family = font_family;
-        return n;
-    }
-
-    pub fn scroll(self: *const Self, scroll_type: types.Scroll) Self {
-        var n = self.*;
-        n._scroll = scroll_type;
-        return n;
-    }
-
-    pub fn showScrollBar(self: *const Self, show: bool) Self {
-        var n = self.*;
-        n._show_scrollbar = show;
         return n;
     }
 
@@ -1036,55 +1047,11 @@ pub const ComponentBuilder = struct {
         return n;
     }
 
-    pub fn pos(self: *const Self, position: types.Position) Self {
-        var n = self.*;
-        var p = n._pos orelse types.Position{};
-        p.top = position.top;
-        p.right = position.right;
-        p.bottom = position.bottom;
-        p.left = position.left;
-        p.type = position.type;
-        n._pos = p;
-        return n;
-    }
-
-    pub fn zIndex(self: *const Self, z_index: ?i16) Self {
-        var n = self.*;
-        var p = n._pos orelse types.Position{};
-        p.z_index = z_index;
-        n._pos = p;
-        return n;
-    }
-
     pub fn blur(self: *const Self, value: ?u8) Self {
         var n = self.*;
         var v = n._visual orelse types.Visual{};
         v.blur = value;
         n._visual = v;
-        return n;
-    }
-
-    pub fn layout(self: *const Self, value: types.Layout) Self {
-        var n = self.*;
-        n._layout = value;
-        return n;
-    }
-
-    pub fn anchorPlacement(self: *const Self, value: types.AnchorPlacement) Self {
-        var n = self.*;
-        n._placement = value;
-        return n;
-    }
-
-    pub fn placement(self: *const Self, value: types.AnchorPlacement) Self {
-        var n = self.*;
-        n._placement = value;
-        return n;
-    }
-
-    pub fn center(self: *const Self) Self {
-        var n = self.*;
-        n._layout = .center;
         return n;
     }
 
@@ -1141,12 +1108,6 @@ pub const ComponentBuilder = struct {
         var v = n._visual orelse types.Visual{};
         v.background = value;
         n._visual = v;
-        return n;
-    }
-
-    pub fn wrap(self: *const Self, value: types.FlexWrap) Self {
-        var n = self.*;
-        n._flex_wrap = value;
         return n;
     }
 
@@ -1227,89 +1188,9 @@ pub const ComponentBuilder = struct {
         return n;
     }
 
-    pub fn spacing(self: *const Self, value: u8) Self {
-        var n = self.*;
-        n._child_gap = value;
-        const node = self._ui_node orelse {
-            Vapor.printlnSrcErr("Node is null", .{}, @src());
-            return self.*;
-        };
-        node.spacing = value;
-        return n;
-    }
-
     pub fn transformOrigin(self: *const Self, value: types.TransformOrigin) Self {
         var n = self.*;
         n._transform_origin = value;
-        return n;
-    }
-
-    pub fn padding(self: *const Self, value: types.Padding) Self {
-        var n = self.*;
-        n._padding = value;
-        return n;
-    }
-
-    pub fn pl(self: *const Self, value: u8) Self {
-        var n = self.*;
-        if (n._padding == null) n._padding = .{};
-        n._padding.?._left = value;
-        return n;
-    }
-    pub fn pr(self: *const Self, value: u8) Self {
-        var n = self.*;
-        if (n._padding == null) n._padding = .{};
-        n._padding.?._right = value;
-        return n;
-    }
-    pub fn pt(self: *const Self, value: u8) Self {
-        var n = self.*;
-        if (n._padding == null) n._padding = .{};
-        n._padding.?._top = value;
-        return n;
-    }
-    pub fn pb(self: *const Self, value: u8) Self {
-        var n = self.*;
-        if (n._padding == null) n._padding = .{};
-        n._padding.?._bottom = value;
-        return n;
-    }
-    pub fn mt(self: *const Self, value: i16) Self {
-        var n = self.*;
-        if (n._margin == null) n._margin = .{};
-        n._margin.?.top = value;
-        return n;
-    }
-    pub fn mb(self: *const Self, value: i16) Self {
-        var n = self.*;
-        if (n._margin == null) n._margin = .{};
-        n._margin.?.bottom = value;
-        return n;
-    }
-    pub fn ml(self: *const Self, value: i16) Self {
-        var n = self.*;
-        if (n._margin == null) n._margin = .{};
-        n._margin.?.left = value;
-        return n;
-    }
-    pub fn mr(self: *const Self, value: i16) Self {
-        var n = self.*;
-        if (n._margin == null) n._margin = .{};
-        n._margin.?.right = value;
-        return n;
-    }
-    pub fn my(self: *const Self, value: i16) Self {
-        var n = self.*;
-        if (n._margin == null) n._margin = .{};
-        n._margin.?.top = value;
-        n._margin.?.bottom = value;
-        return n;
-    }
-    pub fn mx(self: *const Self, value: i16) Self {
-        var n = self.*;
-        if (n._margin == null) n._margin = .{};
-        n._margin.?.left = value;
-        n._margin.?.right = value;
         return n;
     }
 
@@ -1319,167 +1200,6 @@ pub const ComponentBuilder = struct {
         v.cursor = value;
         n._visual = v;
         return n;
-    }
-
-    pub fn margin(self: *const Self, value: types.Margin) Self {
-        var n = self.*;
-        n._margin = value;
-        return n;
-    }
-
-    pub fn hide(self: *const Self, shown: bool) *const Self {
-        const ui_node = self._ui_node orelse {
-            Vapor.printlnSrcErr("Node is null", .{}, @src());
-            @panic("vapor: Node is null");
-        };
-
-        const uuid = ui_node.uuid;
-        const _key = "hidden";
-        var value: []const u8 = "false";
-        if (shown) value = "true";
-
-        if (Vapor.isWasi) {
-            Vapor.Wasm.setAttributeWasm(uuid.ptr, uuid.len, _key.ptr, _key.len, value.ptr, value.len);
-        }
-        return self;
-    }
-
-    pub fn responsive(self: *const Self, platform: types.Platform, responsive_style: types.ResponsiveStyle) Self {
-        var new_self = self.*;
-        var responsive_val = self._responsive orelse blk: {
-            break :blk types.Responsive{};
-        };
-        switch (platform) {
-            .mobile => {
-                responsive_val.mobile = responsive_style;
-            },
-            .desktop => {
-                responsive_val.desktop = responsive_style;
-            },
-            .tablet => {
-                responsive_val.tablet = responsive_style;
-            },
-        }
-        new_self._responsive = responsive_val;
-        return new_self;
-    }
-
-    pub fn size(self: *const Self, dim: types.Size) Self {
-        var n = self.*;
-        n._size = dim;
-        return n;
-    }
-
-    pub fn hw(self: *const Self, height_value: types.Sizing, width_value: types.Sizing) Self {
-        var n = self.*;
-        if (n._size == null) {
-            n._size = .{ .width = width_value, .height = height_value };
-        } else {
-            n._size.?.width = width_value;
-            n._size.?.height = height_value;
-        }
-        return n;
-    }
-
-    pub fn width(self: *const Self, length: types.Sizing) Self {
-        var n = self.*;
-        if (n._size == null) {
-            n._size = .{ .width = length };
-        } else {
-            n._size.?.width = length;
-        }
-        return n;
-    }
-
-    pub fn minWidth(self: *const Self, min: types.Sizing) Self {
-        var n = self.*;
-        const sizing: types.Sizing = switch (min.type) {
-            .percent => .{ .type = .min_percent, .size = min.size },
-            .fixed => .{ .type = .min_px, .size = min.size },
-            else => {
-                Vapor.printlnErr("minWidth: only .percent and .px sizes are supported; ignored", .{});
-                return self.*;
-            },
-        };
-        if (n._size == null) {
-            n._size = .{ .width = sizing };
-        } else {
-            n._size.?.width = sizing;
-        }
-        return n;
-    }
-
-    pub fn maxWidth(self: *const Self, max: types.Sizing) Self {
-        var n = self.*;
-        const sizing: types.Sizing = switch (max.type) {
-            .percent => .{ .type = .max_percent, .size = max.size },
-            .fixed => .{ .type = .max_px, .size = max.size },
-            else => {
-                Vapor.printlnErr("maxWidth: only .percent and .px sizes are supported; ignored", .{});
-                return self.*;
-            },
-        };
-        if (n._size == null) {
-            n._size = .{ .width = sizing };
-        } else {
-            n._size.?.width = sizing;
-        }
-        return n;
-    }
-
-    pub fn height(self: *const Self, length: types.Sizing) Self {
-        var n = self.*;
-        if (n._size == null) {
-            n._size = .{ .height = length };
-        } else {
-            n._size.?.height = length;
-        }
-        return n;
-    }
-
-    pub fn minHeight(self: *const Self, min: types.Sizing) Self {
-        var n = self.*;
-        const sizing: types.Sizing = switch (min.type) {
-            .percent => .{ .type = .min_percent, .size = min.size },
-            .fixed => .{ .type = .min_px, .size = min.size },
-            else => {
-                Vapor.printlnErr("minHeight: only .percent and .px sizes are supported; ignored", .{});
-                return self.*;
-            },
-        };
-        if (n._size == null) {
-            n._size = .{ .height = sizing };
-        } else {
-            n._size.?.height = sizing;
-        }
-        return n;
-    }
-
-    pub fn maxHeight(self: *const Self, max: types.Sizing) Self {
-        var n = self.*;
-        const sizing: types.Sizing = switch (max.type) {
-            .percent => .{ .type = .max_percent, .size = max.size },
-            .fixed => .{ .type = .max_px, .size = max.size },
-            else => {
-                Vapor.printlnErr("maxHeight: only .percent and .px sizes are supported; ignored", .{});
-                return self.*;
-            },
-        };
-        if (n._size == null) {
-            n._size = .{ .height = sizing };
-        } else {
-            n._size.?.height = sizing;
-        }
-        return n;
-    }
-
-    pub fn columns(self: *const Self, column_count: u8) *const Self {
-        const node = self._ui_node orelse {
-            Vapor.printlnSrcErr("Node is null", .{}, @src());
-            return self;
-        };
-        node.column_count = column_count;
-        return self;
     }
 
     pub fn border(self: *const Self, value: types.BorderGrouped) Self {
@@ -1521,13 +1241,6 @@ pub const ComponentBuilder = struct {
     pub fn duration(self: *const Self, value: u32) Self {
         var n = self.*;
         n._transition = .{ .duration = value };
-        return n;
-    }
-
-    pub fn direction(self: *const Self, value: types.Direction) Self {
-        var n = self.*;
-        n._direction = value;
-        self._ui_node.?.direction = value;
         return n;
     }
 
