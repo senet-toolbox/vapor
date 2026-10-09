@@ -601,6 +601,9 @@ pub fn renderCycle(route_ptr: [*:0]u8) !void {
     // First it traverses the layouts calling them in order, and then it calls the render_page
     callNestedLayouts(); // 4.5ms
 
+    // Indexed: a callback may register another one, which reallocates items.
+    const commit_count = on_commit_funcs.items.len;
+    for (0..commit_count) |i| on_commit_funcs.items[i]();
     onCommitCtxCallback();
 
     on_commit_funcs.clearRetainingCapacity();

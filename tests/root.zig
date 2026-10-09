@@ -524,6 +524,31 @@ test "renderCycle exposes rendered UINode tree for a registered page" {
     try std.testing.expectEqualStrings("Beta", beta.text.?);
 }
 
+var commit_calls: u32 = 0;
+fn countCommit() void {
+    commit_calls += 1;
+}
+fn CommitPage() void {
+    Vapor.onCommit(countCommit);
+    textElement("committed", "committed");
+}
+
+// onCommit callbacks were stored and then cleared without ever being called;
+// only the onCommitCtx variant ran.
+test "onCommit runs its callback once per render" {
+    Vapor.init(.{});
+    Vapor.Animation.new();
+    Vapor.lib.resetRerender();
+    Vapor.Animation.removal_queue.clearRetainingCapacity();
+    Vapor.Page(.{ .route = "/commit" }, CommitPage, null);
+    commit_calls = 0;
+
+    _ = try renderRoute("/root/commit");
+    try std.testing.expectEqual(@as(u32, 1), commit_calls);
+    _ = try renderRoute("/root/commit");
+    try std.testing.expectEqual(@as(u32, 2), commit_calls);
+}
+
 test "renderCycle leaves stable same-route rerenders clean" {
     initRenderCycleRuntime("/cycle-stable");
 
