@@ -47,6 +47,13 @@ fn emit(bytes: []const u8) void {
     writer.writeAll(bytes) catch |err| fatal("writing output", err);
 }
 
+/// Writes the HTML for `root` and its subtree to `out`, without the page
+/// template around it.
+pub fn renderTree(root: *UINode, out: *std.Io.Writer) void {
+    writer = out;
+    createHtmlTree(root);
+}
+
 pub fn generate(root: *UINode, new_writer: *std.Io.Writer, style_path: []const u8) void {
     var threaded: std.Io.Threaded = .init_single_threaded;
     const io = threaded.io();
@@ -374,7 +381,7 @@ pub fn createListItemClose() void {
 pub fn createListItemOpen(ui_node: *UINode) void {
     emit("<li");
     writeAllProps(ui_node);
-    emit("\">");
+    emit(">");
 }
 pub fn createListClose() void {
     emit("</ul>");
@@ -413,8 +420,12 @@ pub fn createHeadingOpen(ui_node: *UINode) void {
         writeEscaped(text);
     }
 }
-pub fn createHeadingClose() void {
-    emit("</h>");
+pub fn createHeadingClose(ui_node: *UINode) void {
+    emit("</h");
+    if (ui_node.level) |level| {
+        writer.print("{d}", .{level}) catch |err| fatal("writing heading level", err);
+    }
+    emit(">");
 }
 
 pub fn createSvgOpen(ui_node: *UINode) void {
@@ -558,7 +569,7 @@ pub fn createElementClose(ui_node: *UINode) void {
         },
 
         .Heading => {
-            createHeadingClose();
+            createHeadingClose(ui_node);
         },
 
         .HtmlText => {},

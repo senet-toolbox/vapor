@@ -874,6 +874,37 @@ test "html escaping neutralises markup in text and attributes" {
     try std.testing.expectEqualStrings("&amp;lt;script&amp;gt;", escape(&buf, "&lt;script&gt;"));
 }
 
+fn HeadingListPage() void {
+    Vapor.Heading(2, "Title").end();
+    Vapor.Text("after").end();
+    Vapor.List().children({
+        Vapor.ListItem().children({
+            Vapor.Text("item").end();
+        });
+    });
+}
+
+// Headings closed with </h> instead of </h2>, so prerendered pages put what
+// followed inside the heading; list items opened with a stray quote.
+test "prerendered headings and list items are well-formed" {
+    Vapor.init(.{});
+    Vapor.Animation.new();
+    Vapor.lib.resetRerender();
+    Vapor.Animation.removal_queue.clearRetainingCapacity();
+    Vapor.Page(.{ .route = "/html-shape" }, HeadingListPage, null);
+    const root = try renderRoute("/root/html-shape");
+
+    var out: std.Io.Writer.Allocating = .init(std.testing.allocator);
+    defer out.deinit();
+    Vapor.Testing.HtmlGenerator.renderTree(root, &out.writer);
+    const html = out.written();
+    const close = std.mem.indexOf(u8, html, "</h2>") orelse return error.HeadingNotClosed;
+    const after = std.mem.indexOf(u8, html, ">after<") orelse return error.MissingText;
+    try std.testing.expect(close < after);
+    try std.testing.expect(std.mem.indexOf(u8, html, "</h>") == null);
+    try std.testing.expect(std.mem.indexOf(u8, html, "\"\">") == null);
+}
+
 test "html escaping leaves ordinary text untouched" {
     var buf: [512]u8 = undefined;
 

@@ -53,7 +53,6 @@ pub const Layer = struct {
         return l;
     }
 
-    /// Writes every layer as a CSS `box-shadow` list, or "none".
     /// Writes the layer as CSS (`x y blur spread color`).
     pub fn writeCss(self: Layer, writer: *Writer) !void {
         if (self.inset) _ = try writer.write("inset ");
@@ -147,6 +146,7 @@ pub fn insetSpread(x: i16, y: i16, blur: u16, spread: i16, color: Color) Shadow 
 
 // -- 5. Output Generation --
 
+/// Writes every layer as a CSS `box-shadow` list, or "none".
 pub fn writeCss(self: Shadow, writer: *Writer) !void {
     if (self.layer_count == 0) {
         try writer.write("none");

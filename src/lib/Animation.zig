@@ -419,9 +419,6 @@ pub const Property = struct {
     unit: Unit,
 
     /// A property animated from `from_val` to `to_val`, in its default unit.
-    /// Starts an animation named `name`. Build it with `.prop` for a simple
-    /// from-to animation, or `.at(percent).set(...)` for keyframes, then register
-    /// it with `.build()` and attach it by name with an element's `.animation(name)`.
     pub fn init(prop_type: AnimationType, from_val: f32, to_val: f32) Property {
         const default_unit: Unit = switch (prop_type) {
             .opacity, .scale, .scaleX, .scaleY, .brightness, .saturate => .none,
@@ -566,6 +563,9 @@ fill_mode: FillMode = .none,
 direction: Direction = .normal,
 iteration_count: ?u32 = 1,
 
+/// Starts an animation named `name`. Build it with `.prop` for a simple
+/// from-to animation, or `.at(percent).set(...)` for keyframes, then register
+/// it with `.build()` and attach it by name with an element's `.animation(name)`.
 pub fn init(name: []const u8) Animation {
     return Animation{
         ._name = name,
