@@ -248,6 +248,7 @@ pub fn writeAttributes(self: Accessibility) !void {
 /// Returns the attribute string allocated in frame arena
 var buffer: [4096]u8 = undefined;
 var writer: Writer = undefined;
+/// The attributes as an HTML attribute string, for server rendering.
 pub fn toAttributeString(self: Accessibility) []const u8 {
     writer.init(&buffer);
     writeAttributes(self) catch return "";
@@ -387,6 +388,7 @@ pub const Accessibility = struct {
         term,
         toolbar,
 
+        /// The attribute value.
         pub fn toCss(self: Role) []const u8 {
             return switch (self) {
                 .banner => "banner",
@@ -464,6 +466,7 @@ pub const Accessibility = struct {
         true_val,
         mixed,
 
+        /// The attribute value.
         pub fn toCss(self: Checked) []const u8 {
             return switch (self) {
                 .false_val => "false",
@@ -478,6 +481,7 @@ pub const Accessibility = struct {
         true_val,
         mixed,
 
+        /// The attribute value.
         pub fn toCss(self: Pressed) []const u8 {
             return switch (self) {
                 .false_val => "false",
@@ -492,6 +496,7 @@ pub const Accessibility = struct {
         polite,
         assertive,
 
+        /// The attribute value.
         pub fn toCss(self: Live) []const u8 {
             return switch (self) {
                 .off => "off",
@@ -508,6 +513,7 @@ pub const Accessibility = struct {
         all,
         additions_text,
 
+        /// The attribute value.
         pub fn toCss(self: Relevant) []const u8 {
             return switch (self) {
                 .additions => "additions",
@@ -528,6 +534,7 @@ pub const Accessibility = struct {
         grid,
         dialog,
 
+        /// The attribute value.
         pub fn toCss(self: HasPopup) []const u8 {
             return switch (self) {
                 .false_val => "false",
@@ -545,6 +552,7 @@ pub const Accessibility = struct {
         horizontal,
         vertical,
 
+        /// The attribute value.
         pub fn toCss(self: Orientation) []const u8 {
             return switch (self) {
                 .horizontal => "horizontal",
@@ -559,6 +567,7 @@ pub const Accessibility = struct {
         list,
         both,
 
+        /// The attribute value.
         pub fn toCss(self: Autocomplete) []const u8 {
             return switch (self) {
                 .none => "none",
@@ -573,11 +582,13 @@ pub const Accessibility = struct {
     // Fluent Builder Methods
     // ========================================
 
+    /// No attributes set.
     pub fn init() Accessibility {
         return .{};
     }
 
     // Role
+    /// The ARIA `role`.
     pub fn setRole(self: Accessibility, role: Role) Accessibility {
         var a = self;
         a.role = role;
@@ -585,18 +596,21 @@ pub const Accessibility = struct {
     }
 
     // Labeling
+    /// `aria-label`: the accessible name.
     pub fn setLabel(self: Accessibility, label: []const u8) Accessibility {
         var a = self;
         a.label = label;
         return a;
     }
 
+    /// `aria-labelledby`: id of the element that names this one.
     pub fn setLabelledBy(self: Accessibility, id: []const u8) Accessibility {
         var a = self;
         a.labelled_by = id;
         return a;
     }
 
+    /// `aria-describedby`: id of the element that describes this one.
     pub fn setDescribedBy(self: Accessibility, id: []const u8) Accessibility {
         var a = self;
         a.described_by = id;
@@ -604,54 +618,63 @@ pub const Accessibility = struct {
     }
 
     // States
+    /// `aria-expanded`.
     pub fn setExpanded(self: Accessibility, expanded: bool) Accessibility {
         var a = self;
         a.expanded = expanded;
         return a;
     }
 
+    /// `aria-selected`.
     pub fn setSelected(self: Accessibility, selected: bool) Accessibility {
         var a = self;
         a.selected = selected;
         return a;
     }
 
+    /// `aria-checked`: true, false or mixed.
     pub fn setChecked(self: Accessibility, checked: Checked) Accessibility {
         var a = self;
         a.checked = checked;
         return a;
     }
 
+    /// `aria-pressed`: true, false or mixed.
     pub fn setPressed(self: Accessibility, pressed: Pressed) Accessibility {
         var a = self;
         a.pressed = pressed;
         return a;
     }
 
+    /// `aria-disabled`.
     pub fn setDisabled(self: Accessibility, disabled: bool) Accessibility {
         var a = self;
         a.disabled = disabled;
         return a;
     }
 
+    /// `aria-hidden`: hides the element from assistive technology.
     pub fn setHidden(self: Accessibility, hidden_val: bool) Accessibility {
         var a = self;
         a.hidden = hidden_val;
         return a;
     }
 
+    /// `aria-invalid`.
     pub fn setInvalid(self: Accessibility, invalid_val: bool) Accessibility {
         var a = self;
         a.invalid = invalid_val;
         return a;
     }
 
+    /// `aria-required`.
     pub fn setRequired(self: Accessibility, required_val: bool) Accessibility {
         var a = self;
         a.required = required_val;
         return a;
     }
 
+    /// `aria-busy`.
     pub fn setBusy(self: Accessibility, busy_val: bool) Accessibility {
         var a = self;
         a.busy = busy_val;
@@ -659,18 +682,21 @@ pub const Accessibility = struct {
     }
 
     // Relationships
+    /// `aria-controls`: id of the element this one controls.
     pub fn setControls(self: Accessibility, id: []const u8) Accessibility {
         var a = self;
         a.controls = id;
         return a;
     }
 
+    /// `aria-owns`.
     pub fn setOwns(self: Accessibility, id: []const u8) Accessibility {
         var a = self;
         a.owns = id;
         return a;
     }
 
+    /// `aria-activedescendant`; `null` clears it.
     pub fn setActiveDescendant(self: Accessibility, id: ?[]const u8) Accessibility {
         var a = self;
         a.active_descendant = id;
@@ -678,12 +704,14 @@ pub const Accessibility = struct {
     }
 
     // Live regions
+    /// `aria-live`: how updates are announced.
     pub fn setLive(self: Accessibility, live_val: Live) Accessibility {
         var a = self;
         a.live = live_val;
         return a;
     }
 
+    /// `aria-atomic`.
     pub fn setAtomic(self: Accessibility, atomic_val: bool) Accessibility {
         var a = self;
         a.atomic = atomic_val;
@@ -691,24 +719,28 @@ pub const Accessibility = struct {
     }
 
     // Widget properties
+    /// `aria-haspopup`.
     pub fn setHasPopup(self: Accessibility, popup: HasPopup) Accessibility {
         var a = self;
         a.has_popup = popup;
         return a;
     }
 
+    /// `aria-modal`.
     pub fn setModal(self: Accessibility, modal_val: bool) Accessibility {
         var a = self;
         a.modal = modal_val;
         return a;
     }
 
+    /// `aria-orientation`.
     pub fn setOrientation(self: Accessibility, orient: Orientation) Accessibility {
         var a = self;
         a.orientation = orient;
         return a;
     }
 
+    /// `aria-multiselectable`.
     pub fn setMultiselectable(self: Accessibility, multi: bool) Accessibility {
         var a = self;
         a.multiselectable = multi;
@@ -716,6 +748,7 @@ pub const Accessibility = struct {
     }
 
     // Values
+    /// `aria-valuenow`, `aria-valuemin` and `aria-valuemax`.
     pub fn setValue(self: Accessibility, now: f32, min: f32, max: f32) Accessibility {
         var a = self;
         a.value_now = now;
@@ -724,6 +757,7 @@ pub const Accessibility = struct {
         return a;
     }
 
+    /// `aria-valuetext`.
     pub fn setValueText(self: Accessibility, text: []const u8) Accessibility {
         var a = self;
         a.value_text = text;
@@ -731,6 +765,7 @@ pub const Accessibility = struct {
     }
 
     // Position
+    /// `aria-posinset` and `aria-setsize`.
     pub fn setPosition(self: Accessibility, pos: u32, total: u32) Accessibility {
         var a = self;
         a.pos_in_set = pos;
@@ -738,6 +773,7 @@ pub const Accessibility = struct {
         return a;
     }
 
+    /// `aria-level`.
     pub fn setLevel(self: Accessibility, lvl: u8) Accessibility {
         var a = self;
         a.level = lvl;
@@ -745,16 +781,19 @@ pub const Accessibility = struct {
     }
 
     // Keyboard
+    /// `tabindex`.
     pub fn setTabIndex(self: Accessibility, index: i16) Accessibility {
         var a = self;
         a.tab_index = index;
         return a;
     }
 
+    /// `tabindex=0`: reachable with Tab.
     pub fn focusable(self: Accessibility) Accessibility {
         return self.setTabIndex(0);
     }
 
+    /// `tabindex=-1`: focusable only from code.
     pub fn notFocusable(self: Accessibility) Accessibility {
         return self.setTabIndex(-1);
     }
@@ -956,12 +995,14 @@ pub const Accessibility = struct {
             .setChecked(if (checked) .true_val else .false_val)
             .setPosition(pos, total);
     }
+    /// `aria-rowindex`.
     pub fn setRowIndex(self: Accessibility, index: u32) Accessibility {
         var a = self;
         a.row_index = index;
         return a;
     }
 
+    /// `aria-colindex`.
     pub fn setColIndex(self: Accessibility, index: u32) Accessibility {
         var a = self;
         a.col_index = index;
@@ -969,12 +1010,14 @@ pub const Accessibility = struct {
     }
 
     // While you're at it, add these too since you have the fields:
+    /// `aria-colspan`.
     pub fn setColSpan(self: Accessibility, span: u32) Accessibility {
         var a = self;
         a.col_span = span;
         return a;
     }
 
+    /// `aria-rowspan`.
     pub fn setRowSpan(self: Accessibility, span: u32) Accessibility {
         var a = self;
         a.row_span = span;

@@ -102,6 +102,7 @@ pub const AnchorPlacement = enum(u8) {
     bottom_left,
     bottom_right,
 
+    /// The CSS `position-area` value.
     pub fn toPositionArea(self: AnchorPlacement) []const u8 {
         return switch (self) {
             .top => "top",
@@ -124,6 +125,7 @@ pub const ThemeDefinition = struct {
     theme: Theme.Colors,
 };
 
+/// Flips the theme tokens between light and dark.
 pub fn switchColorTheme() void {
     switch (color_theme.theme) {
         .dark => color_theme.theme = .light,
@@ -145,6 +147,7 @@ const MinMax = packed struct {
     min: f32 = 0,
     max: f32 = 0,
 
+    /// Whether both bounds are equal.
     pub fn eql(self: MinMax, other: MinMax) bool {
         return self.min == other.min and self.max == other.max;
     }
@@ -298,6 +301,7 @@ pub const Position = struct {
         .z_index = 999,
     };
 
+    /// Pinned to all four sides with `pos_type` positioning, e.g. a full overlay.
     pub fn full(pos_type: PositionType) Position {
         return .{
             .top = .px(0),
@@ -403,22 +407,27 @@ pub const Transform = struct {
     type: []const TransformType = &.{.none},
     opacity: f16 = 1,
 
+    /// Scales to 104%.
     pub fn scale() Transform {
         return .{ .scale_size = 1.04, .type = &.{.scale}, .size_type = .scale };
     }
 
+    /// Moves by `x`, `y` in `unit`.
     pub fn translate(x: f32, y: f32, unit: SizeType) Transform {
         return .{ .trans_x = x, .trans_y = y, .type = &.{ .translateX, .translateY }, .size_type = unit };
     }
 
+    /// Scales by `value` (1 is unchanged).
     pub fn scaleDecimal(value: f16) Transform {
         return .{ .scale_size = value, .type = &.{.scale}, .size_type = .scale };
     }
 
+    /// Moves up `dist` pixels.
     pub fn up(dist: f32) Transform {
         return .{ .trans_y = -dist, .type = &.{.translateY}, .size_type = .px };
     }
 
+    /// Moves `dist` pixels in `dir` and scales by `scale_size`.
     pub fn direction_scale(dir: Transform.Direction, dist: f32, scale_size: f32) Transform {
         switch (dir) {
             .up => return .{ .trans_y = -dist, .scale_size = scale_size, .type = &.{ .translateY, .scale }, .size_type = .px },
@@ -432,6 +441,7 @@ pub const Transform = struct {
         }
     }
 
+    /// Same as `direction_scale`.
     pub fn distAndScale(dir: Transform.Direction, dist: f32, scale_size: f32) Transform {
         switch (dir) {
             .up => return .{ .trans_y = -dist, .scale_size = scale_size, .type = &.{ .translateY, .scale }, .size_type = .px },
@@ -445,37 +455,46 @@ pub const Transform = struct {
         }
     }
 
+    /// Moves down `dist` pixels.
     pub fn down(dist: f32) Transform {
         return .{ .trans_y = dist, .type = &.{.translateY}, .size_type = .px };
     }
 
+    /// Moves left `dist` pixels.
     pub fn left(dist: f32) Transform {
         return .{ .trans_x = -dist, .type = &.{.translateX}, .size_type = .px };
     }
+    /// Moves right `dist` pixels.
     pub fn right(dist: f32) Transform {
         return .{ .trans_x = dist, .type = &.{.translateX}, .size_type = .px };
     }
 
+    /// Moves along x by `percent` percent of the element's width.
     pub fn left_percent(percent: f32) Transform {
         return .{ .trans_x = percent, .type = &.{.translateX}, .size_type = .percent };
     }
 
+    /// Moves along y by `percent` percent of the element's height.
     pub fn top_percent(percent: f32) Transform {
         return .{ .trans_y = percent, .type = &.{.translateY}, .size_type = .percent };
     }
 
+    /// Rotates by `deg` degrees.
     pub fn rotate(deg: f16) Transform {
         return .{ .deg = deg, .type = &.{.rotate}, .size_type = .deg };
     }
 
+    /// Rotates around the x axis by `deg` degrees.
     pub fn rotateX(deg: f16) Transform {
         return .{ .deg = deg, .type = &.{.rotateX}, .size_type = .deg };
     }
 
+    /// Rotates around the y axis by `deg` degrees.
     pub fn rotateY(deg: f16) Transform {
         return .{ .deg = deg, .type = &.{.rotateY}, .size_type = .deg };
     }
 
+    /// Rotates around each axis by `x`, `y`, `z` degrees.
     pub fn rotateXYZ(x: f16, y: f16, z: f16) Transform {
         return .{ .x = x, .y = y, .z = z, .type = &.{.rotateXYZ}, .size_type = .deg };
     }
@@ -571,12 +590,14 @@ pub const Dim = struct {
     type: SizingType = .fit,
     pub const grow = Sizing{ .type = .grow, .size = .{ .min = 0, .max = 0 } };
     pub const fit = Sizing{ .type = .fit, .size = .{ .min = 0, .max = 0 } };
+    /// A fixed size in pixels.
     pub fn fixed(size: f32) Sizing {
         return .{ .type = .fixed, .size = .{
             .min = size,
             .max = size,
         } };
     }
+    /// Between `min` and `max` pixels.
     pub fn elastic(min: f32, max: f32) Sizing {
         return .{ .type = .elastic, .size = .{
             .min = min,
@@ -691,11 +712,13 @@ pub const KeyFrame = struct {
 
 const Iteration = struct {
     iter_count: u32 = 1,
+    /// Repeats forever.
     pub fn infinite() Iteration {
         return .{
             .iter_count = 0,
         };
     }
+    /// Runs `c` times.
     pub fn count(c: u32) Iteration {
         return .{
             .iter_count = c,
@@ -836,22 +859,26 @@ const FontParams = struct {
     _size: i32,
     _weight: ?usize = null,
     _color: ?Color = null,
+    /// Only the size, in pixels.
     pub fn size(font_size: i32) FontParams {
         return .{
             ._size = font_size,
         };
     }
+    /// Only the weight.
     pub fn weight(font_weight: ?u16) FontParams {
         return .{
             ._weight = font_weight,
         };
     }
 
+    /// Only the colour.
     pub fn color(font_color: ?Color) FontParams {
         return .{
             ._color = font_color,
         };
     }
+    /// Size in pixels, weight and colour.
     pub fn all(font_size: u8, font_weight: ?u16, font_color: ?Color) FontParams {
         return .{
             ._size = font_size,
@@ -859,12 +886,14 @@ const FontParams = struct {
             ._color = font_color,
         };
     }
+    /// Size in pixels and weight.
     pub fn size_weight(font_size: u8, font_weight: ?u16) FontParams {
         return .{
             ._size = font_size,
             ._weight = font_weight,
         };
     }
+    /// Size in pixels and colour.
     pub fn size_color(font_size: i32, font_color: ?Color) FontParams {
         return .{
             ._size = font_size,
