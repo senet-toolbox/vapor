@@ -312,4 +312,5 @@ test {
     _ = @import("lib/Router.zig");
     _ = Fetch;
     _ = @import("lib/storage.zig");
+    _ = @import("lib/element.zig");
 }

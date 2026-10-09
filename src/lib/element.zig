@@ -96,6 +96,7 @@ pub const Element = struct {
         background: []const u8 = "white",
     } = .{},
 
+    /// Internal: the element's DOM id, once `.ref` has bound it.
     pub fn _get_id(self: *Element) ?[]const u8 {
         if (self._node_ptr) |node| {
             return node.uuid;
@@ -106,11 +107,14 @@ pub const Element = struct {
         }
     }
 
+    /// Gives `setText` its own buffer, so the text it keeps does not depend on the
+    /// caller's memory.
     pub fn init(self: *Element, allocator: std.mem.Allocator) void {
         self.buf =
             std.array_list.Managed(u8).init(allocator);
     }
 
+    /// Scrolls the element's content to `options.top`/`options.left`.
     pub fn scrollTo(self: *Element, options: ScrollOptions) void {
         if (!Vapor.isWasi) return;
         const id = self._get_id() orelse {
@@ -120,6 +124,7 @@ pub const Element = struct {
         Wasm.scrollToBehaviorWasm(id.ptr, id.len, options.top, options.left, options.behavior, options.block);
     }
 
+    /// Sets the element's `scrollBottom` property to `value`.
     pub fn scrollToBottom(self: *Element, value: u32) void {
         if (!Vapor.isWasi) return;
         const id = self._get_id() orelse {
@@ -131,6 +136,7 @@ pub const Element = struct {
         self.scroll_top = @floatFromInt(value);
     }
 
+    /// Total height of the element's content, in pixels.
     pub fn scrollHeight(self: *Element) f32 {
         if (!Vapor.isWasi) return 0;
         const id = self._get_id() orelse {
@@ -141,6 +147,7 @@ pub const Element = struct {
         return @floatFromInt(Wasm.getAttributeWasmNumber(id.ptr, id.len, attribute.ptr, attribute.len));
     }
 
+    /// Total width of the element's content, in pixels.
     pub fn scrollWidth(self: *Element) u32 {
         if (!Vapor.isWasi) return 0;
         const id = self._get_id() orelse {
@@ -151,6 +158,7 @@ pub const Element = struct {
         return Wasm.getAttributeWasmNumber(id.ptr, id.len, attribute.ptr, attribute.len);
     }
 
+    /// Scrolls the element's content to `value` pixels from the top.
     pub fn scrollToTop(self: *Element, value: f32) void {
         if (!Vapor.isWasi) return;
         const id = self._get_id() orelse {
@@ -162,6 +170,7 @@ pub const Element = struct {
         self.scroll_top = value;
     }
 
+    /// Sets a DOM attribute on the element.
     pub fn setAttribute(self: *Element, key: []const u8, value: []const u8) void {
         const id = self._get_id() orelse {
             Vapor.printlnSrc("Id is null", .{}, @src());
@@ -173,6 +182,7 @@ pub const Element = struct {
         return;
     }
 
+    /// How far the content is scrolled from the top, in pixels.
     pub fn scrollTop(self: *Element) f32 {
         if (!Vapor.isWasi) return 0;
         const attribute: []const u8 = "scrollTop";
@@ -180,6 +190,7 @@ pub const Element = struct {
         return self.scroll_top;
     }
 
+    /// Scrolls the page so the element is visible.
     pub fn scrollIntoView(self: *Element, options: ScrollIntoViewOptions) void {
         if (!Vapor.isWasi) return;
         const id = self._get_id() orelse {
@@ -189,6 +200,7 @@ pub const Element = struct {
         Wasm.scrollIntoViewWasm(id.ptr, id.len, options.behavior, options.block);
     }
 
+    /// Sets the element's `offsetWidth` property.
     pub fn toOffsetWidth(self: *Element, value: u32) void {
         if (!Vapor.isWasi) return;
         const id = self._get_id() orelse {
@@ -200,6 +212,7 @@ pub const Element = struct {
         @field(self, attribute) = value;
     }
 
+    /// Reads a numeric DOM property, e.g. "clientHeight".
     pub fn getAttributeNumber(self: *Element, attribute: []const u8) u32 {
         if (!Vapor.isWasi) return 0;
         const id = self._get_id() orelse {
@@ -209,6 +222,7 @@ pub const Element = struct {
         return Wasm.getAttributeWasmNumber(id.ptr, id.len, attribute.ptr, attribute.len);
     }
 
+    /// The text cursor's position in a text field.
     pub fn cursorPosition(self: *Element) u32 {
         const id = self._get_id() orelse {
             Vapor.printlnSrc("Id is null", .{}, @src());
@@ -218,6 +232,7 @@ pub const Element = struct {
         return Wasm.getAttributeWasmNumber(id.ptr, id.len, attribute.ptr, attribute.len);
     }
 
+    /// Moves the text cursor in a text field.
     pub fn setCursorPosition(self: *Element, value: usize) void {
         const id = self._get_id() orelse {
             Vapor.printlnSrc("Id is null", .{}, @src());
@@ -228,6 +243,7 @@ pub const Element = struct {
         }
     }
 
+    /// The selected range in a text field.
     pub fn selection(self: *Element) ?Selection {
         // selectionWasm hands back a mutable [*]u32, which a const array
         // literal cannot stand in for, so the off-wasm stub returns directly.
@@ -244,11 +260,13 @@ pub const Element = struct {
         };
     }
 
+    /// Replaces characters `start` to `end` of a text field's value.
     pub fn replaceRange(self: *Element, start: usize, end: usize, replacement: []const u8) void {
         const id = self._get_id() orelse return;
         Wasm.replaceRangeWasm(id.ptr, id.len, start, end, replacement.ptr, replacement.len);
     }
 
+    /// Sets a numeric DOM property.
     pub fn mutate(self: *Element, attribute: []const u8, value: u32) void {
         const id = self._get_id() orelse {
             Vapor.printlnSrc("Id is null", .{}, @src());
@@ -257,6 +275,8 @@ pub const Element = struct {
         mutateDomElement(id.ptr, id.len, attribute.ptr, attribute.len, @floatFromInt(value));
     }
 
+    /// Calls `cb` with `args` and the event whenever `event_type` fires on the
+    /// element.
     pub fn addInstListener(
         self: *const Element,
         event_type: types.EventType,
@@ -274,6 +294,8 @@ pub const Element = struct {
         };
     }
 
+    /// Calls `cb` with the event whenever `event_type` fires on the element.
+    /// Returns an id for `removeListener`.
     pub fn addListener(self: *Element, event_type: types.EventType, cb: *const fn (event: *Event) void) ?usize {
         const ui_node = self._node_ptr orelse {
             Vapor.printlnSrc("Node is null", .{}, @src());
@@ -286,6 +308,7 @@ pub const Element = struct {
         }
     }
 
+    /// Removes a listener `addListener` added.
     pub fn removeListener(
         self: *Element,
         event_type: types.EventType,
@@ -298,6 +321,7 @@ pub const Element = struct {
         return Vapor.destroyElementEventListener(id, event_type, cb_idx);
     }
 
+    /// Removes a listener `addInstListener` added.
     pub fn removeInstListener(
         self: *Element,
         event_type: types.EventType,
@@ -310,6 +334,7 @@ pub const Element = struct {
         return Vapor.destroyElementInstEventListener(id, event_type, cb_idx);
     }
 
+    /// Sets one CSS property in the element's inline style.
     pub fn mutateStyleString(self: *Element, attribute: []const u8, value: []const u8) void {
         const id = self._get_id() orelse {
             Vapor.printlnSrc("Id is null", .{}, @src());
@@ -333,7 +358,12 @@ pub const Element = struct {
         value: f32,
         unit: Unit,
         pub fn toString(self: *const Sizing) []const u8 {
-            return Vapor.frame.fmt("{d}{s}", .{ self.value, @tagName(self.unit) });
+            const suffix = switch (self.unit) {
+                .percent => "%",
+                .none => "",
+                else => @tagName(self.unit),
+            };
+            return Vapor.frame.fmt("{d}{s}", .{ self.value, suffix });
         }
     };
 
@@ -369,6 +399,9 @@ pub const Element = struct {
         flex_type: ?types.FlexType = null,
     };
 
+    /// Sets one attribute. Only the style-related ones (size, position, display,
+    /// `style`) are applied to the page; `id`, `class`, `src`, `alt` and `href` are
+    /// recorded but not applied yet.
     pub fn mutateAttribute(self: *Element, attribute: Attributes) void {
         var attributes = self.attributes orelse AttributesValues{};
         switch (attribute) {
@@ -426,6 +459,7 @@ pub const Element = struct {
         if (slot == &self.extra_inline_style) self.style_dirty = true;
     }
 
+    /// Internal: merges `mutateAttribute` styles with the builder's inline style.
     pub fn coalesceAttributesAndInline(self: *Element, inline_style: ?[]const u8) ![]const u8 {
         const attributes = self.attributes orelse return error.AttributesIsNull;
         var aw: std.Io.Writer.Allocating = .init(Vapor.persist.allocator());
@@ -450,6 +484,7 @@ pub const Element = struct {
         return Vapor.frame.dupe(aw.written());
     }
 
+    /// Writes the styles set with `mutateAttribute` to the element.
     pub fn flushStyle(self: *Element) !void {
         if (!self.style_dirty) return;
 
@@ -479,6 +514,7 @@ pub const Element = struct {
         try w.flush();
     }
 
+    /// Sets a string DOM property.
     pub fn mutateDomElementString(self: *Element, attribute: []const u8, value: []const u8) void {
         if (!Vapor.isWasi) return;
         const id = self._get_id() orelse {
@@ -488,6 +524,7 @@ pub const Element = struct {
         Wasm.mutateDomElementStringWasm(id.ptr, id.len, attribute.ptr, attribute.len, value.ptr, value.len);
     }
 
+    /// Applies a `Style`'s fields directly to the element's inline style.
     pub fn mutateStyle(self: *Element, style: *const Style) void {
         const id = self._get_id() orelse {
             Vapor.printlnSrc("Id is null", .{}, @src());
@@ -515,6 +552,7 @@ pub const Element = struct {
         }
     }
 
+    /// Scrolls the content to `value` pixels from the left.
     pub fn scrollLeft(self: *Element, value: u32) void {
         const id = self._get_id() orelse {
             Vapor.printlnSrc("Id is null", .{}, @src());
@@ -525,6 +563,7 @@ pub const Element = struct {
         self.scroll_left = value;
     }
 
+    /// The element's offset box relative to its offset parent.
     pub fn getOffsets(self: *Element) ?Offsets {
         const id = self._get_id() orelse {
             Vapor.printlnSrc("Id is null", .{}, @src());
@@ -549,6 +588,7 @@ pub const Element = struct {
         };
     }
 
+    /// The element's box relative to the viewport.
     pub fn getBoundingClientRect(self: *Element) ?Vapor.Bounds {
         const id = self._get_id() orelse {
             std.log.err("Could not get Bounding Rectangle, Id is null, Attach the element to a Node first", .{});
@@ -558,6 +598,7 @@ pub const Element = struct {
         return Vapor.getComponentBounds(id);
     }
 
+    /// Empties a text field.
     pub fn clear(self: *Element) void {
         const id = self._get_id() orelse {
             Vapor.printlnSrc("Id is null", .{}, @src());
@@ -567,6 +608,7 @@ pub const Element = struct {
         setTextFieldValue(id.ptr, @intCast(id.len), text.ptr, @intCast(text.len));
     }
 
+    /// Sets a text field's value.
     pub fn setText(self: *Element, text: []const u8) void {
         const id = self._get_id() orelse {
             Vapor.printlnSrc("Id is null", .{}, @src());
@@ -589,6 +631,7 @@ pub const Element = struct {
         setTextFieldValue(id.ptr, @intCast(id.len), text.ptr, @intCast(text.len));
     }
 
+    /// A text field's current value.
     pub fn getInputValue(self: *Element) ?[]const u8 {
         const id = self._get_id() orelse {
             Vapor.printlnSrc("Id is null", .{}, @src());
@@ -599,6 +642,7 @@ pub const Element = struct {
         return std.mem.span(resp);
     }
 
+    /// Focuses the element (meant for text fields).
     pub fn focus(self: *Element) void {
         const id = self._get_id() orelse {
             Vapor.printlnSrc("Cannot Focus on Element, Id is null", .{}, @src());
@@ -613,6 +657,7 @@ pub const Element = struct {
         Vapor.focus(id);
     }
 
+    /// Whether the element has focus.
     pub fn focused(self: *Element) bool {
         const id = self._get_id() orelse {
             Vapor.printlnSrc("Id is null", .{}, @src());
@@ -621,6 +666,7 @@ pub const Element = struct {
         return Vapor.focused(id);
     }
 
+    /// Clicks the element, as if the user had.
     pub fn click(self: *Element) void {
         const id = self._get_id() orelse {
             Vapor.printlnSrc("Id is null", .{}, @src());
@@ -634,6 +680,7 @@ pub const Element = struct {
             Wasm.callClickWASM(id.ptr, id.len);
         }
     }
+    /// Starts the camera stream into this video element.
     pub fn startVideo(self: *Element) void {
         const id = self._get_id() orelse {
             Vapor.printlnSrcErr("Id is null", .{}, @src());
@@ -644,6 +691,7 @@ pub const Element = struct {
         }
     }
 
+    /// Plays the video.
     pub fn playVideo(self: *Element) void {
         const id = self._get_id() orelse {
             Vapor.printlnSrcErr("Id is null", .{}, @src());
@@ -654,6 +702,7 @@ pub const Element = struct {
         }
     }
 
+    /// Pauses the video.
     pub fn pauseVideo(self: *Element) void {
         if (!isWasi) return;
         const id = self._get_id() orelse {
@@ -663,6 +712,7 @@ pub const Element = struct {
         Wasm.pauseVideoWasm(id.ptr, id.len);
     }
 
+    /// Stops the camera stream.
     pub fn stopCamera(self: *Element) void {
         const id = self._get_id() orelse {
             Vapor.printlnSrcErr("Id is null", .{}, @src());
@@ -673,6 +723,7 @@ pub const Element = struct {
         }
     }
 
+    /// Jumps to `time` seconds.
     pub fn seekVideo(self: *Element, time: f32) void {
         const id = self._get_id() orelse {
             Vapor.printlnSrcErr("Id is null", .{}, @src());
@@ -683,6 +734,7 @@ pub const Element = struct {
         }
     }
 
+    /// Volume from 0 to 1.
     pub fn setVolume(self: *Element, volume: f32) void {
         const id = self._get_id() orelse {
             Vapor.printlnSrcErr("Id is null", .{}, @src());
@@ -691,6 +743,7 @@ pub const Element = struct {
         Wasm.setVolumeWasm(id.ptr, id.len, volume);
     }
 
+    /// Mutes the video.
     pub fn muteVideo(self: *Element) void {
         const id = self._get_id() orelse {
             Vapor.printlnSrcErr("Id is null", .{}, @src());
@@ -699,6 +752,7 @@ pub const Element = struct {
         Wasm.muteVideoWasm(id.ptr, id.len, true);
     }
 
+    /// The video's length in seconds.
     pub fn getVideoDuration(self: *Element) f32 {
         if (!isWasi) return 0;
         const id = self._get_id() orelse {
@@ -708,6 +762,7 @@ pub const Element = struct {
         return Wasm.getVideoDurationWasm(id.ptr, id.len);
     }
 
+    /// The playback position in seconds.
     pub fn getVideoCurrentTime(self: *Element) f32 {
         if (!isWasi) return 0;
         const id = self._get_id() orelse {
@@ -717,6 +772,7 @@ pub const Element = struct {
         return Wasm.getVideoCurrentTimeWasm(id.ptr, id.len);
     }
 
+    /// Moves the element with a GPU-accelerated `translate3d`, without a render.
     pub fn translate3d(element: *Element, translation: Translate3d) ?void {
         if (!isWasi) return;
         const id = element._get_id() orelse {
@@ -726,6 +782,7 @@ pub const Element = struct {
         Wasm.translate3dWasm(id.ptr, id.len, translation.x, translation.y, translation.z);
     }
 
+    /// Sends all pointer events of `evt`'s pointer to this element until released.
     pub fn setPointerCapture(element: *Element, evt: *Event) void {
         if (!isWasi) return;
         const id = element._get_id() orelse {
@@ -735,6 +792,7 @@ pub const Element = struct {
         Wasm.setPointerCaptureWasm(id.ptr, id.len, evt.id);
     }
 
+    /// Ends `setPointerCapture`.
     pub fn releasePointerCapture(element: *Element, evt: *Event) void {
         if (!isWasi) return;
         const id = element._get_id() orelse {
@@ -746,6 +804,7 @@ pub const Element = struct {
     }
 };
 
+/// Internal: sets the value of the text field with the given id.
 pub fn setTextFieldValue(ptr: [*]const u8, len: u32, text_ptr: [*]const u8, text_len: u32) void {
     if (isWasi) {
         return Wasm.setInputValueWasm(ptr, len, text_ptr, text_len);
@@ -755,6 +814,7 @@ pub fn setTextFieldValue(ptr: [*]const u8, len: u32, text_ptr: [*]const u8, text
     }
 }
 
+/// Internal: sets a numeric DOM property by element id.
 pub fn mutateDomElement(
     id_ptr: [*]const u8,
     id_len: usize,
@@ -788,6 +848,7 @@ const Translate3d = struct {
     }
 };
 
+/// Internal: sets a numeric inline style property by element id.
 pub fn mutateDomElementStyle(
     id_ptr: [*]const u8,
     id_len: usize,
@@ -808,6 +869,7 @@ pub fn mutateDomElementStyle(
     }
 }
 
+/// Internal: sets a string inline style property by element id.
 pub fn mutateDomElementStyleString(
     id_ptr: [*]const u8,
     id_len: usize,
@@ -828,4 +890,18 @@ pub fn mutateDomElementStyleString(
         }
         // No-op in non-WASM environments
     }
+}
+
+// The unit's tag name was the CSS suffix, so .percent produced "50percent".
+test "attribute sizes use CSS unit suffixes" {
+    Vapor.init(.{});
+    Vapor.Page(.{ .route = "/element-units" }, struct {
+        fn render() void {}
+    }.render, null);
+    const percent = Element.Sizing{ .value = 50, .unit = .percent };
+    try std.testing.expectEqualStrings("50%", percent.toString());
+    const px = Element.Sizing{ .value = 12, .unit = .px };
+    try std.testing.expectEqualStrings("12px", px.toString());
+    const none = Element.Sizing{ .value = 2, .unit = .none };
+    try std.testing.expectEqualStrings("2", none.toString());
 }

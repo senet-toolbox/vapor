@@ -34,10 +34,12 @@ pub const Result = union(enum) {
     ok: Response,
     err: ErrorResponse,
 
+    /// Whether the request succeeded.
     pub fn isOk(self: Result) bool {
         return self == .ok;
     }
 
+    /// The response body, or `null` on error.
     pub fn body(self: Result) ?[]const u8 {
         return switch (self) {
             .ok => |r| r.body,
@@ -45,6 +47,7 @@ pub const Result = union(enum) {
         };
     }
 
+    /// The response, or `null` on error.
     pub fn unwrap(self: Result) ?Response {
         return switch (self) {
             .ok => |r| r,
@@ -151,6 +154,7 @@ pub const ErasedFetchCallback = struct {
     generation: u32,
     entry_ptr: *Request.RequestEntry,
 
+    /// Internal: runs the stored `.handle` callback with `result`.
     pub fn call(self: ErasedFetchCallback, result: Result) void {
         if (self.generation != self.entry_ptr.generation) return;
         self.callFn(self.ctx, result);
@@ -183,6 +187,7 @@ pub const Headers = struct {
         value: []const u8,
     };
 
+    /// Iterates over the headers that are set, as name/value pairs.
     pub fn iterator(self: *const Self) Iterator {
         return .{ .headers = self };
     }
@@ -191,6 +196,7 @@ pub const Headers = struct {
         headers: *const Self,
         idx: usize = 0,
 
+        /// The next header that is set, or `null` when done.
         pub fn next(it: *Iterator) ?Field {
             const fields = std.meta.fields(Self);
             while (it.idx < fields.len) {
@@ -502,6 +508,7 @@ pub const Request = struct {
     };
 
     pub const RequestKeyContext = struct {
+        /// Internal: hashes a request key for the registry.
         pub fn hash(_: RequestKeyContext, key: RequestKey) u64 {
             var h = std.hash.Wyhash.init(0);
             h.update(key.url);
@@ -509,6 +516,7 @@ pub const Request = struct {
             h.update(key.tag);
             return h.final();
         }
+        /// Internal: compares request keys for the registry.
         pub fn eql(_: RequestKeyContext, a: RequestKey, b: RequestKey) bool {
             return a.method == b.method and
                 std.mem.eql(u8, a.url, b.url) and
@@ -523,20 +531,24 @@ pub const Request = struct {
         state: State = .idle,
         in_flight_id: ?u32 = null,
 
+        /// Internal: the arena that holds this request's response.
         pub fn allocator(self: *RequestEntry) std.mem.Allocator {
             return self.arena.allocator();
         }
 
+        /// Internal: frees the previous response and invalidates older handles.
         pub fn reset(self: *RequestEntry) void {
             _ = self.arena.reset(.retain_capacity);
             self.last_result = null;
             self.generation +%= 1;
         }
 
+        /// Internal: frees the entry's arena.
         pub fn deinit(self: *RequestEntry) void {
             self.arena.deinit();
         }
 
+        /// Internal: drops the callback of a request still in flight.
         pub fn cancelInFlight(self: *RequestEntry) void {
             if (self.in_flight_id) |id| {
                 cleanupCallback(id);
@@ -580,6 +592,9 @@ pub const Request = struct {
         };
     }
 
+    /// Starts (or joins) a request. GET and OPTIONS requests to the same URL share
+    /// one entry, as do requests with the same `key`; other methods get their own.
+    /// Use `Vapor.fetch`.
     pub fn fetch(url: []const u8, http_req: Options) *Request {
         const shared = isSharedMethod(http_req.method);
         const has_key = http_req.key != null;
@@ -807,15 +822,19 @@ pub const Request = struct {
         }
     }
 
+    /// Drops the result of the request in flight; its `.handle` callback will not
+    /// run. The browser request itself is not aborted.
     pub fn cancel(self: *Request) void {
         self.entry.cancelInFlight();
         self.entry.state = .idle;
     }
 
+    /// `.idle`, `.loading`, `.ok` or `.err`.
     pub fn state(self: *const Request) State {
         return self.entry.state;
     }
 
+    /// The last result, or `null` before the first one arrives.
     pub fn response(self: *const Request) ?Result {
         return self.entry.last_result;
     }
