@@ -54,6 +54,7 @@ pub fn renderTree(root: *UINode, out: *std.Io.Writer) void {
     createHtmlTree(root);
 }
 
+/// Writes a full page for `root` to `new_writer`: template.html with the stylesheet link and the rendered tree.
 pub fn generate(root: *UINode, new_writer: *std.Io.Writer, style_path: []const u8) void {
     var threaded: std.Io.Threaded = .init_single_threaded;
     const io = threaded.io();
@@ -203,26 +204,31 @@ fn writeAllProps(ui_node: *UINode) void {
     // TODO: Add other attributes as needed, e.g., 'src' for 'video'
 }
 
+/// Writes the opening <div> tag with the node's attributes.
 pub fn createDivOpen(ui_node: *UINode) void {
     emit("<div");
     writeAllProps(ui_node);
     emit(">");
 }
 
+/// Writes the closing tag for <div>.
 pub fn createDivClose() void {
     emit("</div>");
 }
 
+/// Writes the opening <button> tag with the node's attributes.
 pub fn createButtonOpen(ui_node: *UINode) void {
     emit("<button");
     writeAllProps(ui_node);
     emit(">");
 }
 
+/// Writes the closing tag for <button>.
 pub fn createButtonClose() void {
     emit("</button>");
 }
 
+/// Writes the opening <p> tag with the node's attributes.
 pub fn createParagraphOpen(ui_node: *UINode) void {
     emit("<p");
     writeAllProps(ui_node);
@@ -232,6 +238,7 @@ pub fn createParagraphOpen(ui_node: *UINode) void {
     }
 }
 
+/// Writes the closing tag for <p>.
 pub fn createParagraphClose() void {
     emit("</p>");
 }
@@ -252,6 +259,7 @@ pub fn createRawHtml(ui_node: *UINode) void {
     emit("</p>");
 }
 
+/// Writes a field as a paragraph with its text.
 pub fn createField(ui_node: *UINode) void {
     emit("<p");
     writeAllProps(ui_node);
@@ -262,6 +270,7 @@ pub fn createField(ui_node: *UINode) void {
     emit("</p>");
 }
 
+/// Writes an `<input>` with the field's name and type.
 pub fn createInput(ui_node: *UINode) void {
     emit("<input");
     writeAllProps(ui_node);
@@ -290,6 +299,7 @@ pub fn createInput(ui_node: *UINode) void {
     // emit("</input>");
 }
 
+/// Writes a `<textarea>`.
 pub fn createTextArea(ui_node: *UINode) void {
     emit("<textarea");
     writeAllProps(ui_node);
@@ -310,6 +320,7 @@ pub fn createTextArea(ui_node: *UINode) void {
     emit("</textarea>");
 }
 
+/// Writes a `<label>` with its text.
 pub fn createLabel(ui_node: *UINode) void {
     emit("<label ");
     writeOptionalProp("for", ui_node.name);
@@ -321,34 +332,41 @@ pub fn createLabel(ui_node: *UINode) void {
     emit("</label>");
 }
 
+/// Writes the opening <a> tag with the node's attributes.
 pub fn createLinkOpen(ui_node: *UINode) void {
     emit("<a");
     writeAllProps(ui_node);
     emit(">");
 }
+/// Writes the closing tag for <a>.
 pub fn createLinkClose() void {
     emit("</a>");
 }
 
+/// Writes the opening <i> tag with the node's attributes.
 pub fn createIconOpen(ui_node: *UINode) void {
     emit("<i");
     writeAllProps(ui_node);
     emit(">");
 }
+/// Writes the closing tag for <i>.
 pub fn createIconClose() void {
     emit("</i>");
 }
 
+/// Writes the opening <img> tag with the node's attributes.
 pub fn createImageOpen(ui_node: *UINode) void {
     emit("<img");
     writeAllProps(ui_node);
     writeOptionalProp("alt", ui_node.alt);
     emit(">");
 }
+/// Writes the closing tag for <img>.
 pub fn createImageClose() void {
     emit("</img>");
 }
 
+/// Writes the container a Graphic's SVG is loaded into.
 pub fn createGraphicOpen(ui_node: *UINode) void {
     if (mode_options.static_mode) {
         emit("<div");
@@ -360,6 +378,7 @@ pub fn createGraphicOpen(ui_node: *UINode) void {
         emit(">");
     }
 }
+/// Closes that container.
 pub fn createGraphicClose() void {
     if (mode_options.static_mode) {
         emit("</div>");
@@ -368,34 +387,41 @@ pub fn createGraphicClose() void {
     }
 }
 
+/// Writes the opening <ul> tag with the node's attributes.
 pub fn createListOpen(ui_node: *UINode) void {
     emit("<ul");
     writeAllProps(ui_node);
     emit(">");
 }
 
+/// Writes the closing tag for <li>.
 pub fn createListItemClose() void {
     emit("</li>");
 }
 
+/// Writes the opening <li> tag with the node's attributes.
 pub fn createListItemOpen(ui_node: *UINode) void {
     emit("<li");
     writeAllProps(ui_node);
     emit(">");
 }
+/// Writes the closing tag for <ul>.
 pub fn createListClose() void {
     emit("</ul>");
 }
 
+/// Writes the opening <section> tag with the node's attributes.
 pub fn createSectionOpen(ui_node: *UINode) void {
     emit("<section");
     writeAllProps(ui_node);
     emit(">");
 }
+/// Writes the closing tag for <section>.
 pub fn createSectionClose() void {
     emit("</section>");
 }
 
+/// Writes the opening <code> tag with the node's attributes.
 pub fn createCodeOpen(ui_node: *UINode) void {
     emit("<code");
     writeAllProps(ui_node);
@@ -404,10 +430,12 @@ pub fn createCodeOpen(ui_node: *UINode) void {
         writeEscaped(text);
     }
 }
+/// Writes the closing tag for <code>.
 pub fn createCodeClose() void {
     emit("</code>");
 }
 
+/// Writes `<hN ...>` and the heading text.
 pub fn createHeadingOpen(ui_node: *UINode) void {
     emit("<h");
     if (ui_node.level) |level| {
@@ -420,6 +448,7 @@ pub fn createHeadingOpen(ui_node: *UINode) void {
         writeEscaped(text);
     }
 }
+/// Writes `</hN>`.
 pub fn createHeadingClose(ui_node: *UINode) void {
     emit("</h");
     if (ui_node.level) |level| {
@@ -428,6 +457,7 @@ pub fn createHeadingClose(ui_node: *UINode) void {
     emit(">");
 }
 
+/// Writes the node's inline SVG.
 pub fn createSvgOpen(ui_node: *UINode) void {
     const start = std.mem.find(u8, ui_node.text.?, ">") orelse return;
     const end = std.mem.indexOf(u8, ui_node.text.?, "</svg>") orelse return;
@@ -439,10 +469,12 @@ pub fn createSvgOpen(ui_node: *UINode) void {
     emit(ui_node.text.?[start + 1 .. end]);
 }
 
+/// Writes the closing tag for <svg>.
 pub fn createSvgClose() void {
     emit("</svg>");
 }
 
+/// Writes the opening tag for `ui_node` by element type.
 pub fn createElementOpen(ui_node: *UINode) void {
     switch (ui_node.type) {
         .FlexBox => {
@@ -526,6 +558,7 @@ pub fn createElementOpen(ui_node: *UINode) void {
     }
 }
 
+/// Writes the closing tag for `ui_node` by element type.
 pub fn createElementClose(ui_node: *UINode) void {
     switch (ui_node.type) {
         .FlexBox => {
@@ -590,6 +623,7 @@ pub fn createElementClose(ui_node: *UINode) void {
     }
 }
 
+/// Writes `node` and its subtree.
 pub fn createHtmlTree(node: *UINode) void {
     createElementOpen(node);
 

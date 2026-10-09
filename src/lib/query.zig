@@ -6,6 +6,7 @@ const UINode = @import("UITree.zig").UINode;
 const Wasm = @import("wasm.zig");
 const std = @import("std");
 
+/// Debug: renders `route` and logs its node tree.
 pub fn printUIRouteTree(route: []const u8) void {
     Vapor.frame_arena.beginFrame(); // For double-buffered approach
     Vapor.current_route = route;
@@ -78,6 +79,7 @@ pub fn printUIRouteTree(route: []const u8) void {
     // writer.writeAll("}\n") catch unreachable;
 }
 
+/// Debug: logs the ids of `node` and its children.
 pub fn printUITree(node: *UINode) void {
     // if (node.dirty) {
     Vapor.println("UI: {s}\n", .{node.uuid});
@@ -88,6 +90,7 @@ pub fn printUITree(node: *UINode) void {
     }
 }
 
+/// `input` with quotes and backslashes escaped for JSON.
 pub fn escapeForJson(input: []const u8) ![]u8 {
     var list = std.array_list.Managed(u8).init(Vapor.allocator_global);
 
@@ -116,6 +119,7 @@ pub fn escapeForJson(input: []const u8) ![]u8 {
     return list.toOwnedSlice();
 }
 
+/// `input` with dashes replaced.
 pub fn replace_dash(input: []const u8) ![]u8 {
     var list = std.array_list.Managed(u8).init(Vapor.allocator_global);
 
@@ -134,6 +138,7 @@ pub fn replace_dash(input: []const u8) ![]u8 {
     return list.toOwnedSlice();
 }
 
+/// Debug: logs a static node's text.
 pub fn printStaticTextNode(node: *UINode) void {
     if (node.state_type == .static) blk: {
         var valid_text: []const u8 = "";
@@ -171,6 +176,7 @@ pub fn printStaticTextNode(node: *UINode) void {
 /// looks complete.
 pub var component_id_collection_failed: bool = false;
 
+/// Adds the ids of nodes of `selected_type` under `node` to `component_ids`.
 pub fn collectComponentIds(node: *UINode, selected_type: Vapor.ElementType, component_ids: *std.array_list.Managed([]const u8)) void {
     if (node.type == selected_type) {
         component_ids.append(node.uuid) catch |err| {
@@ -310,6 +316,7 @@ pub fn getComponentBounds(uuid: []const u8) ?Bounds {
     };
 }
 
+/// Debug: walks a command tree.
 pub fn iterateTreeChildren(tree: *Vapor.CommandsTree) void {
     for (tree.children.items) |child| {
         iterateTreeChildren(child);

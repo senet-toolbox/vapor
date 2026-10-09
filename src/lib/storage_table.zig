@@ -15,6 +15,7 @@ pub const StorageTable = struct {
     entries: ArrayList(Entry),
     allocator: std.mem.Allocator,
 
+    /// An empty table.
     pub fn init(allocator: std.mem.Allocator) Self {
         return .{
             .index_map = std.AutoHashMap(u32, u32).init(allocator),
@@ -23,6 +24,7 @@ pub const StorageTable = struct {
         };
     }
 
+    /// Frees every stored copy.
     pub fn deinit(self: *Self) void {
         for (self.entries.items) |entry| {
             self.allocator.free(entry.key);
@@ -32,6 +34,7 @@ pub const StorageTable = struct {
         self.entries.deinit();
     }
 
+    /// Stores a copy of `new_content` under `key_str`, replacing the old one; returns its handle.
     pub fn replaceOrAddStr(self: *Self, key_str: []const u8, new_content: []const u8) !u32 {
         const h = std.hash.XxHash32.hash(0, key_str);
 
@@ -65,6 +68,7 @@ pub const StorageTable = struct {
         return new_idx;
     }
 
+    /// The string stored under `handle`.
     pub fn getStr(self: Self, handle: u32) ?[]const u8 {
         if (handle >= self.entries.items.len) return null;
         return self.entries.items[handle].data;

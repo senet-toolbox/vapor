@@ -46,6 +46,7 @@ pub const Payload = struct {
     exp: i64, // Expiration time (timestamp)
 };
 
+/// Splits and decodes a token's header and payload, without verifying it.
 pub fn decodev2(token: []const u8, allocator: std.mem.Allocator) !JWT2 {
     var jwt_itr = std.mem.splitScalar(u8, token, '.');
 
@@ -116,10 +117,12 @@ pub const DecodingKey = union(enum) {
     // ECDSA public keys are SEC1-encoded and accept either the compressed (33/49
     // byte) or uncompressed (65/97 byte) form, so these take a slice rather than
     // a fixed-size array.
+    /// An ES256 verification key from SEC1 bytes.
     pub fn fromEs256Sec1(sec1: []const u8) !@This() {
         return .{ .es256 = try std.crypto.sign.ecdsa.EcdsaP256Sha256.PublicKey.fromSec1(sec1) };
     }
 
+    /// An ES384 verification key from SEC1 bytes.
     pub fn fromEs384Sec1(sec1: []const u8) !@This() {
         return .{ .es384 = try std.crypto.sign.ecdsa.EcdsaP384Sha384.PublicKey.fromSec1(sec1) };
     }
@@ -132,12 +135,14 @@ fn decodePart(allocator: std.mem.Allocator, comptime T: type, encoded: []const u
     return try std.json.parseFromSliceLeaky(T, allocator, dest, .{ .allocate = .alloc_always, .ignore_unknown_fields = true });
 }
 
+/// A decoded token with claims of type `ClaimSet`; owns its arena.
 pub fn JWT(comptime ClaimSet: type) type {
     return struct {
         arena: *std.heap.ArenaAllocator,
         header: HeaderRoot,
         claims: ClaimSet,
 
+        /// Frees the token and its arena.
         pub fn deinit(self: *@This()) void {
             const child = self.arena.child_allocator;
             self.arena.deinit();
@@ -146,6 +151,7 @@ pub fn JWT(comptime ClaimSet: type) type {
     };
 }
 
+/// Verifies `str` with `key` and `validation` and returns its claims.
 pub fn decode(
     allocator: std.mem.Allocator,
     comptime ClaimSet: type,
@@ -189,6 +195,7 @@ fn signatureBytes(comptime len: usize, sig: []const u8) error{InvalidSignature}!
     return out;
 }
 
+/// Checks the signature of `msg` and parses its claims.
 pub fn verify(
     allocator: std.mem.Allocator,
     algo: Algorithm,
@@ -296,10 +303,12 @@ pub const EncodingKey = union(enum) {
         return .{ .edsa = try std.crypto.sign.Ed25519.SecretKey.fromBytes(bytes) };
     }
 
+    /// An ES256 signing key from its secret bytes.
     pub fn fromEs256Bytes(bytes: [std.crypto.sign.ecdsa.EcdsaP256Sha256.SecretKey.encoded_length]u8) !@This() {
         return .{ .es256 = try std.crypto.sign.ecdsa.EcdsaP256Sha256.SecretKey.fromBytes(bytes) };
     }
 
+    /// An ES384 signing key from its secret bytes.
     pub fn fromEs384Bytes(bytes: [std.crypto.sign.ecdsa.EcdsaP384Sha384.SecretKey.encoded_length]u8) !@This() {
         return .{ .es384 = try std.crypto.sign.ecdsa.EcdsaP384Sha384.SecretKey.fromBytes(bytes) };
     }
@@ -381,6 +390,7 @@ fn sign(
     };
 }
 
+/// Signs `claims` with `key` and returns the token.
 pub fn encode(
     allocator: std.mem.Allocator,
     header: HeaderRoot,
@@ -419,12 +429,14 @@ pub fn encode(
     return try buf.toOwnedSlice();
 }
 
+/// Parses a token header.
 pub fn getHeader(header_str: []const u8, allocator: std.mem.Allocator) !Header {
     const header = try std.json.parseFromSlice(Header, allocator, header_str, .{});
     // defer header.deinit();
     return header.value;
 }
 
+/// Parses a token payload.
 pub fn getPayload(payload_str: []const u8, allocator: std.mem.Allocator) !Payload {
     const payload = try std.json.parseFromSlice(Payload, allocator, payload_str, .{});
     // defer payload.deinit();
@@ -442,6 +454,7 @@ pub const GoogleIdToken = struct {
     iat: i64,
     exp: i64,
 };
+/// Parses a refresh-token payload.
 pub fn getRefreshPayload(payload_str: []const u8, allocator: std.mem.Allocator) !GoogleIdToken {
     const payload = try std.json.parseFromSlice(GoogleIdToken, allocator, payload_str, .{});
     // defer payload.deinit();
@@ -469,6 +482,7 @@ pub const SessionClaims = struct {
 // `encode` below is still available for server-side use, where the caller
 // supplies a key that never reaches a client.
 
+/// Whether the token's `exp` has passed (or it cannot be read). Does not verify the signature.
 pub fn isExpired(token: []const u8) bool {
     const parsed = decodePayloadUnverified(token) catch return true;
     defer parsed.deinit();

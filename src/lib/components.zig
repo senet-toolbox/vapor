@@ -79,6 +79,8 @@ pub fn Header(text: []const u8, size: HeaderSize, style: Style) void {
     LifeCycle.close({});
 }
 
+/// Wraps the block in a node whose `mounted`/`created`, `updated` and `destroy`
+/// callbacks run at those points: `Hooks(.{ .mounted = f })({ ... })`.
 pub fn Hooks(hooks: Vapor.HooksFuncs) *const fn (void) void {
     const elem_decl = ElementDecl{
         .state_type = .static,
@@ -352,6 +354,7 @@ pub const ComponentBuilder = struct {
     // `pub` only so the method files under builder/ can reach them; not part
     // of the public API.
 
+    /// The builder's node, opening one if it has none yet.
     pub fn getOrCreateNode(self: *const Self, new_self: *Self) *UINode {
         if (self._ui_node) |node| return node;
         const node = LifeCycle.open(ElementDecl{
@@ -365,6 +368,7 @@ pub const ComponentBuilder = struct {
         return node;
     }
 
+    /// The builder's chained style values, for `mergeStyles`.
     pub fn getStyleMergeParams(self: *const Self, include_extended: bool, include_aspect_ratio: bool) StyleMergeParams {
         return .{
             .style_ptr = self._style,
@@ -398,6 +402,7 @@ pub const ComponentBuilder = struct {
         };
     }
 
+    /// The element declaration `end`/`children` configure the node with.
     pub fn makeElemDecl(self: *const Self, text: ?[]const u8, mutable_style: *const Style, inline_style: ?[]const u8) Vapor.ElementDecl {
         return .{
             .state_type = _state_type,
@@ -619,6 +624,7 @@ pub fn Builder(comptime state_type: types.StateType) type {
     return ComponentBuilder;
 }
 
+/// Same as `Builder`.
 pub fn BuilderClose(comptime state_type: types.StateType) type {
     _ = state_type;
     return ComponentBuilder;

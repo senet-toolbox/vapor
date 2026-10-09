@@ -22,6 +22,7 @@ pub const monthsStrings: []const []const u8 = &.{
 pub var years_string: [100][]const u8 = undefined;
 pub var years_buffers: [100][20]u8 = undefined; // Using [20]u8 as requested
 
+/// Fills `years_string` with year labels for pickers.
 pub fn initYearsString() void {
     for (0..years_string.len) |i| {
         years_string[i] = std.fmt.bufPrint(&years_buffers[i], "{d}", .{2025 - i}) catch "";
@@ -92,6 +93,7 @@ pub fn fromTimestamp(timestamp: i64) !DateTime {
     };
 }
 
+/// Midnight on the given date.
 pub fn fromDayMonthYear(day: u8, month: u8, year: i32) DateTime {
     return .{
         .year = year,
@@ -103,6 +105,7 @@ pub fn fromDayMonthYear(day: u8, month: u8, year: i32) DateTime {
     };
 }
 
+/// Midnight on the first of `month`.
 pub fn fromMonth(month: u8, year: i32) DateTime {
     return .{
         .year = year,

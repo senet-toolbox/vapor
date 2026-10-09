@@ -42,6 +42,7 @@ test hexToRgba {
     try eq([4]f32{ 0, 0, 0, 1 }, hexToRgba("fff")); // no '#'
 }
 
+/// Two hex digits as a byte.
 pub fn parseHexByte(hex: []const u8) !u8 {
     if (hex.len != 2) return error.InvalidLength;
 
@@ -51,6 +52,7 @@ pub fn parseHexByte(hex: []const u8) !u8 {
     return (high << 4) | low;
 }
 
+/// One hex digit's value.
 pub fn charToHex(c: u8) !u8 {
     return switch (c) {
         '0'...'9' => c - '0',

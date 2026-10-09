@@ -69,6 +69,7 @@ const Color = @This();
 theme: Theme = .light,
 switched_theme: bool = false,
 
+/// The colours of the current theme.
 pub fn getDefaultThemeColors(self: Color) ThemeColors {
     return switch (self.theme) {
         .light => Light,
@@ -76,6 +77,7 @@ pub fn getDefaultThemeColors(self: Color) ThemeColors {
     };
 }
 
+/// The colours of the current theme.
 pub fn getThemeColors(self: *Color) ThemeColors {
     return switch (self.theme) {
         .light => Light,
@@ -83,17 +85,20 @@ pub fn getThemeColors(self: *Color) ThemeColors {
     };
 }
 
+/// Switches to `theme_type`.
 pub fn switchTheme(self: *Color, theme_type: Theme) void {
     self.theme = theme_type;
     self.switched_theme = true;
     Vapor.global_rerender = true;
 }
 
+/// A colour of the current theme, as RGBA.
 pub fn getAttribute(self: *Color, comptime attribute: []const u8) [4]f32 {
     const theme = self.getThemeColors();
     return @field(theme, attribute);
 }
 
+/// A colour of the current theme, as RGBA.
 pub fn getDefaultAttribute(self: Color, comptime attribute: []const u8) [4]f32 {
     const theme = self.getDefaultThemeColors();
     return @field(theme, attribute);

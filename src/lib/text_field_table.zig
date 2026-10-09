@@ -22,6 +22,7 @@ pub const StringTable = struct {
     /// Special value indicating no string / null
     pub const null_handle: u32 = std.math.maxInt(u32);
 
+    /// An empty table.
     pub fn init(allocator: std.mem.Allocator) Self {
         return .{
             .index_map = std.AutoHashMap(u32, u32).init(allocator),
@@ -30,6 +31,7 @@ pub const StringTable = struct {
         };
     }
 
+    /// Frees every string.
     pub fn deinit(self: *Self) void {
         // Free all allocated strings
         for (self.entries.items) |entry| {
@@ -144,6 +146,7 @@ pub const StringTable = struct {
         self.entries.clearRetainingCapacity();
     }
 
+    /// Updates entries that point into a buffer that moved from `old_base` to `new_base`.
     pub fn remapPointerRange(
         self: *Self,
         old_base: usize,

@@ -112,6 +112,7 @@ pub const PackedTransform = packed struct {
     type_ptr: u32 = 0,
     type_len: usize = 0,
 
+    /// Packs the value.
     pub fn set(packed_transform: *PackedTransform, transform: *const types.Transform) void {
         const type_slice = transform.type;
         var slice: []types.TransformType = Vapor.arena(.frame).alloc(types.TransformType, type_slice.len) catch return;

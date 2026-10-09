@@ -36,6 +36,7 @@ pub const NodeProto = *const fn (*Node) void;
 
 pub const ArgsProto = *const fn (*Action) []const u8;
 
+/// `std.meta.ArgsTuple(Fn)`, or an empty tuple for functions without parameters.
 pub fn ArgsTuple(comptime Fn: type) type {
     const out = std.meta.ArgsTuple(Fn);
     return if (std.meta.fields(out).len == 0) @TypeOf(.{}) else out;
@@ -47,10 +48,12 @@ pub const ErasedEventCallback = struct {
     event_type: Vapor.EventType,
     dynamic_object: ?*DynamicObject = null,
 
+    /// Runs the callback with `evt`.
     pub fn call(self: *const ErasedEventCallback, evt: *Event) void {
         self.callFn(self.ctx, evt);
     }
 
+    /// Wraps `cb` and `args` as an event callback; the event is passed last.
     pub fn make(allocator: std.mem.Allocator, event_type: Vapor.EventType, cb: anytype, args: anytype) !ErasedEventCallback {
         const Args = @TypeOf(args);
 
@@ -126,6 +129,7 @@ pub export fn dispatchNodeEvent(ui_node: *UINode, event_type_int: u32) void {
     }
 }
 
+/// Calls `cb` with `args` and then the event whenever `event_type` fires on the node.
 pub fn attachEventCtxCallback(ui_node: *UINode, event_type: Vapor.EventType, cb: anytype, args: anytype) !void {
     if (!Vapor.isWasi) return;
 
@@ -220,14 +224,17 @@ pub const ErasedCallback = struct {
     callFn: *const fn (*anyopaque) void,
     deinitFn: *const fn (*anyopaque) void,
 
+    /// Runs the callback.
     pub fn call(self: *const ErasedCallback) void {
         self.callFn(self.ctx);
     }
 
+    /// Releases the callback's closure.
     pub fn deinit(self: *ErasedCallback) void {
         self.deinitFn(self.ctx);
     }
 
+    /// Wraps `cb` and `args` as a callback.
     pub fn make(allocator: std.mem.Allocator, cb: anytype, args: anytype) !ErasedCallback {
         const Args = @TypeOf(args);
 
@@ -277,6 +284,7 @@ pub fn assignUserId(node: *UINode, new_id: []const u8) void {
     moveEntry(&Vapor.element_registry, old_hash, node.hash);
 }
 
+/// Moves `map`'s entry from key `from` to key `to`.
 pub fn moveEntry(map: anytype, from: u32, to: u32) void {
     const kv = map.fetchRemove(from) orelse return;
     map.put(to, kv.value) catch |err| {

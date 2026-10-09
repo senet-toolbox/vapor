@@ -123,6 +123,7 @@ pub fn exportStruct(comptime T: type) type {
         pub var instance: T = undefined;
         var descriptors: [@typeInfo(T).@"struct".fields.len]FieldDescriptor() = undefined;
 
+        /// Records `T`'s field layout.
         pub fn init() void {
             const fields = @typeInfo(T).@"struct".fields;
             inline for (fields, 0..) |field, i| {
@@ -137,14 +138,17 @@ pub fn exportStruct(comptime T: type) type {
             }
         }
 
+        /// The shared instance's address.
         pub fn getInstancePtr() [*]const u8 {
             return @ptrCast(&instance);
         }
 
+        /// Number of fields in `T`.
         pub fn getFieldCount() u32 {
             return @typeInfo(T).@"struct".fields.len;
         }
 
+        /// The layout of field `index`.
         pub fn getFieldDescriptor(index: u32) *const FieldDescriptor() {
             return &descriptors[index];
         }

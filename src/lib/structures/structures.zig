@@ -117,6 +117,7 @@ pub fn BoundedArray(comptime T: type, comptime buffer_capacity: usize) type {
             return Self{ .len = len };
         }
 
+        /// The items as a slice.
         pub fn slice(self: anytype) switch (@TypeOf(&self.buffer)) {
             *[buffer_capacity]T => []T,
             *const [buffer_capacity]T => []const T,

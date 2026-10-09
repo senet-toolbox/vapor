@@ -50,6 +50,7 @@ pub const PackedTransition = packed struct {
     timing: TimingFunction = .ease,
     delay: u32 = 0,
 
+    /// Packs `transition` for a node.
     pub fn set(packed_transition: *PackedTransition, transition: *const Transition) void {
         var slice: []TransitionProperty = Vapor.arena(.frame).alloc(TransitionProperty, transition.properties.len) catch return;
         for (transition.properties, 0..) |property, i| {
@@ -72,10 +73,12 @@ pub const Transition = struct {
     timing: TimingFunction = .ease,
     delay: u32 = 0,
 
+    /// No transition.
     pub fn none() Transition {
         return Transition{};
     }
 
+    /// Transitions only `transform`.
     pub fn transform() Transition {
         return .{
             .properties = &.{.transform},

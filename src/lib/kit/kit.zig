@@ -617,6 +617,7 @@ pub const FieldDescriptor = packed struct {
 };
 
 // Generic schema generator
+/// Describes `T`'s fields (name, offset, type) so the runtime can read a `T` from memory.
 pub fn StructSchema(comptime T: type) type {
     return struct {
         pub var fields: []FieldDescriptor = undefined;

@@ -29,6 +29,7 @@ pub const StringTable = struct {
     /// Special value indicating no string / null
     pub const null_handle: u32 = std.math.maxInt(u32);
 
+    /// An empty table.
     pub fn init(allocator: std.mem.Allocator) Self {
         return .{
             .string_data = std.array_list.Managed(u8).init(allocator),
@@ -38,6 +39,7 @@ pub const StringTable = struct {
         };
     }
 
+    /// Frees the table.
     pub fn deinit(self: *Self) void {
         self.string_data.deinit();
         self.index_map.deinit();

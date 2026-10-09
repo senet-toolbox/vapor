@@ -360,6 +360,7 @@ pub const Element = struct {
     const Sizing = struct {
         value: f32,
         unit: Unit,
+        /// The size as CSS, e.g. "50%", in frame memory.
         pub fn toString(self: *const Sizing) []const u8 {
             const suffix = switch (self.unit) {
                 .percent => "%",
@@ -842,6 +843,7 @@ const Translate3d = struct {
     x: f32 = 0,
     y: f32 = 0,
     z: f32 = 0,
+    /// The CSS `translate3d(...)`, in frame memory.
     pub fn toString(self: *const Translate3d) []const u8 {
         return Vapor.fmtln("translate3d({d}px, {d}px, 0)", .{
             self.x,

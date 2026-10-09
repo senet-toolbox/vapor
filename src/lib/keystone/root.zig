@@ -35,6 +35,7 @@ pub const Algorithm = enum {
     /// Edwards-curve Digital Signature Algorithm (EdDSA)
     EdDSA,
 
+    /// Writes the algorithm name as JSON.
     pub fn jsonStringify(
         self: @This(),
         out: anytype,
@@ -55,17 +56,20 @@ pub const Header = struct {
 
     // todo add others
     //
+    /// Writes the header as JSON.
     pub fn format(self: @This(), writer: *std.Io.Writer) std.Io.Writer.Error!void {
         try std.json.Stringify.value(self, .{ .emit_null_optional_fields = false }, writer);
     }
 };
 
+/// A decoded token with claims of type `ClaimSet`; owns its arena.
 pub fn JWT(comptime ClaimSet: type) type {
     return struct {
         arena: *std.heap.ArenaAllocator,
         header: Header,
         claims: ClaimSet,
 
+        /// Frees the token and its arena.
         pub fn deinit(self: *@This()) void {
             const child = self.arena.child_allocator;
             self.arena.deinit();

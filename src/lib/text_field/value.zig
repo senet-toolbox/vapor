@@ -509,6 +509,7 @@ pub fn bind(self: *const Self, value: anytype) Self {
 
     // Build an erased updater fn for this specific type
     const Updater = struct {
+        /// Writes the field's new value into the bound pointer.
         pub fn update(ptr: *anyopaque, evt: *Vapor.Event) void {
             const T = @TypeOf(value.*);
             const typed: *T = @ptrCast(@alignCast(ptr));

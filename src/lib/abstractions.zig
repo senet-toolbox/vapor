@@ -27,6 +27,7 @@ pub fn ManagedMemoryPool(comptime T: type) type {
             return self.pool.create(self.allocator);
         }
 
+        /// Returns an item from `create` to the pool.
         pub fn destroy(self: *Self, ptr: *T) void {
             // The pool over-aligns its items; `ptr` came from `create`, so it
             // carries that alignment even though `*T` does not say so.

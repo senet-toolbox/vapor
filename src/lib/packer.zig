@@ -28,6 +28,7 @@ pub var interactives_pool: ManagedMemoryPool(types.PackedInteractive) = undefine
 pub var transforms_pool: ManagedMemoryPool(types.PackedTransforms) = undefined;
 pub var responsive_pool: ManagedMemoryPool(types.PackedResponsive) = undefined;
 
+/// Creates the pools and tables, using `allocator`.
 pub fn init(allocator: std.mem.Allocator) void {
     initPackedData(allocator);
     initPools(allocator);
