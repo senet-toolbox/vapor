@@ -62,6 +62,8 @@ const modules = .{
     @import("lib/UITree.zig"),
     @import("lib/Vapor.zig"),
     @import("lib/WASM.zig"),
+    @import("lib/animation/removal.zig"),
+    @import("lib/animation/presets.zig"),
     @import("lib/configure/motion.zig"),
     @import("lib/configure/visual.zig"),
     @import("lib/configure/layout.zig"),
