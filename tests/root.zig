@@ -588,6 +588,37 @@ test "items and child finish every child builder, pointers included" {
     try std.testing.expectEqualStrings("c", c.text orelse return error.TextNotConfigured);
 }
 
+var deinit_calls: u32 = 0;
+fn DeinitPageA() void {
+    textElement("a", "page-a");
+}
+fn deinitPageA() void {
+    deinit_calls += 1;
+}
+fn DeinitPageB() void {
+    textElement("b", "page-b");
+}
+
+// Page's deinit argument went into a map keyed by u32 with a string key (a
+// compile error once used) and nothing ever read the map.
+test "a page's deinit runs when the app navigates away from it" {
+    Vapor.init(.{});
+    Vapor.Animation.new();
+    Vapor.lib.resetRerender();
+    Vapor.Animation.removal_queue.clearRetainingCapacity();
+    Vapor.Page(.{ .route = "/deinit-a" }, DeinitPageA, deinitPageA);
+    Vapor.Page(.{ .route = "/deinit-b" }, DeinitPageB, null);
+    deinit_calls = 0;
+
+    _ = try renderRoute("/root/deinit-a");
+    _ = try renderRoute("/root/deinit-a");
+    try std.testing.expectEqual(@as(u32, 0), deinit_calls);
+    _ = try renderRoute("/root/deinit-b");
+    try std.testing.expectEqual(@as(u32, 1), deinit_calls);
+    _ = try renderRoute("/root/deinit-b");
+    try std.testing.expectEqual(@as(u32, 1), deinit_calls);
+}
+
 test "renderCycle leaves stable same-route rerenders clean" {
     initRenderCycleRuntime("/cycle-stable");
 

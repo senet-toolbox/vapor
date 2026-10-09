@@ -83,7 +83,10 @@ const LayoutItem = struct {
     call_fn: *const fn (*const fn () void) void,
 };
 pub var layout_map: std.AutoHashMap(u32, LayoutItem) = undefined;
-pub var page_deinit_map: std.AutoHashMap(u32, *const fn () void) = undefined;
+/// Page deinit callbacks, keyed by the page function's address.
+pub var page_deinit_map: std.AutoHashMap(usize, *const fn () void) = undefined;
+/// The page rendered last, so its deinit can run when the route changes.
+var shown_page: ?*const fn () void = null;
 pub var global_rerender: bool = false;
 pub var has_dirty: bool = false;
 pub var rerender_everything: bool = false;
@@ -111,6 +114,7 @@ pub const setCookie = StorageModule.setCookie;
 pub const getCookies = StorageModule.getCookies;
 pub const getCookie = StorageModule.getCookie;
 
+/// The page's current URL path (`location.pathname`); "" outside the browser.
 pub fn getWindowPath() []const u8 {
     if (isWasi) {
         return std.mem.span(Wasm.getWindowInformationWasm());
@@ -240,6 +244,8 @@ extern fn frame_arena_init(frame_arena: *FrameAllocator, backing_allocator: *std
 
 // 17kb is just the exports and externs
 
+/// Starts the runtime. Call it once, first, in your app's exported `init`,
+/// before registering pages.
 pub fn init(config: VaporConfig) void {
     switch (builtin.target.cpu.arch) {
         .wasm32 => {
@@ -350,9 +356,11 @@ fn initContextData(persistent_allocator: std.mem.Allocator) void {
     ctx_map = std.AutoHashMap(u32, *UIContext).init(persistent_allocator);
     page_map = std.StringHashMap(void).init(persistent_allocator);
     layout_map = std.AutoHashMap(u32, LayoutItem).init(persistent_allocator);
-    page_deinit_map = std.AutoHashMap(u32, *const fn () void).init(persistent_allocator);
+    page_deinit_map = std.AutoHashMap(usize, *const fn () void).init(persistent_allocator);
+    shown_page = null;
 }
 
+/// Internal: the node the builders are currently filling in.
 pub fn getCurrentNode() ?*UINode {
     const stack = current_ctx.stack.?;
     // Parent node
@@ -388,9 +396,9 @@ pub const LifeCycle = struct {
     }
 };
 
-/// Force rerender forces the entire dom tree to check props of all dynamic and pure components and rerender the ui
-/// since Vapor is built with zig and wasm, checking all props of 10000s of nodes and ui components is cheap
-/// feel free to abuse force, its essentially a global signal
+/// Requests a rerender. In the default `.atomic` mode, event handlers,
+/// `timeout` callbacks and fetch results trigger one by themselves; call this
+/// after changing state anywhere else.
 pub fn cycle() void {
     if (isWasi) {
         Vapor.global_rerender = true;
@@ -399,6 +407,7 @@ pub fn cycle() void {
     }
 }
 
+/// Requests a rerender. Same as `cycle`.
 pub fn batch() void {
     if (isWasi) {
         Vapor.global_rerender = true;
@@ -426,6 +435,7 @@ var deepest_reset_layout: ?LayoutItem = null;
 var deepest_reset_layout_path: []const u8 = "";
 var target_min_layout_path: []const u8 = "";
 
+/// Internal: finds the deepest layout registered with `.reset = true`.
 pub fn findResetLayout() void {
     var potential_path: []const u8 = "";
     for (route_segments, 0..) |segment, i| {
@@ -445,6 +455,7 @@ pub fn findResetLayout() void {
 }
 
 pub var next_layout_path_to_check: []const u8 = "";
+/// Internal: renders the current page inside its layouts, outermost first.
 pub fn callNestedLayouts() void {
     if (route_segments.len == 0) {
         if (deepest_reset_layout) |layout| {
@@ -497,14 +508,18 @@ const Status = struct {
 
 pub var status: Status = .{};
 
+/// Status of the last render: whether it ran, and whether the URL matched a
+/// page.
 pub fn getStatus() Status {
     return status;
 }
 
+/// Internal: clears the render status.
 pub fn resetStatus() void {
     status = .{};
 }
 
+/// The empty page rendered when no route matches, not even `/error`.
 pub fn DefaultPage() void {
     Components.Builder(.pure).Stack().children({});
 }
@@ -513,6 +528,9 @@ pub var old_ctx_op: ?*UIContext = null;
 
 // pub var render_phase: RenderPhase = .idle;
 pub var changed_route: bool = false;
+/// Internal: renders the route at `route_ptr` (a "/root/..." path), runs its
+/// layouts and page, and diffs the result against the previous tree. The JS
+/// runtime calls this.
 pub fn renderCycle(route_ptr: [*:0]u8) !void {
     UIContext.cache_count = 0;
     status = .{};
@@ -542,10 +560,15 @@ pub fn renderCycle(route_ptr: [*:0]u8) !void {
 
     if (!std.mem.eql(u8, current_route, route)) {
         changed_route = true;
+        // Leaving the page: its deinit runs while its view memory is intact.
+        if (shown_page) |page| {
+            if (page_deinit_map.get(@intFromPtr(page))) |deinit| deinit();
+        }
         // We need to start a new route allocator
         // otherwise we are on the same route
         frame_arena.beginView();
     }
+    shown_page = render_page;
 
     current_route = route;
     added_nodes.clearRetainingCapacity();
@@ -633,6 +656,7 @@ pub fn renderCycle(route_ptr: [*:0]u8) !void {
     previous_route = current_route;
 }
 
+/// Internal: registers `page` under the full route `path`. Use `Page`.
 pub fn createPage(path: []const u8, page: fn () void, page_deinit: ?fn () void) !void {
     if (isWasi) {
         has_context = true;
@@ -658,7 +682,7 @@ pub fn createPage(path: []const u8, page: fn () void, page_deinit: ?fn () void) 
     };
 
     if (page_deinit) |de| {
-        page_deinit_map.put(path, de) catch |err| {
+        page_deinit_map.put(@intFromPtr(&page), de) catch |err| {
             println("Could not put route {any}\n", .{err});
         };
     }
@@ -679,6 +703,7 @@ pub const runOnAnimationFrame = TimersModule.runOnAnimationFrame;
 pub const nowMs = TimersModule.nowMs;
 pub const startViewTransition = TimersModule.startViewTransition;
 
+/// Internal: writes the stylesheet after a route change.
 pub fn endPage(_: *UIContext) void {
     if (changed_route) {
         ////// BE CAREFUL WITH THIS the configuration system does not run if the value has been created already i think?
@@ -693,6 +718,10 @@ const Path = union(enum) {
     route: []const u8,
     src: std.builtin.SourceLocation,
 };
+/// Registers a page. `.route = "/users/:id"` gives the URL; `:name` segments
+/// match anything and are read with `routeParam`. `.src = @src()` derives the
+/// route from the file's path under `src/routes/` instead. `page_deinit`, if not
+/// null, runs when the app navigates away from the page.
 pub fn Page(path: Path, page: fn () void, page_deinit: ?fn () void) void {
     const allocator = Vapor.frame_arena.persistentAllocator();
     var full_route: []const u8 = "";
@@ -765,6 +794,9 @@ pub fn routeParam(name: []const u8) ?[]const u8 {
     return null;
 }
 
+/// Wraps every page under `path` in `layout`, which gets the page's render
+/// function and calls it where the content goes. Layouts nest outermost first;
+/// `.reset = true` drops the layouts above this one. "/root" is reserved.
 pub fn registerLayout(path: []const u8, layout: LayoutFn, options: LayoutOptions) !void {
     if (std.mem.eql(u8, path, "/root")) return error.CannotRegisterRootPath;
     if (std.mem.eql(u8, path, "/")) {
@@ -787,6 +819,7 @@ pub const HooksFuncs = struct {
 
 pub const HooksCtxFuncs = enum(u8) { mounted, destroy };
 
+/// Switches between the light and dark theme.
 pub fn toggleTheme() void {
     if (isWasi) {
         Wasm.toggleThemeWasm();
@@ -887,6 +920,7 @@ pub inline fn elementEventListener(
     return null;
 }
 
+/// Internal: removes a listener `elementEventListener` added.
 pub inline fn removeElementEventListener(
     ui_node: *UINode,
     event_type: types.EventType,
@@ -960,6 +994,7 @@ pub inline fn eventListener(
 }
 
 // The first node needs to be marked as false always
+/// Internal: marks the node's children for re-diffing.
 pub fn markChildrenDirty(node: *UINode) void {
     if (node.parent != null) {
         node.dirty = true;
@@ -970,6 +1005,7 @@ pub fn markChildrenDirty(node: *UINode) void {
     }
 }
 // The first node needs to be marked as false always
+/// Internal: clears the node's children's dirty flags.
 pub fn markChildrenNotDirty(node: *UINode) void {
     if (node.parent != null) {
         node.dirty = false;
@@ -1079,6 +1115,7 @@ pub extern "env" fn consoleLogWasm(
 ) callconv(.c) void;
 
 pub const Clipboard = struct {
+    /// Copies `text` to the system clipboard.
     pub fn copy(text: []const u8) void {
         if (isWasi) {
             Wasm.copyTextWasm(text.ptr, text.len);
