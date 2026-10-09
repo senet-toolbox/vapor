@@ -172,6 +172,8 @@ oauth_nonce_storage_key: []const u8,
 oauth_provider_storage_key: []const u8,
 hook_registered: bool,
 
+/// Configures KeyStone: OAuth clients, the backend URL, the hook path and the
+/// localStorage key for the session.
 pub fn init(cfg: InitConfig) void {
     keystone.clients = cfg.clients;
     keystone.hook_path = cfg.hook_path;
@@ -190,35 +192,43 @@ pub fn init(cfg: InitConfig) void {
     hydrateFromStoredToken();
 }
 
+/// Calls `cb` with each auth response from the backend.
 pub fn onAuthChange(cb: *const fn (Kit.Response) void) void {
     on_auth_change = cb;
 }
 
+/// Calls `cb` whenever the auth state changes (loading, signed in, signed out).
 pub fn onAuthStateChange(cb: *const fn (AuthSnapshot) void) void {
     on_auth_state_change = cb;
 }
 
+/// The current auth state and session.
 pub fn getAuthState() AuthSnapshot {
     return auth_snapshot;
 }
 
+/// The OAuth providers `init` configured.
 pub fn configuredProviders() []const Provider {
     return configured_provider_cache[0..configured_provider_count];
 }
 
+/// Whether `provider` is configured.
 pub fn hasProvider(provider: Provider) bool {
     return keystone.getClient(provider) != null;
 }
 
+/// The provider's authorize URL, or `null` if it is not configured.
 pub fn oauthUrl(provider: Provider) ?[]const u8 {
     const client = keystone.getClient(provider) orelse return null;
     return buildAuthorizeUrl(provider, client, true) catch null;
 }
 
+/// Same as `signInWithOauth`.
 pub fn signIn(provider: Provider) void {
     signInWithOauth(provider);
 }
 
+/// Sends the browser to the provider's sign-in page.
 pub fn signInWithOauth(provider: Provider) void {
     const client = keystone.getClient(provider) orelse return;
     const url = buildAuthorizeUrl(provider, client, false) catch return;
@@ -227,10 +237,12 @@ pub fn signInWithOauth(provider: Provider) void {
     Kit.setWindowLocation(url);
 }
 
+/// Completes an OAuth sign-in if the URL carries the provider's callback.
 pub fn handleAuthExchanges() void {
     _ = maybeHandleAuthExchange();
 }
 
+/// Like `handleAuthExchanges`; returns whether the URL was an OAuth callback.
 pub fn maybeHandleAuthExchange() bool {
     const params = Kit.Window.params() orelse return false;
     if (params.get("code") == null and params.get("error") == null) return false;
@@ -253,6 +265,7 @@ pub fn maybeHandleAuthExchange() bool {
     return true;
 }
 
+/// Asks the backend for the current session and updates the auth state.
 pub fn bootstrap() void {
     setAuthState(.{ .state = .loading, .session = auth_snapshot.session });
     const url = Vapor.frame.fmt("{s}/auth/session/bootstrap", .{keystone.backend_url});
@@ -262,10 +275,12 @@ pub fn bootstrap() void {
     }).handle(handleAuthSessionResponse, .{});
 }
 
+/// Same as `bootstrap`.
 pub fn restoreSession() void {
     bootstrap();
 }
 
+/// Asks the backend for a fresh access token.
 pub fn refreshSession() void {
     const url = Vapor.frame.fmt("{s}/auth/session/refresh", .{keystone.backend_url});
     Fetch.fetch(url, .{
@@ -274,6 +289,7 @@ pub fn refreshSession() void {
     }).handle(handleAuthSessionResponse, .{});
 }
 
+/// Updates the auth state if another tab changed the stored session.
 pub fn syncFromStorage() void {
     const stored = Vapor.getStore([]const u8, keystone.session_storage_key) orelse "";
     const current = auth_snapshot.session orelse SessionInfo{ .token = "" };
@@ -292,6 +308,7 @@ pub fn enableFocusSync() void {
     focus_sync_listener_id = Vapor.addGlobalListener(.focus, onGlobalFocus);
 }
 
+/// Stops `enableFocusSync`.
 pub fn disableFocusSync() void {
     if (focus_sync_listener_id) |id| {
         _ = Vapor.removeGlobalListener(.focus, id);
@@ -299,28 +316,35 @@ pub fn disableFocusSync() void {
     }
 }
 
+/// Whether a stored access token exists and has not expired.
 pub fn isAuthenticated() bool {
     const token = getAccessToken() orelse return false;
     return !JWT.isExpired(token);
 }
 
+/// Same as `getAccessToken`.
 pub fn getSession() ?[]const u8 {
     return getAccessToken();
 }
 
+/// The stored access token, or `null`.
 pub fn getAccessToken() ?[]const u8 {
     return Vapor.getStore([]const u8, keystone.session_storage_key);
 }
 
+/// The signed-in user, or `null`.
 pub fn getUser() ?AuthUser {
     return if (auth_snapshot.session) |s| s.user else null;
 }
 
+/// Forgets the local session and marks the user signed out, without telling the
+/// backend.
 pub fn clearSession() void {
     clearLocalSession();
     setAuthState(.{ .state = .signed_out });
 }
 
+/// Signs out locally and on the backend.
 pub fn signOut() void {
     signOutWithOptions(.{});
 }
@@ -330,6 +354,7 @@ pub const SignOutOptions = struct {
     notify_backend: bool = true,
 };
 
+/// Signs out, with options for the backend call.
 pub fn signOutWithOptions(options: SignOutOptions) void {
     clearProviderCookie(keystone.oauth_provider_cookie_name);
     clearProviderCookie(keystone.oauth_state_cookie_name);
@@ -355,6 +380,8 @@ pub fn signout() void {
     signOut();
 }
 
+/// Asks the backend whether the session for `provider` is still valid; calls
+/// `cb` with the response.
 pub fn validateSession(provider: Provider, cb: fn (Kit.Response) void) void {
     const token = getAccessToken() orelse return;
     const url = Vapor.frame.fmt("{s}/auth/validate/{s}/session", .{ keystone.backend_url, @tagName(provider) });
@@ -366,10 +393,13 @@ pub fn validateSession(provider: Provider, cb: fn (Kit.Response) void) void {
     }).handle(cb, .{});
 }
 
+/// `Vapor.fetch` with the access token as a bearer header. On a 401 it refreshes
+/// the session once and retries.
 pub fn authFetch(url: []const u8, http_req: Kit.HttpReq, cb: fn (Kit.Response) void) void {
     authFetchWithOptions(url, http_req, .{}, cb);
 }
 
+/// Like `authFetch`, with options (e.g. turning the 401 retry off).
 pub fn authFetchWithOptions(
     url: []const u8,
     http_req: Kit.HttpReq,
@@ -383,19 +413,19 @@ pub fn authFetchWithOptions(
         options: AuthFetchOptions,
     };
     const Handlers = struct {
-        fn onRequest(ctx: Ctx, resp: Kit.Response) void {
+        fn onRequest(resp: Kit.Response, ctx: Ctx) void {
             if (resp == .err and resp.err.code == 401 and ctx.options.retry_on_401) {
                 const refresh_url = Vapor.frame.fmt("{s}/auth/session/refresh", .{keystone.backend_url});
-                Kit.fetchWithParams(refresh_url, ctx, onRefresh, .{
+                Fetch.fetch(refresh_url, .{
                     .method = .POST,
                     .credentials = "include",
-                });
+                }).handle(onRefresh, .{ctx});
                 return;
             }
             callback(resp);
         }
 
-        fn onRefresh(ctx: Ctx, resp: Kit.Response) void {
+        fn onRefresh(resp: Kit.Response, ctx: Ctx) void {
             handleAuthSessionResponse(resp);
             if (resp == .ok and auth_snapshot.state == .signed_in and getAccessToken() != null) {
                 const retried_req = withAuthHeader(ctx.req, getAccessToken());
@@ -412,7 +442,7 @@ pub fn authFetchWithOptions(
         .options = options,
     };
     const req_with_auth = withAuthHeader(http_req, getAccessToken());
-    Kit.fetchWithParams(url, ctx, Handlers.onRequest, req_with_auth);
+    Fetch.fetch(url, req_with_auth).handle(Handlers.onRequest, .{ctx});
 }
 
 fn withAuthHeader(http_req: Kit.HttpReq, token: ?[]const u8) Kit.HttpReq {

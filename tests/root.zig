@@ -958,6 +958,9 @@ fn docGenericApi() !void {
     _ = event.formData(&form);
     Vapor.Hooks(.{ .mounted = docNoArgs })({});
     try Vapor.registerLayout("/doc", docLayout, .{});
+    Vapor.KeyStone.authFetch("/doc", .{}, docPlainFetched);
+    Vapor.KeyStone.authFetchWithOptions("/doc", .{}, .{}, docPlainFetched);
+    Vapor.KeyStone.validateSession(.github, docPlainFetched);
 }
 
 // Never called; taking its address compiles every line.
