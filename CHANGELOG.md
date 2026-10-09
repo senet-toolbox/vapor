@@ -6,6 +6,68 @@ version and are listed with a migration note.
 
 ## [Unreleased]
 
+### Fixed
+
+Found while documenting the API; each has a unit or browser test unless
+noted.
+
+- Element event handlers (`onEvent`, `onHover`, `onLeave`, `onFocus`, ...)
+  were only attached after the first rerender.
+- `Box().onFocus`/`onBlur` never fired and did not compile once called;
+  `Box().onChange`, `onMountCtx`, the text field's `onFocus`/`onBlur`/
+  `onKeyDown`/`onHover`/`onLeave` and `onDragStart` did not compile either.
+  Every callback-taking public function is now compiled by the test suite.
+- Text fields received focus, blur and input events twice once a page had
+  rerendered.
+- `TextField.onScroll` replaced the field's `onChange` handler and never saw
+  a scroll.
+- `onCommit` never called its callback.
+- `Vapor.Hooks` could not compile (it returned a function type and used
+  registries removed earlier); it is rebuilt on the per-node lifecycle
+  callbacks.
+- `Vapor.onMount` did not compile on 64-bit hosts, which broke prerendering
+  for apps that used it.
+- A `Page`'s deinit callback never ran, and passing one did not compile.
+- `.hide(false)` left the element hidden.
+- `Box().items(.{ Text("a") })` and `.child(Text(...))` dropped the text.
+- An `Svg` over the 2 KB debug limit panicked on `.end()`.
+- `Types.Layers.modal` rendered into the popover layer; the enum now matches
+  the runtime (tooltip, popover, modal, toast).
+- `min_max_vp` and `elastic_percent` widths wrote `min-width` from the max.
+- `Animation.setAll(.{ .strokeDashoffset = ... })` animated
+  `backgroundColor`; `shake`, `shakeY` and `tada` lost their 100% keyframe.
+- `loopInterval` kept calling a closure in recycled frame memory.
+- `Element.mutateAttribute` wrote percent sizes as `50percent`.
+- `KeyStone.authFetch` called a removed function.
+- `BoundedArray.orderedRemove` did not compile; `ManagedMemoryPool.destroy`
+  rejected pointers it had handed out for small types (no test; compiled by
+  `zig build check`).
+- `Margin.xy` took `u8`, so it could not express a negative margin.
+- `isMobile()` switched at 786px while responsive styles switch at 768px.
+- `hashToBase62(0)` returned an uninitialized byte; `firstLetterToUpper("")`
+  sliced out of bounds.
+- `clearPersitantStorage` is spelled `clearPersistentStorage` (the old name
+  remains as a deprecated alias); `error.SeperatorNotFound` is
+  `error.SeparatorNotFound`.
+
+### Documentation
+
+- `src/root.zig` (was `src/comptime.zig`) groups the public API by task and
+  opens with an overview and an example the test suite compiles.
+- Every public function an app calls has a doc comment, and every source
+  file has a module header. Docs state current behaviour, including the
+  no-ops: `Vapor.printErr` and `printlnSrc` print nothing, `.inherit()`
+  records fields nothing reads, `onPushState` callbacks are never called.
+
+### Internal
+
+- Source files follow Zig's naming convention: snake_case for namespaces,
+  TitleCase for files that are a struct (`Fetch.zig` -> `fetch.zig`,
+  `convertStyleCustomWriter.zig` -> `style_compiler.zig`, ...). The JS
+  runtime files are named for what they do (`wasi_obj.js` -> `runtime.js`,
+  ...). Apps import the `vapor` module, so nothing changes for them.
+- The empty `src/main.zig` and the `vapor` executable it built are gone.
+
 ### Internal cleanup (no API change)
 
 - The remaining oversized files are split by concern, each re-exporting what
