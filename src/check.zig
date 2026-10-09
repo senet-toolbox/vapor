@@ -62,6 +62,8 @@ const modules = .{
     @import("lib/UITree.zig"),
     @import("lib/Vapor.zig"),
     @import("lib/WASM.zig"),
+    @import("lib/builder/tree.zig"),
+    @import("lib/builder/elements.zig"),
     @import("lib/builder/style.zig"),
     @import("lib/builder/layout.zig"),
     @import("lib/builder/events.zig"),

@@ -107,7 +107,7 @@ pub fn Hooks(hooks: Vapor.HooksFuncs) fn (void) void {
     return LifeCycle.close;
 }
 
-const LinkOptions = struct {
+pub const LinkOptions = struct {
     url: []const u8,
     aria_label: ?[]const u8 = null,
 };
@@ -115,7 +115,7 @@ const LinkOptions = struct {
 const Position = enum { top, bottom, left, right };
 const Layout = enum { center, start, end };
 
-fn createNode(elem_decl: ElementDecl) *UINode {
+pub fn createNode(elem_decl: ElementDecl) *UINode {
     const ui_node = LifeCycle.open(elem_decl) orelse {
         // Vapor.printlnSrcErr("Could not add component to lifecycle {any}\n", .{error.CouldNotAllocate}, @src());
         @panic("vapor: Could not add component to lifecycle");
@@ -276,7 +276,7 @@ pub fn persistText(ui_node: ?*UINode, text_value: ?[]const u8) ?[]const u8 {
 
 pub const ComponentBuilder = struct {
     const Self = @This();
-    const _state_type: types.StateType = .pure;
+    pub const _state_type: types.StateType = .pure;
 
     _target: ?[]const u8 = null,
     _target_visual: ?types.Visual = null,
@@ -333,6 +333,8 @@ pub const ComponentBuilder = struct {
     _morph: bool = false,
 
     // --- Internal helpers ---
+    // `pub` only so the method files under builder/ can reach them; not part
+    // of the public API.
 
     pub fn getOrCreateNode(self: *const Self, new_self: *Self) *UINode {
         if (self._ui_node) |node| return node;
@@ -347,7 +349,7 @@ pub const ComponentBuilder = struct {
         return node;
     }
 
-    fn getStyleMergeParams(self: *const Self, include_extended: bool, include_aspect_ratio: bool) StyleMergeParams {
+    pub fn getStyleMergeParams(self: *const Self, include_extended: bool, include_aspect_ratio: bool) StyleMergeParams {
         return .{
             .style_ptr = self._style,
             .pos = self._pos,
@@ -380,7 +382,7 @@ pub const ComponentBuilder = struct {
         };
     }
 
-    fn makeElemDecl(self: *const Self, text: ?[]const u8, mutable_style: *const Style, inline_style: ?[]const u8) Vapor.ElementDecl {
+    pub fn makeElemDecl(self: *const Self, text: ?[]const u8, mutable_style: *const Style, inline_style: ?[]const u8) Vapor.ElementDecl {
         return .{
             .state_type = _state_type,
             .elem_type = self._elem_type,
@@ -404,358 +406,50 @@ pub const ComponentBuilder = struct {
         };
     }
 
+    // The methods live in builder/, one file per concern. Each alias below
+    // makes one of them callable as `builder.method(...)`.
+
     // --- Constructors ---
 
-    pub fn Null() void {
-        _ = LifeCycle.open(.{ .elem_type = .Noop, .state_type = _state_type });
-        LifeCycle.configure(.{ .elem_type = .Noop, .state_type = _state_type });
-        LifeCycle.close({});
-    }
-
-    pub fn Null2(elem_type: Vapor.Types.ElementType) void {
-        _ = LifeCycle.open(.{ .elem_type = elem_type, .state_type = _state_type });
-        LifeCycle.configure(.{ .elem_type = .Noop, .state_type = _state_type });
-        LifeCycle.close({});
-    }
-
-    pub fn Heading(level: u8, text: []const u8) Self {
-        const ui_node = createNode(.{ .state_type = _state_type, .elem_type = .Heading, .text = text, .level = level });
-        return Self{ ._elem_type = .Heading, ._text = text, ._level = level, ._ui_node = ui_node, ._returns_close = false };
-    }
-
-    pub fn Video(options: *const types.Video) Self {
-        const ui_node = Vapor.current_ctx.open(.{ .state_type = _state_type, .elem_type = .Video, .can_have_children = false }) catch |err| {
-            println("{any}\n", .{err});
-            @panic("vapor: could not allocate a Video node");
-        };
-        return Self{ ._elem_type = .Video, ._video = options, ._ui_node = ui_node, ._returns_close = false };
-    }
-
-    pub fn Box() Self {
-        const ui_node = createNode(.{ .state_type = _state_type, .elem_type = .FlexBox });
-        return Self{ ._ui_node = ui_node, ._elem_type = .FlexBox, ._returns_close = true };
-    }
-
-    pub fn Row() Self {
-        const ui_node = createNode(.{ .state_type = _state_type, .elem_type = .FlexBox });
-        return Self{ ._ui_node = ui_node, ._elem_type = .FlexBox, ._returns_close = true };
-    }
-
-    pub fn Layer(layer_type: types.Layers) Self {
-        const ui_node = createNode(.{ .state_type = _state_type, .elem_type = .FlexBox });
-        ui_node.layer = layer_type;
-        return Self{ ._ui_node = ui_node, ._elem_type = .FlexBox, ._returns_close = true };
-    }
-
-    pub fn Table() Self {
-        return Self{ ._ui_node = createNode(.{ .state_type = _state_type, .elem_type = .Table }), ._elem_type = .Table, ._returns_close = true };
-    }
-
-    pub fn TableRow() Self {
-        return Self{ ._ui_node = createNode(.{ .state_type = _state_type, .elem_type = .TableRow }), ._elem_type = .TableRow, ._returns_close = true };
-    }
-
-    pub fn TableCell() Self {
-        return Self{ ._ui_node = createNode(.{ .state_type = _state_type, .elem_type = .TableCell }), ._elem_type = .TableCell, ._returns_close = true };
-    }
-
-    pub fn TableBody() Self {
-        return Self{ ._ui_node = createNode(.{ .state_type = _state_type, .elem_type = .TableBody }), ._elem_type = .TableBody, ._returns_close = true };
-    }
-
-    pub fn TableHeader() Self {
-        return Self{ ._ui_node = createNode(.{ .state_type = _state_type, .elem_type = .TableHeader }), ._elem_type = .TableHeader, ._returns_close = true };
-    }
-
-    pub fn TableHead() Self {
-        return Self{ ._ui_node = createNode(.{ .state_type = _state_type, .elem_type = .TableHead }), ._elem_type = .TableHead, ._returns_close = true };
-    }
-
-    pub fn Form(submit: anytype, args: anytype) Self {
-        const ui_node = createNode(.{ .state_type = _state_type, .elem_type = .Form });
-        Vapor.attachEventCtxCallback(ui_node, .submit, submit, args) catch |err| {
-            Vapor.println("ONSUBMIT: Could not attach event callback {any}\n", .{err});
-            @panic("vapor: ONSUBMIT: Could not attach event callback");
-        };
-        return Self{ ._ui_node = ui_node, ._elem_type = .Form, ._returns_close = true };
-    }
-
-    pub fn Section() Self {
-        const ui_node = LifeCycle.open(.{ .state_type = _state_type, .elem_type = .Intersection }) orelse {
-            Vapor.printlnSrcErr("Could not add component to lifecycle {any}\n", .{error.CouldNotAllocate}, @src());
-            @panic("vapor: Could not add component to lifecycle");
-        };
-        return Self{ ._ui_node = ui_node, ._elem_type = .Intersection, ._returns_close = true };
-    }
-
-    pub fn List() Self {
-        const ui_node = LifeCycle.open(.{ .state_type = _state_type, .elem_type = .List }) orelse {
-            Vapor.printlnSrcErr("Could not add component to lifecycle {any}\n", .{error.CouldNotAllocate}, @src());
-            @panic("vapor: Could not add component to lifecycle");
-        };
-        return Self{ ._ui_node = ui_node, ._elem_type = .List, ._returns_close = true };
-    }
-
-    pub fn ListItem() Self {
-        const ui_node = LifeCycle.open(.{ .state_type = _state_type, .elem_type = .ListItem }) orelse {
-            Vapor.printlnSrcErr("Could not add component to lifecycle {any}\n", .{error.CouldNotAllocate}, @src());
-            @panic("vapor: Could not add component to lifecycle");
-        };
-        return Self{ ._ui_node = ui_node, ._elem_type = .ListItem, ._returns_close = true };
-    }
-
-    pub fn Center() *Self {
-        const ui_node = LifeCycle.open(.{ .state_type = _state_type, .elem_type = .FlexBox }) orelse {
-            Vapor.printlnSrcErr("Could not add component to lifecycle {any}\n", .{error.CouldNotAllocate}, @src());
-            @panic("vapor: Could not add component to lifecycle");
-        };
-        const self = Vapor.arena(.frame).create(Self) catch |err| {
-            Vapor.printlnErr("component builder: allocation failed: {any}", .{err});
-            @panic("vapor: out of memory creating a component");
-        };
-        self.* = .{
-            ._ui_node = ui_node,
-            ._elem_type = .FlexBox,
-            ._flex_type = .center,
-            ._returns_close = true,
-        };
-        return self;
-    }
-
-    pub fn FormButton() Self {
-        const elem_decl = ElementDecl{
-            .state_type = _state_type,
-            .elem_type = .SubmitButton,
-        };
-
-        const ui_node = LifeCycle.open(elem_decl) orelse {
-            Vapor.printlnSrcErr("LifeCycle open could not allocate {any}\n", .{error.CouldNotAllocate}, @src());
-            @panic("vapor: LifeCycle open could not allocate");
-        };
-
-        return Self{ ._elem_type = .SubmitButton, ._ui_node = ui_node, ._returns_close = true };
-    }
-
-    pub fn Button(cb: anytype, args: anytype) Self {
-        const elem_decl = ElementDecl{
-            .state_type = _state_type,
-            .elem_type = .CtxButton,
-        };
-
-        const ui_node = LifeCycle.open(elem_decl) orelse {
-            Vapor.printlnSrcErr("LifeCycle open could not allocate {any}\n", .{error.CouldNotAllocate}, @src());
-            @panic("vapor: LifeCycle open could not allocate");
-        };
-
-        const erased = Vapor.ErasedCallback.make(Vapor.arena(.frame), cb, args) catch |err| {
-            println("Error could not create closure {any}\n", .{err});
-            @panic("vapor: Error could not create closure");
-        };
-
-        const callback_id = hashKey(ui_node.uuid);
-        // Store just the ErasedCallback instead of *Node
-        Vapor.erased_registry.put(callback_id, erased) catch |err| {
-            println("Registry error {any}\n", .{err});
-            @panic("vapor: Registry error");
-        };
-
-        return Self{ ._elem_type = .CtxButton, ._ui_node = ui_node, ._returns_close = true };
-    }
-
-    pub fn Stack() Self {
-        const ui_node = LifeCycle.open(.{ .state_type = _state_type, .elem_type = .FlexBox }) orelse {
-            Vapor.printlnSrcErr("Could not add component to lifecycle {any}\n", .{error.CouldNotAllocate}, @src());
-            @panic("vapor: Could not add component to lifecycle");
-        };
-        ui_node.direction = .column;
-        return Self{ ._ui_node = ui_node, ._elem_type = .FlexBox, ._flex_type = .stack, ._direction = .column, ._returns_close = true };
-    }
-
-    pub fn Link(options: LinkOptions) Self {
-        const ui_node = LifeCycle.open(.{ .state_type = _state_type, .elem_type = .Link, .href = options.url, .aria_label = options.aria_label }) orelse {
-            Vapor.printlnSrcErr("Could not add component Link to lifecycle {any}\n", .{error.CouldNotAllocate}, @src());
-            @panic("vapor: Could not add component Link to lifecycle");
-        };
-
-        return Self{ ._ui_node = ui_node, ._elem_type = .Link, ._aria_label = options.aria_label, ._href = options.url, ._returns_close = true };
-    }
-
-    pub fn RedirectLink(options: LinkOptions) Self {
-        const ui_node = LifeCycle.open(.{ .state_type = _state_type, .elem_type = .RedirectLink, .href = options.url, .aria_label = options.aria_label }) orelse {
-            Vapor.printlnSrcErr("Could not add component Link to lifecycle {any}\n", .{error.CouldNotAllocate}, @src());
-            @panic("vapor: Could not add component Link to lifecycle");
-        };
-        return Self{ ._ui_node = ui_node, ._elem_type = .RedirectLink, ._aria_label = options.aria_label, ._href = options.url, ._returns_close = true };
-    }
-
-    pub fn Label(text: []const u8) Self {
-        const ui_node = LifeCycle.open(.{ .state_type = .static, .elem_type = .Label, .text = text, .can_have_children = false }) orelse {
-            Vapor.printlnSrcErr("Could not add component to lifecycle {any}\n", .{error.CouldNotAllocate}, @src());
-            @panic("vapor: Could not add component to lifecycle");
-        };
-        return Self{ ._elem_type = .Label, ._text = text, ._ui_node = ui_node, ._returns_close = false };
-    }
-
-    pub fn Code(value: anytype) Self {
-        const text = blk: switch (@typeInfo(@TypeOf(value))) {
-            .pointer => break :blk value,
-            .int => break :blk Vapor.fmtln("{any}", .{value}),
-            else => {
-                Vapor.printlnErr("Text only accepts []const u8 or number types, NOT {any}", .{@TypeOf(value)});
-                return Self{ ._elem_type = .Code, ._text = "", ._returns_close = false };
-            },
-        };
-        const ui_node = LifeCycle.open(.{ .state_type = _state_type, .elem_type = .Code, .can_have_children = false }) orelse {
-            Vapor.printlnSrcErr("Could not add component to lifecycle {any}\n", .{error.CouldNotAllocate}, @src());
-            @panic("vapor: Could not add component to lifecycle");
-        };
-        return Self{ ._elem_type = .Code, ._text = text, ._ui_node = ui_node, ._returns_close = false };
-    }
-
-    pub fn Spacer(val: f32) Self {
-        const ui_node = LifeCycle.open(.{ .state_type = _state_type, .elem_type = .Spacer, .can_have_children = false }) orelse {
-            Vapor.printlnSrcErr("Could not add component to lifecycle {any}\n", .{error.CouldNotAllocate}, @src());
-            @panic("vapor: Could not add component to lifecycle");
-        };
-        return Self{ ._elem_type = .Spacer, ._ui_node = ui_node, ._size = .hw(.px(val), .expand), ._returns_close = false };
-    }
-
-    pub fn Divider(w: f32) Self {
-        const ui_node = LifeCycle.open(.{ .state_type = _state_type, .elem_type = .FlexBox, .can_have_children = false }) orelse {
-            Vapor.printlnSrcErr("Could not add component to lifecycle {any}\n", .{error.CouldNotAllocate}, @src());
-            @panic("vapor: Could not add component to lifecycle");
-        };
-        return Self{ ._elem_type = .FlexBox, ._ui_node = ui_node, ._size = .hw(.expand, .px(w)), ._returns_close = false };
-    }
-
-    pub fn Iframe(iframe_src: ?[]const u8) Self {
-        const ui_node = LifeCycle.open(.{ .state_type = _state_type, .elem_type = .Iframe, .can_have_children = false }) orelse {
-            Vapor.printlnSrcErr("Could not add component to lifecycle {any}\n", .{error.CouldNotAllocate}, @src());
-            @panic("vapor: Could not add component to lifecycle");
-        };
-        return Self{ ._elem_type = .Iframe, ._ui_node = ui_node, ._returns_close = false, ._href = iframe_src };
-    }
-
-    pub fn FieldSet() Self {
-        const ui_node = LifeCycle.open(.{ .state_type = _state_type, .elem_type = .FieldSet }) orelse {
-            Vapor.printlnSrcErr("Could not add component to lifecycle {any}\n", .{error.CouldNotAllocate}, @src());
-            @panic("vapor: Could not add component to lifecycle");
-        };
-        return Self{ ._elem_type = .FieldSet, ._ui_node = ui_node, ._returns_close = true };
-    }
-
-    pub fn Number(value: anytype) Self {
-        const ui_node = LifeCycle.open(.{ .state_type = _state_type, .elem_type = .Text, .can_have_children = false }) orelse {
-            Vapor.printlnSrcErr("Could not add component to lifecycle {any}\n", .{error.CouldNotAllocate}, @src());
-            @panic("vapor: Could not add component to lifecycle");
-        };
-        const text = blk: switch (@typeInfo(@TypeOf(value))) {
-            .int => {
-                const n = Vapor.fmtln("{any}", .{value});
-                Vapor.frame_arena.addBytesUsed(n.len);
-                break :blk n;
-            },
-            .float => {
-                const n = Vapor.fmtln("{any}", .{value});
-                Vapor.frame_arena.addBytesUsed(n.len);
-                break :blk n;
-            },
-            .@"enum" => {
-                const n = Vapor.fmtln("{s}", .{@tagName(value)});
-                Vapor.frame_arena.addBytesUsed(n.len);
-                break :blk n;
-            },
-            else => {
-                Vapor.printlnErr("Text only accepts []const u8 or number types, NOT {any}", .{@TypeOf(value)});
-                return Self{ ._elem_type = .Text, ._text = "", ._ui_node = ui_node, ._returns_close = false };
-            },
-        };
-        return Self{ ._elem_type = .Text, ._text = text, ._ui_node = ui_node, ._returns_close = false };
-    }
-
-    pub fn Text(value: anytype) *Self {
-        const ui_node = createNode(.{ .state_type = _state_type, .elem_type = .Text, .can_have_children = false });
-        const self = Vapor.arena(.frame).create(Self) catch |err| {
-            Vapor.printlnErr("component builder: allocation failed: {any}", .{err});
-            @panic("vapor: out of memory creating a component");
-        };
-        const text = blk: switch (@typeInfo(@TypeOf(value))) {
-            .pointer => |ptr_info| {
-                if (ptr_info.size == .one) return {
-                    self.* = .{ ._elem_type = .Text, ._text = value, ._ui_node = ui_node, ._persisted_text = true, ._returns_close = false };
-                    return self;
-                };
-
-                if (ptr_info.size == .slice or ptr_info.size == .one) return {
-                    self.* = .{ ._elem_type = .Text, ._text = value, ._ui_node = ui_node, ._persisted_text = true, ._returns_close = false };
-                    return self;
-                };
-            },
-            .int => {
-                const n = Vapor.fmtln("{any}", .{value});
-                Vapor.frame_arena.addBytesUsed(n.len);
-                break :blk n;
-            },
-            .float => {
-                const n = Vapor.fmtln("{any}", .{value});
-                Vapor.frame_arena.addBytesUsed(n.len);
-                break :blk n;
-            },
-            .@"enum" => {
-                const n = Vapor.fmtln("{s}", .{@tagName(value)});
-                Vapor.frame_arena.addBytesUsed(n.len);
-                break :blk n;
-            },
-            else => {
-                Vapor.printlnErr("Text only accepts []const u8 or number types, NOT {any}", .{@TypeOf(value)});
-                return Self{ ._elem_type = .Text, ._text = "", ._ui_node = ui_node, ._returns_close = false };
-            },
-        };
-
-        self.* = .{ ._elem_type = .Text, ._text = text, ._ui_node = ui_node, ._returns_close = false };
-        return self;
-    }
-
-    pub fn Html(text: []const u8) Self {
-        const ui_node = createNode(.{ .state_type = _state_type, .elem_type = .HtmlText, .can_have_children = false });
-        return Self{ ._elem_type = .HtmlText, ._text = text, ._ui_node = ui_node, ._returns_close = false };
-    }
-
-    pub fn TextFmt(comptime fmt: []const u8, args: anytype) Self {
-        const text = Vapor.frame.fmt(fmt, args);
-        Vapor.frame_arena.addBytesUsed(text.len);
-        const ui_node = createNode(.{ .state_type = _state_type, .elem_type = .TextFmt, .can_have_children = false });
-        return Self{ ._elem_type = .TextFmt, ._text = text, ._ui_node = ui_node, ._returns_close = false };
-    }
-
-    pub fn Graphic(options: struct { src: []const u8 }) Self {
-        const ui_node = createNode(.{ .state_type = _state_type, .elem_type = .Graphic, .can_have_children = false });
-        return Self{ ._elem_type = .Graphic, ._href = options.src, ._ui_node = ui_node, ._returns_close = false };
-    }
-
-    pub fn Icon(token: IconTokens) Self {
-        const ui_node = createNode(.{ .state_type = _state_type, .elem_type = .Icon, .can_have_children = false });
-        return Self{ ._elem_type = .Icon, ._href = token.web orelse "", ._ui_node = ui_node, ._returns_close = false };
-    }
-
-    pub fn Svg(options: struct { svg: []const u8, override: bool = false }) Self {
-        const ui_node = createNode(.{ .elem_type = .Svg, .can_have_children = false });
-        if (options.svg.len > 2048 and Vapor.build_options.enable_debug and !options.override) {
-            Vapor.printlnErr("Svg is too large inlining: {d}B, use Graphic;\nSVG Content:\n{s}...", .{ options.svg.len, options.svg[0..100] });
-            return Self{ ._elem_type = .Svg, ._svg = "", ._returns_close = false };
-        }
-        return Self{ ._elem_type = .Svg, ._svg = options.svg, ._ui_node = ui_node, ._returns_close = false };
-    }
-
-    pub fn Image(options: struct { src: []const u8, alt: ?[]const u8 = null }) Self {
-        const ui_node = createNode(.{ .state_type = _state_type, .elem_type = .Image, .can_have_children = false });
-        return Self{ ._elem_type = .Image, ._href = options.src, ._alt = options.alt, ._ui_node = ui_node, ._returns_close = false };
-    }
-
-    pub fn Anchor(name: []const u8) Self {
-        const ui_node = createNode(.{ .state_type = _state_type, .elem_type = .Anchor });
-        return Self{ ._elem_type = .Anchor, ._ui_node = ui_node, ._anchor = name, ._returns_close = true };
-    }
+    const ElementConstructors = @import("builder/elements.zig");
+    pub const Null = ElementConstructors.Null;
+    pub const Null2 = ElementConstructors.Null2;
+    pub const Heading = ElementConstructors.Heading;
+    pub const Video = ElementConstructors.Video;
+    pub const Box = ElementConstructors.Box;
+    pub const Row = ElementConstructors.Row;
+    pub const Layer = ElementConstructors.Layer;
+    pub const Table = ElementConstructors.Table;
+    pub const TableRow = ElementConstructors.TableRow;
+    pub const TableCell = ElementConstructors.TableCell;
+    pub const TableBody = ElementConstructors.TableBody;
+    pub const TableHeader = ElementConstructors.TableHeader;
+    pub const TableHead = ElementConstructors.TableHead;
+    pub const Form = ElementConstructors.Form;
+    pub const Section = ElementConstructors.Section;
+    pub const List = ElementConstructors.List;
+    pub const ListItem = ElementConstructors.ListItem;
+    pub const Center = ElementConstructors.Center;
+    pub const FormButton = ElementConstructors.FormButton;
+    pub const Button = ElementConstructors.Button;
+    pub const Stack = ElementConstructors.Stack;
+    pub const Link = ElementConstructors.Link;
+    pub const RedirectLink = ElementConstructors.RedirectLink;
+    pub const Label = ElementConstructors.Label;
+    pub const Code = ElementConstructors.Code;
+    pub const Spacer = ElementConstructors.Spacer;
+    pub const Divider = ElementConstructors.Divider;
+    pub const Iframe = ElementConstructors.Iframe;
+    pub const FieldSet = ElementConstructors.FieldSet;
+    pub const Number = ElementConstructors.Number;
+    pub const Text = ElementConstructors.Text;
+    pub const Html = ElementConstructors.Html;
+    pub const TextFmt = ElementConstructors.TextFmt;
+    pub const Graphic = ElementConstructors.Graphic;
+    pub const Icon = ElementConstructors.Icon;
+    pub const Svg = ElementConstructors.Svg;
+    pub const Image = ElementConstructors.Image;
+    pub const Anchor = ElementConstructors.Anchor;
 
     // --- Chainable instance methods ---
 
@@ -892,159 +586,16 @@ pub const ComponentBuilder = struct {
 
     // --- Terminal methods ---
 
-    pub fn child(self: *const Self, item: anytype) void {
-        if (@TypeOf(item) == Builder(.pure)) {
-            var added_node: Builder(.pure) = item;
-            added_node._ui_node = item._ui_node;
-            added_node.end();
-        }
+    const TreeMethods = @import("builder/tree.zig");
+    pub const child = TreeMethods.child;
+    pub const items = TreeMethods.items;
+    pub const children = TreeMethods.children;
+    pub const cloneRecurse = TreeMethods.cloneRecurse;
+    pub const clone = TreeMethods.clone;
+    pub const close = TreeMethods.close;
+    pub const end = TreeMethods.end;
+    pub const getUUID = TreeMethods.getUUID;
 
-        var inline_style = self._inlineStyle;
-        if (self._element) |el| blk: {
-            if (el.attributes) |_| {
-                inline_style = el.coalesceAttributesAndInline(inline_style) catch break :blk;
-            }
-        }
-
-        var mutable_style = mergeStyles(self.getStyleMergeParams(true, false));
-
-        const elem_decl = self.makeElemDecl(null, &mutable_style, inline_style);
-        Vapor.LifeCycle.configure(elem_decl);
-        return Vapor.LifeCycle.close({});
-    }
-
-    pub fn items(self: *const Self, nodes: anytype) void {
-        inline for (nodes) |kid| {
-            if (@TypeOf(kid) == ComponentBuilder) {
-                var added_node: ComponentBuilder = kid;
-                added_node._ui_node = kid._ui_node;
-                added_node.end();
-            }
-        }
-
-        var inline_style = self._inlineStyle;
-        if (self._element) |el| blk: {
-            if (el.attributes) |_| {
-                inline_style = el.coalesceAttributesAndInline(inline_style) catch break :blk;
-            }
-        }
-
-        var mutable_style = mergeStyles(self.getStyleMergeParams(true, false));
-        const elem_decl = self.makeElemDecl(null, &mutable_style, inline_style);
-        Vapor.LifeCycle.configure(elem_decl);
-        return Vapor.LifeCycle.close({});
-    }
-
-    pub fn children(self: *const Self, _: void) void {
-        if (self._used_style) return Vapor.LifeCycle.close({});
-        var mutable_style = mergeStyles(self.getStyleMergeParams(true, false));
-
-        var inline_style = self._inlineStyle;
-        if (self._element) |el| blk: {
-            if (el.attributes) |_| {
-                inline_style = el.coalesceAttributesAndInline(inline_style) catch break :blk;
-            }
-        }
-
-        const elem_decl = self.makeElemDecl(null, &mutable_style, inline_style);
-        Vapor.LifeCycle.configure(elem_decl);
-        return Vapor.LifeCycle.close({});
-    }
-
-    fn copyFields(dst: *UINode, node_src: *const UINode) void {
-        dst.text = node_src.text;
-        dst.href = node_src.href;
-        dst.src = node_src.src;
-        dst.class = node_src.class;
-        dst.packed_field_ptrs = node_src.packed_field_ptrs;
-        dst.style_hashes = node_src.style_hashes;
-        dst.style_hash = node_src.style_hash;
-        dst.hooks = node_src.hooks;
-        dst.event_handlers = node_src.event_handlers;
-        dst.aria_label = node_src.aria_label;
-        dst.alt = node_src.alt;
-        dst.direction = node_src.direction;
-        dst.finger_print = node_src.finger_print;
-        dst.props_hash = node_src.props_hash;
-        dst.hooks_hash = node_src.hooks_hash;
-        dst.animation_exit = node_src.animation_exit;
-        dst.inlineStyle = node_src.inlineStyle;
-        dst.video = node_src.video;
-        dst.text_field_params = node_src.text_field_params;
-        dst.prev_style_hash_computed = node_src.prev_style_hash_computed;
-        dst.name = node_src.name;
-        dst.hover_style_fields = node_src.hover_style_fields;
-    }
-
-    pub fn cloneRecurse(ui_node: *UINode) void {
-        var itr = ui_node.children();
-        while (itr.next()) |og_child| {
-            const cloned_child = createNode(.{
-                .state_type = _state_type,
-                .elem_type = og_child.type,
-            });
-            copyFields(cloned_child, og_child);
-            cloneRecurse(og_child); // open children of og_child as children of cloned_child
-            Vapor.LifeCycle.close({}); // close cloned_child — once per open
-        }
-    }
-
-    pub fn clone(self: *const Self) void {
-        const ui_node = self._ui_node orelse @panic("vapor: builder has no node");
-        const cloned_ui_node = createNode(.{
-            .state_type = _state_type,
-            .elem_type = ui_node.type,
-        });
-        copyFields(cloned_ui_node, ui_node);
-        cloneRecurse(ui_node);
-        return Vapor.LifeCycle.close({});
-    }
-
-    pub fn close(self: *const Self) void {
-        if (self._used_style) return Vapor.LifeCycle.close({});
-        var mutable_style = mergeStyles(self.getStyleMergeParams(true, false));
-
-        var inline_style = self._inlineStyle;
-        if (self._element) |el| blk: {
-            if (el.attributes) |_| {
-                inline_style = el.coalesceAttributesAndInline(inline_style) catch break :blk;
-            }
-        }
-
-        const elem_decl = self.makeElemDecl(null, &mutable_style, inline_style);
-        Vapor.LifeCycle.configure(elem_decl);
-        return Vapor.LifeCycle.close({});
-    }
-
-    pub fn end(self: *const Self) void {
-        const ui_node = self._ui_node orelse @panic("vapor: builder has no node");
-        if (self._used_style) {
-            if (ui_node.can_have_children) LifeCycle.close({});
-            return;
-        }
-        var mutable_style = mergeStyles(self.getStyleMergeParams(false, true));
-        var text: ?[]const u8 = self._text;
-        if (self._elem_type == .Text and self._persisted_text) text = persistText(self._ui_node, self._text);
-
-        var inline_style = self._inlineStyle;
-        if (self._element) |el| blk: {
-            if (el.attributes) |_| {
-                inline_style = el.coalesceAttributesAndInline(inline_style) catch break :blk;
-            }
-        }
-
-        const elem_decl = self.makeElemDecl(text, &mutable_style, inline_style);
-        _ = Vapor.current_ctx.configureByNode(self._ui_node, elem_decl);
-        if (ui_node.can_have_children) LifeCycle.close({});
-    }
-
-    pub fn getUUID(self: *const Self) []const u8 {
-        if (self._ui_node == null) {
-            Vapor.printlnSrcErr("getUUID Failed: Node is null", .{}, @src());
-            return "";
-        }
-        return self._ui_node.?.uuid;
-    }
 };
 
 // ============================================================
