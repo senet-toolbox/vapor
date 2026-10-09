@@ -688,7 +688,7 @@ pub fn setShadow(self: Animation, prop_type: AnimationType, shadow: Shadow) Anim
     return a;
 }
 
-// Convenience presets
+/// Convenience presets, defined in animation/presets.zig.
 const PresetsModule = @import("animation/presets.zig");
 pub const fadeIn = PresetsModule.fadeIn;
 pub const fadeOut = PresetsModule.fadeOut;
@@ -750,34 +750,6 @@ pub const flip3D = PresetsModule.flip3D;
 pub const tilt = PresetsModule.tilt;
 pub const zoomInRotate = PresetsModule.zoomInRotate;
 pub const zoomOutRotate = PresetsModule.zoomOutRotate;
-
-// ============================================
-// ATTENTION / EMPHASIS ANIMATIONS
-// ============================================
-
-// ============================================
-// ENTRANCE ANIMATIONS
-// ============================================
-
-// ============================================
-// EXIT ANIMATIONS
-// ============================================
-
-// ============================================
-// BACKGROUND / SPECIAL ANIMATIONS
-// ============================================
-
-// ============================================
-// LOADING / PROGRESS ANIMATIONS
-// ============================================
-
-// ============================================
-// TEXT ANIMATIONS
-// ============================================
-
-// ============================================
-// 3D-ISH ANIMATIONS
-// ============================================
 
 pub fn build(self: Animation) void {
     if (Vapor.animations == null) return;
@@ -844,6 +816,3 @@ pub const getRemovalIdPtr = RemovalModule.getRemovalIdPtr;
 pub const removalCount = RemovalModule.removalCount;
 pub const RemovalQueue = RemovalModule.RemovalQueue;
 pub var removal_queue: RemovalQueue = undefined;
-
-//
-

@@ -595,14 +595,9 @@ pub const ComponentBuilder = struct {
     pub const close = TreeMethods.close;
     pub const end = TreeMethods.end;
     pub const getUUID = TreeMethods.getUUID;
-
 };
 
-// ============================================================
-// Backward-compatible aliases
-// ============================================================
-
-// const InertBuilder = @import("Inert.zig").InertBuilder;
+/// Kept for source compatibility; every state type gets the same builder.
 pub fn Builder(comptime state_type: types.StateType) type {
     _ = state_type;
     return ComponentBuilder;

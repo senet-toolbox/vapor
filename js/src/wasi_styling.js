@@ -312,13 +312,6 @@ export function checkMarkStyling(id, element, styleId, checkmarkstyle) {
 
   // Check if we already have this class
   if (styleRuleCache.has(className)) {
-    // Update existing rule
-    // const ruleIndex = styleRuleCache.get(className);
-    // styleSheet.deleteRule(ruleIndex);
-    // styleSheet.insertRule(
-    //   `.${className} { ${checkmarkstyle} }`,
-    //   ruleIndex,
-    // );
   } else {
     try {
       // const checkmarkCSS = `.${className}:checked::after {${checkmarkstyle}}`;

@@ -196,10 +196,6 @@ export function updateElement(element, uinode, force = false) {
           fieldStruct.value !== null ? String(fieldStruct.value) : "";
       }
 
-      // const text = readWasmString(
-      //   uinode.textPtr,
-      //   uinode.textLen,
-      // );
     } else if (uinode.elemType === COMPONENT_TYPES.ICON) {
       const iconName = readWasmString(uinode.hrefPtr, uinode.hrefLen);
       element.className = iconName + " " + uinode.styleId;

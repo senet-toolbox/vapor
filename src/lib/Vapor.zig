@@ -101,7 +101,6 @@ pub const DateTime = @import("DateTime.zig");
 pub const Animation = @import("Animation.zig");
 pub const Edges = @import("Edges.zig").Edges;
 pub const Transition = @import("Transition.zig");
-// pub const Error = @import("routes/nightwatch/Error.zig");
 
 const StorageModule = @import("Storage.zig");
 pub const clearPersitantStorage = StorageModule.clearPersitantStorage;
@@ -191,9 +190,6 @@ const Class = struct {
 pub var animations: ?std.StringHashMap(Animation) = null;
 pub var edges_table: ?std.StringHashMap(Edges) = null;
 pub var polygons_table: ?std.StringHashMap(Polygons) = null;
-// Define a type for continuation functions
-
-// Global array to store continuations
 
 pub var allocator_global: std.mem.Allocator = undefined;
 pub var browser_width: f32 = 0;
@@ -317,10 +313,6 @@ pub fn init(config: VaporConfig) void {
     added_nodes = std.array_list.Managed(*UINode).init(allocator);
     dirty_nodes = std.array_list.Managed(*UINode).init(allocator);
     element_registry = std.AutoHashMap(u32, *Binded).init(allocator);
-
-    // action_log = Structures.BoundedArray(ErrorReport, 512).init(512) catch unreachable;
-
-    // Everything up to here is 42 kb
 }
 
 fn initRegistries(persistent_allocator: std.mem.Allocator) void {
@@ -413,15 +405,6 @@ pub fn batch() void {
         Wasm.requestRerenderWasm();
     }
 }
-
-// /// Force rerender forces the entire dom tree to check props of all dynamic and pure components and rerender the ui
-// /// since Vapor is built with zig and wasm, checking all props of 10000s of nodes and ui components is cheap
-// /// feel free to abuse force, its essentially a global signal
-// pub fn cycleGrain() void {
-//     Vapor.grain_rerender = true;
-//     Vapor.println("Grain rerender", .{});
-//     Wasm.requestRerenderWasm();
-// }
 
 /// Force rerender forces the entire dom tree to check props and rerender the entire ui
 /// since Vapor is built with zig and wasm, checking all props of 10000s of nodes and ui components is cheap
@@ -535,7 +518,6 @@ pub fn renderCycle(route_ptr: [*:0]u8) !void {
 
     const route = std.mem.span(route_ptr);
 
-    // Get the old context for current route
     const old_route_op = router.searchRoute(route) orelse blk: {
         printlnSrcErr("No Route found", .{}, @src());
         break :blk router.searchRoute("/root/error") orelse {
@@ -1065,7 +1047,6 @@ pub var ui_node_layout_info = packed struct {
     .layer_offset = @offsetOf(UINode, "layer"),
 };
 
-// Make sure this function is not evaluated at compile time
 const HexModule = @import("Hex.zig");
 pub const hexToRgba = HexModule.hexToRgba;
 
@@ -1092,8 +1073,6 @@ pub extern "env" fn consoleLogWasm(
     style_ptr: [*]const u8,
     style_len: usize,
 ) callconv(.c) void;
-
-// Convenience wrappers (optional)
 
 pub const Clipboard = struct {
     pub fn copy(text: []const u8) void {
@@ -1144,23 +1123,9 @@ pub const getVideo = ExportsModule.getVideo;
 pub const onLayoutCallback = ExportsModule.onLayoutCallback;
 pub const hasLayoutFunctions = ExportsModule.hasLayoutFunctions;
 
-// --- Rendering & Tree Management ---
-
-// Zig side - export first child and next sibling
-
-// --- Layout & Allocation ---
-
-// --- CSS & Commands ---
-
-// --- Removal Handling ---
-
 pub const std_options = std.Options{
     .log_level = .debug,
     .logFn = log,
 };
-
-// The JS/WASM side calls back with the id:
-
-// The JS/WASM side calls back with the id:
 
 pub const ArrayArena = @import("Array.zig").Array;

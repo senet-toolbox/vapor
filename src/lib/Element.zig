@@ -510,18 +510,6 @@ pub const Element = struct {
                         field_value.len,
                     );
                 },
-                // Color => {
-                //     mutateDomElementStyle(
-                //         id.ptr,
-                //         id.len,
-                //         field_name.ptr,
-                //         field_name.len,
-                //         field_value.Literal.r,
-                //         field_value.Literal.g,
-                //         field_value.Literal.b,
-                //         field_value.Literal.a,
-                //     );
-                // },
                 else => {},
             }
         }

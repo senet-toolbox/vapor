@@ -83,9 +83,6 @@ pub const InputParamsRadio = struct {
 
 pub const InputParamsFile = struct {
     type: InputTypes = .file,
-    // tag: ?[]const u8 = null,
-    // required: ?bool = null,
-    // disabled: ?bool = null,
     default_ptr: ?[*]const u8 = null,
     default_len: usize = 0,
     value_ptr: ?[*]const u8 = null,

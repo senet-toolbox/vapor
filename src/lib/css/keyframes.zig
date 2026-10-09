@@ -2,6 +2,9 @@ const Vapor = @import("../Vapor.zig");
 const Animation = Vapor.Animation;
 const Writer = @import("../Writer.zig");
 
+// ---------------------------------------------------------
+// ANIMATION CSS GENERATOR
+// ---------------------------------------------------------
 /// Writes all registered animations to the CSS buffer
 pub fn generateAnimationsFrames(writer: *Writer) void {
     if (Vapor.animations) |table| {
@@ -94,6 +97,7 @@ fn writeFrameProperties(frame: Animation.Keyframe, writer: *Writer) void {
     }
 }
 
+// Handles values like "translateX(10px)" or "blur(5px)"
 fn writeAnimTransformValue(p: Animation.PropValue, writer: *Writer) void {
     const func_name = p.type.toCss();
     writer.write(func_name) catch {};
@@ -135,6 +139,7 @@ fn writeAnimTransformValue(p: Animation.PropValue, writer: *Writer) void {
     writer.writeByte(')') catch {};
 }
 
+// Handles standard values like "opacity: 0.5" or "width: 100px"
 fn writeAnimStandardValue(p: Animation.PropValue, writer: *Writer) void {
     switch (p.value) {
         .number => |val| {

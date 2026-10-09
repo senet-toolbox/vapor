@@ -40,24 +40,6 @@ const ValuesModule = @import("css/values.zig");
 pub const writePropValue = ValuesModule.writePropValue;
 pub const colorToCSS = ValuesModule.colorToCSS;
 
-// Maps for simple enum-to-string conversions
-
-// Helper function to convert SizingType to CSS values
-
-// Helper function to convert color array to CSS rgba
-
-// Helper function to convert color array to CSS rgba
-
-// Function to convert OutlineStyle enum to a CSS string
-
-// Function to convert ListStyle enum to CSS string
-
-// Function to convert ListStyle enum to CSS string
-
-// Function to convert FlexWrap enum to CSS string
-
-// Function to convert FlexType enum to a CSS string
-
 pub fn writeStyleField(field: Types.StyleFields, visual: *const Types.PackedVisual, writer: writer_t) void {
     switch (field) {
         .border => {
@@ -729,16 +711,6 @@ pub fn setGlobalStyleVariables(catalog: Catalog) void {
 }
 
 pub var animations_str: []const u8 = "";
-// ... (Your existing imports and code) ...
-
-// ---------------------------------------------------------
-// ANIMATION CSS GENERATOR
-// ---------------------------------------------------------
 
 const KeyframesModule = @import("css/keyframes.zig");
 pub const generateAnimationsFrames = KeyframesModule.generateAnimationsFrames;
-
-// Handles values like "translateX(10px)" or "blur(5px)"
-
-// Handles standard values like "opacity: 0.5" or "width: 100px"
-

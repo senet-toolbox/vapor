@@ -596,10 +596,6 @@ function readAllRenderCommands(baseOffset, count) {
       offset + layoutInfo.styleChangedOffset,
       true,
     );
-    // const hasChildren = view.getUint8(
-    //   offset + layoutInfo.hasChildrenOffset,
-    //   true,
-    // );
 
     const idPtr = view.getUint32(offset + layoutInfo.idPtrOffset, true);
     const idLen = view.getUint32(offset + layoutInfo.idPtrOffset + 4, true);

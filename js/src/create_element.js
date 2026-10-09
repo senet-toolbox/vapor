@@ -475,10 +475,6 @@ export function createElementByType(uinode) {
         const field = readWasmString(label_name_ptr, label_name_len);
         element.setAttribute("for", field);
       }
-      // element.htmlFor = readWasmString(
-      //   uinode.hrefPtr,
-      //   uinode.hrefLen,
-      // );
       text = readWasmString(uinode.textPtr, uinode.textLen);
       element.textContent = text;
       break;

@@ -150,8 +150,6 @@ const Tag = enum {
     clamp,
 };
 
-// Make it a tagged union by adding an enum
-
 pub const Platform = enum(u8) {
     mobile,
     desktop,
@@ -189,7 +187,6 @@ pub const SizingUnit = enum(u8) {
     percent,
 };
 
-// Represents a single background image source and its properties.
 const BackgroundModule = @import("types/background.zig");
 pub const Image = BackgroundModule.Image;
 pub const Grid = BackgroundModule.Grid;
@@ -202,8 +199,6 @@ pub const BackgroundLayer = BackgroundModule.BackgroundLayer;
 pub const BackgroundClip = BackgroundModule.BackgroundClip;
 pub const Gradient = BackgroundModule.Gradient;
 
-// Represents a generated grid pattern.
-
 pub const DirectionType = enum(u8) {
     none,
     to_top,
@@ -214,9 +209,6 @@ pub const DirectionType = enum(u8) {
     to_top_left,
     angle,
 };
-
-// A BackgroundLayer can be one of several mutually exclusive types,
-// like an image or a generated pattern. This is a perfect use for a union.
 
 const ColorModule = @import("types/color.zig");
 pub const Thematic = ColorModule.Thematic;
@@ -507,38 +499,6 @@ pub const Focus = struct {
     opacity: f16 = 1,
     child_style: ?ChildStyle = null,
 };
-
-// pub const Hover = struct {
-//     position: ?Position = null,
-//     display: ?FlexType = null,
-//     direction: ?Direction = null,
-//     width: ?Sizing = null,
-//     height: ?Sizing = null,
-//     font_size: ?i32 = null,
-//     letter_spacing: ?i32 = null,
-//     line_height: ?i32 = null,
-//     font_weight: ?usize = null,
-//
-//     border_radius: ?BorderRadius = null,
-//     border_thickness: ?Border = null,
-//     border_color: ?Color = null,
-//
-//     border: ?struct {
-//         thickness: Border = .all(1),
-//         color: ?Color = null,
-//         radius: ?BorderRadius = null,
-//     } = null,
-//
-//     text_color: ?Color = null,
-//     padding: ?Padding = null,
-//     child_alignment: ?struct { x: Alignment, y: Alignment } = null,
-//     child_gap: u16 = 0,
-//     background: ?Color = null,
-//     shadow: Shadow = .{},
-//     transform: Transform = .{},
-//     opacity: f32 = 1,
-//     child_style: ?ChildStyle = null,
-// };
 
 pub const Hover = struct {
     position: ?Position = null,

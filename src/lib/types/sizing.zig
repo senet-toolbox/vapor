@@ -29,6 +29,7 @@ pub const SizingType = enum(u8) {
     vp,
 };
 
+// Make it a tagged union by adding an enum
 pub const SizingConstraint = packed struct {
     min: f32 = 0,
     max: f32 = 0,

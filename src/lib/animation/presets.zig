@@ -1,3 +1,5 @@
+//! Ready-made animations: `Animation.fadeIn("name")` and friends.
+
 const Animation = @import("../Animation.zig");
 
 pub fn fadeIn(name: []const u8) Animation {
@@ -98,6 +100,10 @@ pub fn pulse(name: []const u8) Animation {
         .dir(.alternate)
         .infinite();
 }
+
+// ============================================
+// ATTENTION / EMPHASIS ANIMATIONS
+// ============================================
 
 pub fn bounce(name: []const u8) Animation {
     return Animation.init(name)
@@ -221,6 +227,10 @@ pub fn swing(name: []const u8) Animation {
         .easing(.easeInOut);
 }
 
+// ============================================
+// ENTRANCE ANIMATIONS
+// ============================================
+
 pub fn bounceIn(name: []const u8) Animation {
     return Animation.init(name)
         .at(0).setAll(.{ .opacity = 0, .scale = 0.3 })
@@ -321,6 +331,10 @@ pub fn expandInY(name: []const u8) Animation {
         .fill(.both);
 }
 
+// ============================================
+// EXIT ANIMATIONS
+// ============================================
+
 pub fn bounceOut(name: []const u8) Animation {
     return Animation.init(name)
         .at(0).setAll(.{ .opacity = 1, .scale = 1 })
@@ -406,6 +420,10 @@ pub fn hinge(name: []const u8) Animation {
         .fill(.both);
 }
 
+// ============================================
+// BACKGROUND / SPECIAL ANIMATIONS
+// ============================================
+
 pub fn flash(name: []const u8) Animation {
     return Animation.init(name)
         .at(0).set(.opacity, 1)
@@ -473,6 +491,10 @@ pub fn pulseShadow(name: []const u8) Animation {
         .infinite();
 }
 
+// ============================================
+// LOADING / PROGRESS ANIMATIONS
+// ============================================
+
 pub fn spinPulse(name: []const u8) Animation {
     return Animation.init(name)
         .at(0).setAll(.{ .rotate = 0, .scale = 1 })
@@ -508,6 +530,10 @@ pub fn progressPulse(name: []const u8) Animation {
         .infinite();
 }
 
+// ============================================
+// TEXT ANIMATIONS
+// ============================================
+
 pub fn typewriter(name: []const u8, width: f32) Animation {
     return Animation.init(name)
         .at(0).set(.width, 0)
@@ -529,6 +555,10 @@ pub fn unblur(name: []const u8) Animation {
         .at(100).setAll(.{ .blur = 0, .opacity = 1 })
         .fill(.forwards);
 }
+
+// ============================================
+// 3D-ISH ANIMATIONS
+// ============================================
 
 pub fn flip3D(name: []const u8) Animation {
     return Animation.init(name)

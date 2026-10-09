@@ -67,6 +67,7 @@ pub export fn resizeCallback(resize_callback: u32, object_ptr: ?*DynamicObject) 
     erased.call(object_ptr.?);
 }
 
+// --- Rendering & Tree Management ---
 pub export fn renderUI(route: [*:0]u8) callconv(.c) u32 {
     Vapor.renderCycle(route) catch |err| {
         Vapor.printlnSrcErr("Error while rendering", .{}, @src());
@@ -103,6 +104,7 @@ pub export fn getUINodeChild(node_ptr: ?*UINode, index: u32) callconv(.c) ?*UINo
     return node.childAt(index);
 }
 
+// Zig side - export first child and next sibling
 pub export fn getUINodeFirstChild(node_ptr: ?*UINode) callconv(.c) ?*UINode {
     const node = node_ptr orelse return null;
     return node.first_child;
@@ -119,6 +121,7 @@ pub export fn markCurrentTreeNotDirty() callconv(.c) void {
     Vapor.markChildrenNotDirty(root);
 }
 
+// --- Layout & Allocation ---
 pub export fn allocateUINodeLayoutInfo() callconv(.c) *u8 {
     const ui_info_ptr: *u8 = @ptrCast(&Vapor.ui_node_layout_info);
     return ui_info_ptr;
@@ -152,6 +155,7 @@ pub export fn allocateU32(size: usize) callconv(.c) ?[*]u32 {
     return buf.ptr;
 }
 
+// --- CSS & Commands ---
 pub export fn getCSS() callconv(.c) ?[*]const u8 {
     return Vapor.generator.getCSS().ptr;
 }
@@ -176,6 +180,7 @@ pub export fn getTreeNodeChild(tree: *Vapor.CommandsTree, index: usize) callconv
     return child;
 }
 
+// --- Removal Handling ---
 pub export fn shouldRerender() callconv(.c) bool {
     return Vapor.global_rerender;
 }

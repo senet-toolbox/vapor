@@ -139,7 +139,6 @@ pub const RemovalQueue = struct {
     }
 };
 
-
 export fn clearRemovalQueueRetainingCapacity() void {
     Animation.removal_queue.clearRetainingCapacity();
 }

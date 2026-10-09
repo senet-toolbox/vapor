@@ -271,6 +271,7 @@ pub fn writePropValue(prop: []const u8, value: PropValue, writer: *Writer) void 
     writer.write(";\n") catch {};
 }
 
+// Maps for simple enum-to-string conversions
 const direction_map = [_][]const u8{ "column", "row" };
 
 const alignment_map = [_][]const u8{ "none", "center", "flex-start", "flex-end", "flex-start", "flex-end", "space-between", "space-evenly", "flex-start", "anchor-start", "anchor-end", "anchor-center" };
@@ -368,6 +369,7 @@ fn textDecoToCSS(deco: Types.PackedTextDecoration, writer: anytype) !void {
     }
 }
 
+// Helper function to convert SizingType to CSS values
 fn sizingTypeToCSS(sizing: Sizing, writer: *Writer) !void {
     switch (sizing.type) {
         .fit => try writer.write("fit-content"),
@@ -425,6 +427,7 @@ fn posTypeToCSS(pos: Pos, writer: *Writer) !void {
     }
 }
 
+// Helper function to convert color array to CSS rgba
 pub fn colorToCSS(color: Types.PackedColor, writer: *Writer) !void {
     if (color.has_color) {
         writeRgba(writer, color.color) catch {};
@@ -493,6 +496,7 @@ fn appearanceToCSS(appearance: Appearance, writer: anytype) !void {
     try writeMappedString(Appearance, appearance, &appearance_map, writer);
 }
 
+// Function to convert OutlineStyle enum to a CSS string
 fn outlineStyleToCSS(outline: Outline, writer: anytype) !void {
     try writeMappedString(Outline, outline, &outline_map, writer);
 }
@@ -525,6 +529,7 @@ fn transitionStyleToCSS(style: PackedTransition, writer: *Writer) void {
     }
 }
 
+// Function to convert Cursor enum to a CSS string
 fn cursorToCSS(cursor_type: Cursor, writer: anytype) !void {
     try writeMappedString(Cursor, cursor_type, &cursor_map, writer);
 }
@@ -542,10 +547,12 @@ fn resizeToCSS(resize: Types.Resize, writer: anytype) !void {
     try writeMappedString(Types.Resize, resize, &resize_map, writer);
 }
 
+// Function to convert ListStyle enum to CSS string
 fn listStyleToCSS(list_style: ListStyle, writer: anytype) !void {
     try writeMappedString(ListStyle, list_style, &list_style_map, writer);
 }
 
+// Function to convert FlexWrap enum to CSS string
 fn flexWrapToCSS(flex_wrap: FlexWrap, writer: anytype) !void {
     try writeMappedString(FlexWrap, flex_wrap, &flex_wrap_map, writer);
 }
@@ -554,6 +561,7 @@ fn whiteSpaceToCSS(white_space: WhiteSpace, writer: anytype) !void {
     try writeMappedString(WhiteSpace, white_space, &white_space_map, writer);
 }
 
+// Function to convert FlexType enum to a CSS string
 fn flexTypeToCSS(flex_type: FlexType, writer: anytype) !void {
     try writeMappedString(FlexType, flex_type, &flex_type_map, writer);
 }

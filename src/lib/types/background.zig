@@ -1,5 +1,6 @@
 const types = @import("../types.zig");
 
+// Represents a single background image source and its properties.
 pub const Image = struct {
     url: []const u8,
     // TODO: Add other CSS properties like repeat, size, position
@@ -7,6 +8,7 @@ pub const Image = struct {
     // size: union(enum) { auto, cover, contain, explicit: struct { w: f32, h: f32 } } = .auto,
 };
 
+// Represents a generated grid pattern.
 pub const Grid = struct {
     size: u8 = 0,
     color: types.Color = .transparent,
@@ -53,6 +55,8 @@ pub const LinesDirection = enum(u8) {
     diagonal_down,
 };
 
+// A BackgroundLayer can be one of several mutually exclusive types,
+// like an image or a generated pattern. This is a perfect use for a union.
 pub const BackgroundLayer = union(enum) {
     Image: Image,
     Grid: Grid,

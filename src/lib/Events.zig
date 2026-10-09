@@ -300,6 +300,7 @@ pub fn moveEntry(map: anytype, from: u32, to: u32) void {
     };
 }
 
+// The JS/WASM side calls back with the id:
 pub export fn invokeErasedCallback(id: u32) void {
     var erased = Vapor.erased_registry.get(id) orelse {
         std.log.err("Erased Callback not found {d}", .{id});
@@ -311,6 +312,7 @@ pub export fn invokeErasedCallback(id: u32) void {
     }
 }
 
+// The JS/WASM side calls back with the id:
 pub export fn invokeHooksErasedCallback(id: u32) void {
     var erased = Vapor.erased_hooks_registry.get(id) orelse {
         std.log.err("Hooks Callback not found {d}", .{id});

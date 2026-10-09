@@ -56,6 +56,7 @@ pub fn printRaw(level: LogLevel, msg: []const u8) void {
     Vapor.consoleLogWasm(@intFromEnum(level), full.ptr, full.len, style.ptr, style.len);
 }
 
+// Convenience wrappers (optional)
 pub fn printErr(comptime fmt: []const u8, args: anytype) void {
     print(.err, fmt, args);
 }

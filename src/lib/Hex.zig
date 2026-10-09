@@ -1,5 +1,6 @@
 const std = @import("std");
 
+// Make sure this function is not evaluated at compile time
 /// Parses a CSS hex colour: `#rgb`, `#rgba`, `#rrggbb` or `#rrggbbaa`.
 /// Returns 0-255 channels and alpha in 0-1. Anything else is opaque black,
 /// as before; previously only `#rrggbb` was understood, so `#fff` was black
