@@ -1,3 +1,6 @@
+//! KeyStone: client-side authentication against a KeyStone backend: OAuth
+//! sign-in, session storage and refresh, and authenticated fetches.
+
 // This is the Frontend module dep for KeyStone.
 const std = @import("std");
 const Vapor = @import("../vapor.zig");

@@ -1,4 +1,5 @@
-// transition.zig
+//! CSS transitions: which properties animate, and their timing.
+
 const std = @import("std");
 const TimingFunction = @import("Animation.zig").Easing;
 const Vapor = @import("vapor.zig");

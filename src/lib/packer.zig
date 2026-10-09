@@ -1,3 +1,6 @@
+//! Pools and lookup tables for packed style data, shared by nodes with equal
+//! styles.
+
 const std = @import("std");
 const types = @import("types.zig");
 const Abstractions = @import("abstractions.zig");

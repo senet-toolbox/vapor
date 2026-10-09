@@ -1,3 +1,6 @@
+//! Functions the JS runtime calls to walk the render command tree and its
+//! dirty and added nodes. Not for app code.
+
 const std = @import("std");
 const Vapor = @import("vapor.zig");
 const isWasi = Vapor.isWasi;

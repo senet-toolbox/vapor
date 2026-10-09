@@ -1,3 +1,5 @@
+//! Parsing CSS hex colours.
+
 const std = @import("std");
 
 // Make sure this function is not evaluated at compile time

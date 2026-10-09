@@ -1,3 +1,7 @@
+//! `ComponentBuilder`, the value every element constructor returns: its
+//! fields, the helpers its methods share, and one alias per method into
+//! builder/. Also `Hooks` and the `Builder` compatibility functions.
+
 const std = @import("std");
 const types = @import("types.zig");
 const Vapor = @import("vapor.zig");

@@ -1,3 +1,6 @@
+//! Arena-backed containers: `Array` (exported as `Vapor.ArrayArena`), a
+//! growable list that never needs `deinit`, and `BoundedArray`, stored inline.
+
 const std = @import("std");
 const assert = std.debug.assert;
 const Vapor = @import("vapor.zig");

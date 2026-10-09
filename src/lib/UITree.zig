@@ -1,3 +1,6 @@
+//! The UINode tree a render builds: node layout, child iteration, the open
+//! node stack the builders push to, and the per-route UI context.
+
 const std = @import("std");
 const Vapor = @import("vapor.zig");
 const KeyGenerator = @import("key.zig").KeyGenerator;

@@ -1,3 +1,6 @@
+//! Reference counts for generated CSS classes, so a rule is removed from the
+//! stylesheet once no element uses it.
+
 // The ClassCache is a simple cache for reference counting of the number of element that share the same class
 const std = @import("std");
 const Vapor = @import("vapor.zig");

@@ -1,3 +1,6 @@
+//! `Element` (exported as `Vapor.Binded`): a handle to a rendered DOM element,
+//! filled in by `.ref`, for reading and changing it outside a render.
+
 const types = @import("types.zig");
 const Vapor = @import("vapor.zig");
 const UINode = @import("UITree.zig").UINode;

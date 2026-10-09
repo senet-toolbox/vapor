@@ -1,3 +1,5 @@
+//! Generates the ids (keys) the reconciler uses to match nodes across renders.
+
 const std = @import("std");
 const Vapor = @import("vapor.zig");
 const UINode = @import("UITree.zig").UINode;

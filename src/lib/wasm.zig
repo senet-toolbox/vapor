@@ -1,3 +1,6 @@
+//! Every core binding to the JS runtime (`extern fn`). Browser APIs beyond
+//! rendering are in browser.zig.
+
 // =============================================================================
 // WASM External Bindings for Zig
 // JavaScript interop declarations organized by functional domain

@@ -1,3 +1,6 @@
+//! Reads structs the JS runtime builds (form data, file info, resize entries)
+//! from wasm memory, and describes Zig structs' layout to JS.
+
 const std = @import("std");
 const Vapor = @import("vapor.zig");
 const utils = @import("utils.zig");

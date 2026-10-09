@@ -1,3 +1,6 @@
+//! The memory API: `arena`, `dupe`, `fmtln`, and the `frame`, `view` and
+//! `persist` namespaces for allocating with a given lifetime.
+
 const Vapor = @import("vapor.zig");
 const ArrayArena = @import("array.zig").Array;
 const std = @import("std");

@@ -1,3 +1,6 @@
+//! Generates the static site: renders every page to HTML and copies the
+//! runtime and assets into the release directory. Runs on the host.
+
 const Vapor = @import("vapor.zig");
 const HtmlGenerator = @import("html_generator.zig");
 const StyleCompiler = @import("style_compiler.zig");

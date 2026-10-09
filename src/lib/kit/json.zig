@@ -1,3 +1,5 @@
+//! JSON parsing into arena memory.
+
 const std = @import("std");
 const Vapor = @import("../vapor.zig");
 

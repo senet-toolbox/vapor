@@ -1,3 +1,7 @@
+//! The core runtime: initialisation, page registration and routing, the
+//! render cycle, and the global state the other modules share. Most of it is
+//! re-exported from src/root.zig.
+
 const std = @import("std");
 const builtin = @import("builtin");
 pub var isGenerated = !isWasi;

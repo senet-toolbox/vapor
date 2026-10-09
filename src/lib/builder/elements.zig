@@ -1,3 +1,6 @@
+//! The element constructors (`Box`, `Text`, `Button`, ...). Each opens a node
+//! and returns a ComponentBuilder. Aliased from components.zig.
+
 const Components = @import("../components.zig");
 const Self = Components.ComponentBuilder;
 const types = @import("../types.zig");

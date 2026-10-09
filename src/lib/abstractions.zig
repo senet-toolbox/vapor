@@ -1,3 +1,6 @@
+//! Allocator-carrying wrappers around std's unmanaged MemoryPool and
+//! AutoHashMap.
+
 const std = @import("std");
 
 // Wrapper that pairs an unmanaged MemoryPool with its allocator

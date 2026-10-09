@@ -1,3 +1,5 @@
+//! Reading files the user picked in a file input, and offering downloads.
+
 const std = @import("std");
 const Vapor = @import("vapor.zig");
 const Wasm = Vapor.Wasm;

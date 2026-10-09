@@ -1,3 +1,5 @@
+//! Writes background layers (grid, dots, lines, gradients) as CSS.
+
 const Values = @import("values.zig");
 const Writer = @import("../Writer.zig");
 const Types = @import("../types.zig");

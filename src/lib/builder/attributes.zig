@@ -1,3 +1,6 @@
+//! ComponentBuilder methods for ids and attributes: `.id`, ARIA, `.hidden`,
+//! `.attribute`. Aliased from components.zig.
+
 const Components = @import("../components.zig");
 const Self = Components.ComponentBuilder;
 const std = @import("std");

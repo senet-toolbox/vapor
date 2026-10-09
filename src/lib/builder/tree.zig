@@ -1,3 +1,6 @@
+//! ComponentBuilder methods that finish an element: `.children`, `.items`,
+//! `.child`, `.end`, `.close`, `.clone`. Aliased from components.zig.
+
 const Components = @import("../components.zig");
 const Self = Components.ComponentBuilder;
 const Vapor = @import("../vapor.zig");

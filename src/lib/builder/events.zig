@@ -1,3 +1,6 @@
+//! ComponentBuilder methods for events and lifecycle: `.onEvent`, `.onHover`,
+//! `.onMount`, `.ref`, ... Aliased from components.zig.
+
 const Components = @import("../components.zig");
 const Self = Components.ComponentBuilder;
 const std = @import("std");

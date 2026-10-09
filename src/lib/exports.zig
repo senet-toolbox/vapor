@@ -1,3 +1,6 @@
+//! Functions exported to the JS runtime for rendering, layout callbacks and
+//! navigation. Not for app code.
+
 const Vapor = @import("vapor.zig");
 const DynamicObject = @import("dynamic.zig").DynamicObject;
 const Packer = @import("packer.zig");

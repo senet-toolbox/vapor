@@ -1,3 +1,7 @@
+//! Every style value type (`Vapor.Types`): colours, sizes, spacing, borders,
+//! layout, transforms, the `Style` struct and the ElementType/EventType
+//! enums. Larger groups live in types/.
+
 const std = @import("std");
 const UINode = @import("UITree.zig").UINode;
 const Vapor = @import("vapor.zig");

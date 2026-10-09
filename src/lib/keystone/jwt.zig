@@ -1,3 +1,5 @@
+//! JSON Web Token decoding and signature verification.
+
 const std = @import("std");
 const Vapor = @import("../vapor.zig");
 const print = Vapor.println;

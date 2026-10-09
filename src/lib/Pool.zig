@@ -1,3 +1,6 @@
+//! A slot pool with a freelist, for fixed-size values that are created and
+//! released often.
+
 const std = @import("std");
 
 // Pool-aware data types

@@ -1,3 +1,5 @@
+//! Finding rendered nodes by id or type and measuring them on the page.
+
 const Vapor = @import("vapor.zig");
 const UIContext = @import("UITree.zig");
 const UINode = @import("UITree.zig").UINode;

@@ -1,3 +1,5 @@
+//! Text field kinds (`InputTypes`) and their parameters.
+
 const types = @import("../types.zig");
 
 pub const InputParamsStr = struct {

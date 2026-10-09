@@ -1,3 +1,6 @@
+//! The `TextField`/`TextArea` constructors and the methods for the field's
+//! value: `.bind`, `.placeholder`, `.val`, `.config`.
+
 const TextFieldMod = @import("../text_field.zig");
 const Self = TextFieldMod.TextFieldBuilder;
 const std = @import("std");

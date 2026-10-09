@@ -1,3 +1,6 @@
+//! Pointer-driven dragging for an element: constraints, snapping, handles and
+//! drag callbacks.
+
 const std = @import("std");
 const Vapor = @import("vapor.zig");
 

@@ -1,3 +1,5 @@
+//! Writes individual style values (enums, sizes, colours) as CSS.
+
 const Writer = @import("../Writer.zig");
 const Types = @import("../types.zig");
 const Alignment = Types.Alignment;

@@ -1,3 +1,6 @@
+//! Collects the CSS rules a render produces (classes, hover targets, layers,
+//! responsive variants, injected CSS) into the stylesheet the runtime installs.
+
 // CSS Rules, classnames must always be with dashes, cannot use icon types
 const std = @import("std");
 const UITree = @import("UITree.zig");

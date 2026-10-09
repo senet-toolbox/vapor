@@ -1,3 +1,5 @@
+//! Strings bound to text fields, kept stable across renders.
+
 const std = @import("std");
 const Vapor = @import("vapor.zig");
 

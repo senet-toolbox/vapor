@@ -1,3 +1,6 @@
+//! Box model values: `Padding`, `Margin`, `Border`, `BorderRadius`,
+//! `BorderGrouped`, `Scroll`.
+
 const types = @import("../types.zig");
 
 pub const Padding = packed struct {

@@ -1,3 +1,6 @@
+//! Browser helpers: window and URL, navigation, a JSON writer, intersection
+//! and resize observers, websockets, timestamps.
+
 const std = @import("std");
 const Vapor = @import("../vapor.zig");
 const isWasi = Vapor.isWasi;

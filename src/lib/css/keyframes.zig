@@ -1,3 +1,5 @@
+//! Writes registered animations as `@keyframes` rules.
+
 const Vapor = @import("../vapor.zig");
 const Animation = Vapor.Animation;
 const Writer = @import("../Writer.zig");

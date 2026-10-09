@@ -1,3 +1,6 @@
+//! Decorative edge lines drawn on an element's sides with ::before/::after,
+//! configured with a builder and attached with `.edges(name)`.
+
 const std = @import("std");
 const Vapor = @import("vapor.zig");
 const Color = Vapor.Types.Color;

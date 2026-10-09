@@ -1,3 +1,6 @@
+//! The arenas behind `Vapor.arena`: a double-buffered frame arena per route,
+//! a view arena reset on route change, and persistent and request arenas.
+
 const std = @import("std");
 const mem = std.mem;
 const Allocator = mem.Allocator;

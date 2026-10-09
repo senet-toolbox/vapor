@@ -1,3 +1,5 @@
+//! TextFieldBuilder methods for events: focus, change, keys, hover, scroll.
+
 const TextFieldMod = @import("../text_field.zig");
 const Self = TextFieldMod.TextFieldBuilder;
 const types = @import("../types.zig");

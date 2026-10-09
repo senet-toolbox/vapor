@@ -1,3 +1,6 @@
+//! Renders a UINode tree to HTML for static pages (prerendering). Runs on
+//! the host, not in the browser.
+
 const std = @import("std");
 
 const Vapor = @import("vapor.zig");

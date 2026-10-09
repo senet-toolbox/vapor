@@ -1,3 +1,5 @@
+//! Packs visual style (colours, borders, backgrounds, layers) for a node.
+
 const Configuration = @import("../configuration.zig");
 const UINode = @import("../UITree.zig").UINode;
 const std = @import("std");

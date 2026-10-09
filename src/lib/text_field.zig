@@ -1,3 +1,6 @@
+//! `TextFieldBuilder`, the builder `TextField` and `TextArea` return: its
+//! fields, `end()`, and one alias per method into text_field/.
+
 const std = @import("std");
 const types = @import("types.zig");
 const Vapor = @import("vapor.zig");

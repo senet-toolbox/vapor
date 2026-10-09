@@ -1,3 +1,6 @@
+//! ComponentBuilder methods for visual style: colour, font, border,
+//! background, hover, animation, ... Aliased from components.zig.
+
 const Components = @import("../components.zig");
 const Self = Components.ComponentBuilder;
 const std = @import("std");

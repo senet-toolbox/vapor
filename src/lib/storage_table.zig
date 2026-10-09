@@ -1,3 +1,5 @@
+//! Interned copies of values read from localStorage, keyed by storage key.
+
 const std = @import("std");
 const ArrayList = std.array_list.Managed;
 

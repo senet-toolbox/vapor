@@ -1,3 +1,5 @@
+//! TextFieldBuilder methods for layout and visual style.
+
 const TextFieldMod = @import("../text_field.zig");
 const Self = TextFieldMod.TextFieldBuilder;
 const std = @import("std");

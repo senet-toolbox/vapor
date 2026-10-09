@@ -1,3 +1,8 @@
+//! Keyframe animations: a value-type builder (`Animation.init(name).at(..).set(..)`),
+//! registered by name with `.build()` and emitted as `@keyframes` CSS.
+//! Presets live in animation/presets.zig; exit-animation bookkeeping in
+//! animation/removal.zig.
+
 const std = @import("std");
 const Vapor = @import("vapor.zig");
 const Allocator = std.mem.Allocator;

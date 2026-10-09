@@ -1,3 +1,6 @@
+//! Calendar dates and times: construction, timestamps, formatting, and
+//! month/year strings for date pickers.
+
 const std = @import("std");
 const Vapor = @import("vapor.zig");
 

@@ -1,3 +1,5 @@
+//! Hashes a `Style` so unchanged styles can be recognised and reused.
+
 const std = @import("std");
 const types = @import("types.zig");
 const Style = types.Style;

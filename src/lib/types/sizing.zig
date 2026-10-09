@@ -1,3 +1,5 @@
+//! Sizes and positions: `Size`, `Sizing`, `Pos`.
+
 const types = @import("../types.zig");
 const isMobile = @import("../utils.zig").isMobile;
 

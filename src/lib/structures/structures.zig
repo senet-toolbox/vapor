@@ -1,3 +1,5 @@
+//! Fixed-capacity containers: a ring buffer and a bounded array.
+
 pub fn RingBuffer(comptime T: type, comptime capacity: usize) type {
     return struct {
         const Self = @This();

@@ -1,3 +1,5 @@
+//! Small shared helpers: hashing, casting, string helpers, `isMobile`.
+
 const std = @import("std");
 const UINode = @import("UITree.zig").UINode;
 const Vapor = @import("vapor.zig");

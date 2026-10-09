@@ -1,3 +1,5 @@
+//! Box and text shadows: up to several layers, written as CSS.
+
 const std = @import("std");
 const Vapor = @import("vapor.zig"); // Assuming Color is defined here
 const Allocator = std.mem.Allocator;

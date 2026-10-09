@@ -1,3 +1,6 @@
+//! The event a handler receives: reads key, modifier, pointer and input data
+//! from the JS runtime by event id, and parses submitted forms.
+
 const std = @import("std");
 const Vapor = @import("vapor.zig");
 const Wasm = Vapor.Wasm;

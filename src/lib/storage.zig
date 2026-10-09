@@ -1,3 +1,5 @@
+//! localStorage and cookies.
+
 const Vapor = @import("vapor.zig");
 const Wasm = @import("wasm.zig");
 const std = @import("std");

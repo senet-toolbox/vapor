@@ -1,3 +1,6 @@
+//! Turns an element's declared style into packed style data on its UINode and
+//! the hashes the reconciler compares. The packers live in configure/.
+
 const UINode = @import("UITree.zig").UINode;
 const std = @import("std");
 const UIContext = @import("UITree.zig").UIContext;

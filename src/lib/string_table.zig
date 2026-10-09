@@ -1,3 +1,6 @@
+//! String interning with stable u32 handles, used where packed style data
+//! needs to refer to a string.
+
 const std = @import("std");
 
 /// A string interning table that stores unique strings and returns stable u32 indices.

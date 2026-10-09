@@ -1,3 +1,5 @@
+//! Background layers: grid, dots, lines and gradients.
+
 const types = @import("../types.zig");
 
 // Represents a single background image source and its properties.

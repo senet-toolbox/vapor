@@ -1,3 +1,6 @@
+//! Polygon shapes (triangles, n-gons, stars) drawn with `clip-path`,
+//! configured with a builder and applied by CSS class.
+
 const std = @import("std");
 const Vapor = @import("vapor.zig");
 const Color = Vapor.Types.Color;

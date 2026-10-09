@@ -1,3 +1,5 @@
+//! TextFieldBuilder methods for ids and ARIA attributes.
+
 const TextFieldMod = @import("../text_field.zig");
 const Self = TextFieldMod.TextFieldBuilder;
 const Vapor = @import("../vapor.zig");

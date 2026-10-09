@@ -1,3 +1,6 @@
+//! Exit animations: elements with `.animationExit` are queued here instead of
+//! being removed at once, and the runtime removes them when the animation ends.
+
 const Animation = @import("../Animation.zig");
 const std = @import("std");
 const Vapor = @import("../vapor.zig");

@@ -1,3 +1,6 @@
+//! Diffs a render's tree against the previous one and marks nodes added,
+//! changed or removed.
+
 const std = @import("std");
 const UIContext = @import("UITree.zig");
 const Vapor = @import("vapor.zig");

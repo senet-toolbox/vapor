@@ -1,3 +1,5 @@
+//! Logging to the browser console (and stderr natively).
+
 const Vapor = @import("vapor.zig");
 const Wasm = @import("wasm.zig");
 const std = @import("std");

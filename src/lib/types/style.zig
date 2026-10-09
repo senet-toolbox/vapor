@@ -1,3 +1,6 @@
+//! `Style`, `Visual` and `Interactive`: the declarative style an element is
+//! built from.
+
 const types = @import("../types.zig");
 const NewShadow = @import("../Shadow.zig");
 const Transition = @import("../transition.zig").Transition;

@@ -1,3 +1,6 @@
+//! ARIA attributes for an element (`Vapor.Accessibility`) and their HTML/DOM
+//! serialization.
+
 const std = @import("std");
 const Writer = @import("Writer.zig");
 const UINode = @import("UITree.zig").UINode;

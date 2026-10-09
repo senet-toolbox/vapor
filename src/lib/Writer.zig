@@ -1,3 +1,6 @@
+//! A writer over a fixed buffer that truncates and sets `overflowed` instead of
+//! writing past the end; the style compiler writes CSS through it.
+
 const std = @import("std");
 const Vapor = @import("vapor.zig");
 const Writer = @This();

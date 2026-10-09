@@ -1,3 +1,5 @@
+//! `Color`: literal RGBA or a theme token, plus colour mixing.
+
 const types = @import("../types.zig");
 const ThemeTokens = @import("theme").ThemeTokens;
 const Vapor = @import("../vapor.zig");

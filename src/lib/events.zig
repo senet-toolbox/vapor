@@ -1,3 +1,6 @@
+//! Attaching event callbacks to nodes and the document, and dispatching events
+//! the runtime reports back to them.
+
 const Vapor = @import("vapor.zig");
 const DynamicObject = @import("dynamic.zig").DynamicObject;
 const Event = @import("Event.zig");

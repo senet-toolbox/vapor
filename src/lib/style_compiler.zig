@@ -1,3 +1,6 @@
+//! Compiles packed style data into CSS declarations. Value writers live in
+//! css/; the getters the runtime calls in css/exports.zig.
+
 const std = @import("std");
 const mem = std.mem;
 const Types = @import("types.zig");

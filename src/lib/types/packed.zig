@@ -1,3 +1,5 @@
+//! Packed forms of style data, the compact layout stored on each node.
+
 const types = @import("../types.zig");
 const PackedTransition = @import("../transition.zig").PackedTransition;
 const StringTable = @import("../string_table.zig").StringTable;

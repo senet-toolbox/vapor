@@ -1,4 +1,5 @@
-// Color.zig
+//! The built-in light and dark colour themes and theme switching.
+
 const Vapor = @import("../vapor.zig");
 const std = @import("std");
 pub const Theme = enum {

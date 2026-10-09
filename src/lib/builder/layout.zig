@@ -1,3 +1,6 @@
+//! ComponentBuilder methods for layout and size: `.padding`, `.size`,
+//! `.direction`, `.responsive`, ... Aliased from components.zig.
+
 const Components = @import("../components.zig");
 const Self = Components.ComponentBuilder;
 const types = @import("../types.zig");

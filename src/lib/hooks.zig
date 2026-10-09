@@ -1,3 +1,5 @@
+//! Render-level hooks: `onMount`, `onLayout`, `onCommit`, `onPopState`.
+
 const Vapor = @import("vapor.zig");
 const std = @import("std");
 
