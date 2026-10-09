@@ -1,3 +1,4 @@
+/** Browser API bindings: Notifications. */
 import { rt } from "./runtime.js";
 
 // ============================================================================

@@ -1,3 +1,7 @@
+/**
+ * Walks the UINode tree after a render and creates, updates, places and
+ * removes DOM elements to match it.
+ */
 import { debug } from "./debug.js";
 import { safeUrl, setSafeHref } from "./url.js";
 import {

@@ -1,3 +1,4 @@
+/** Browser API bindings: screen orientation. */
 import { rt } from "./runtime.js";
 
 // ============================================================================

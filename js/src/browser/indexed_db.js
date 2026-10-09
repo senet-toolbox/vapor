@@ -1,3 +1,4 @@
+/** Browser API bindings: IndexedDB. */
 import { rt } from "./runtime.js";
 
 const idbDatabases = new Map();

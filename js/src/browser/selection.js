@@ -1,3 +1,4 @@
+/** Browser API bindings: text selection. */
 import { rt } from "./runtime.js";
 
 // ============================================================================

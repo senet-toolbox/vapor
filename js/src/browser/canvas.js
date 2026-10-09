@@ -1,3 +1,4 @@
+/** Browser API bindings: 2D canvas drawing. */
 import { rt } from "./runtime.js";
 
 const canvasContexts = new Map();

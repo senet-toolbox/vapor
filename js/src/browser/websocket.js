@@ -1,3 +1,4 @@
+/** Browser API bindings: WebSocket. */
 import { rt } from "./runtime.js";
 
 const websocketHandles = new Map();

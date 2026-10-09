@@ -1,3 +1,4 @@
+/** Browser API bindings: Geolocation. */
 import { rt } from "./runtime.js";
 
 // ============================================================================

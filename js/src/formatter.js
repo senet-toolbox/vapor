@@ -1,3 +1,4 @@
+/** Formats wasm panics and errors into readable messages. */
 export function formatWasmError(error) {
   const lines = error.stack?.split("\n") || [];
 

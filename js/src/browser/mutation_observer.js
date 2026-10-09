@@ -1,3 +1,4 @@
+/** Browser API bindings: MutationObserver. */
 import { rt } from "./runtime.js";
 
 const mutationObservers = new Map();

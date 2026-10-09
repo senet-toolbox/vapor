@@ -1,3 +1,4 @@
+/** Browser API bindings: Pointer Lock. */
 import { rt } from "./runtime.js";
 
 // ============================================================================

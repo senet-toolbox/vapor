@@ -1,3 +1,8 @@
+/**
+ * Loads the wasm, runs the render loop, applies render commands to the DOM,
+ * handles navigation and delegated events, and loads browser.min.js when
+ * the app needs it.
+ */
 import { debug } from "./debug.js";
 import { importObject } from "./imports.js";
 import { EventType, setWasiInstance } from "./env.js";

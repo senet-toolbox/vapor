@@ -1,3 +1,4 @@
+/** Browser API bindings: Fullscreen. */
 import { rt } from "./runtime.js";
 
 // ============================================================================

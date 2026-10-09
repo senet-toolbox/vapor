@@ -1,3 +1,4 @@
+/** Browser API bindings: performance marks and measures. */
 import { rt } from "./runtime.js";
 
 // ============================================================================

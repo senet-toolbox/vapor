@@ -1,3 +1,4 @@
+/** Browser API bindings: Web Audio playback. */
 import { rt } from "./runtime.js";
 
 const audioElements = new Map();

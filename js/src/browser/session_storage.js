@@ -1,3 +1,4 @@
+/** Browser API bindings: sessionStorage. */
 import { rt } from "./runtime.js";
 
 // ============================================================================

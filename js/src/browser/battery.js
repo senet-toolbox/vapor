@@ -1,3 +1,4 @@
+/** Browser API bindings: Battery Status. */
 import { rt } from "./runtime.js";
 
 // ============================================================================

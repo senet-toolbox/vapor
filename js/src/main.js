@@ -1,3 +1,4 @@
+/** Entry point of the core runtime bundle (bundle.min.js). */
 import  "./runtime.js";
 import  "./imports.js";
 import  "./maps.js";

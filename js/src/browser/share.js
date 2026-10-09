@@ -1,3 +1,4 @@
+/** Browser API bindings: Web Share. */
 import { rt } from "./runtime.js";
 
 // ============================================================================

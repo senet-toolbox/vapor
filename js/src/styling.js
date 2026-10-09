@@ -1,3 +1,7 @@
+/**
+ * Maintains the stylesheet: inserts, updates and removes the CSS rules the
+ * wasm generates.
+ */
 import { COMPONENT_TYPES } from "./traversal.js";
 import {
   wasmInstance,

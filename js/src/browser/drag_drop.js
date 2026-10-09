@@ -1,3 +1,4 @@
+/** Browser API bindings: HTML drag and drop. */
 import { rt } from "./runtime.js";
 
 // ============================================================================

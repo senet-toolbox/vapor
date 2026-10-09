@@ -1,3 +1,4 @@
+/** The wasm import object: the WASI shims and the `env` bindings. */
 import { debug } from "./debug.js";
 import { readWasmString, wasmInstance } from "./runtime.js";
 import { env, requireWasm } from "./env.js";

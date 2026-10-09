@@ -1,3 +1,4 @@
+/** Browser API bindings: Vibration. */
 import { rt } from "./runtime.js";
 
 // ============================================================================
