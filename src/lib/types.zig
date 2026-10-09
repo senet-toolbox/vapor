@@ -16,10 +16,15 @@ const StringTable = @import("string_table.zig").StringTable;
 const Accessibility = @import("accessibility.zig").Accessibility;
 const Edges = @import("Edges.zig").Edges;
 
+/// Top-level layer an element can render into (`Layer(.modal)`). The values
+/// match the JS runtime's LAYER_ROOTS: the element moves into the page
+/// element with id `layer-<name>` when the page has one.
 pub const Layers = enum(u8) {
     none = 0,
     tooltip = 1,
-    modal = 2,
+    popover = 2,
+    modal = 3,
+    toast = 4,
 };
 
 pub const ElementType = enum(u8) {

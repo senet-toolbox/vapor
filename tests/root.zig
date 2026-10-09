@@ -549,6 +549,23 @@ test "onCommit runs its callback once per render" {
     try std.testing.expectEqual(@as(u32, 2), commit_calls);
 }
 
+const big_svg = "<svg>" ++ ("<g/>" ** 600) ++ "</svg>";
+fn BigSvgPage() void {
+    Vapor.Svg(.{ .svg = big_svg }).end();
+}
+
+// An Svg over the inline limit used to return a builder without its node,
+// so .end() panicked with "builder has no node".
+test "an oversized Svg renders empty instead of panicking" {
+    comptime std.debug.assert(big_svg.len > 2048);
+    Vapor.init(.{});
+    Vapor.Animation.new();
+    Vapor.lib.resetRerender();
+    Vapor.Animation.removal_queue.clearRetainingCapacity();
+    Vapor.Page(.{ .route = "/big-svg" }, BigSvgPage, null);
+    _ = try renderRoute("/root/big-svg");
+}
+
 test "renderCycle leaves stable same-route rerenders clean" {
     initRenderCycleRuntime("/cycle-stable");
 
