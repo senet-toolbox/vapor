@@ -44,6 +44,9 @@ noted.
   `zig build check`).
 - `Margin.xy` took `u8`, so it could not express a negative margin.
 - `isMobile()` switched at 786px while responsive styles switch at 768px.
+- Prerendered (static) pages closed headings with `</h>` instead of `</h2>`
+  etc., so the browser put what followed inside the heading; list items
+  carried a stray quote.
 - `hashToBase62(0)` returned an uninitialized byte; `firstLetterToUpper("")`
   sliced out of bounds.
 - `clearPersitantStorage` is spelled `clearPersistentStorage` (the old name
@@ -57,7 +60,8 @@ noted.
 - Every public function an app calls has a doc comment, and every source
   file has a module header. Docs state current behaviour, including the
   no-ops: `Vapor.printErr` and `printlnSrc` print nothing, `.inherit()`
-  records fields nothing reads, `onPushState` callbacks are never called.
+  records fields nothing reads, `onPushState` callbacks are never called,
+  `.view` memory is never reset, and unused CSS rules are never removed.
 
 ### Internal
 
