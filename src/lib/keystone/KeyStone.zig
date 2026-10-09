@@ -1,9 +1,9 @@
 // This is the Frontend module dep for KeyStone.
 const std = @import("std");
-const Vapor = @import("../Vapor.zig");
+const Vapor = @import("../vapor.zig");
 const Kit = Vapor.Kit;
-const Fetch = @import("../Fetch.zig");
-const JWT = @import("JWT.zig");
+const Fetch = @import("../fetch.zig");
+const JWT = @import("jwt.zig");
 
 pub const Provider = enum {
     google,

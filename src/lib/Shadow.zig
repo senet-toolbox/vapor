@@ -1,9 +1,9 @@
 const std = @import("std");
-const Vapor = @import("Vapor.zig"); // Assuming Color is defined here
+const Vapor = @import("vapor.zig"); // Assuming Color is defined here
 const Allocator = std.mem.Allocator;
 const Color = Vapor.Types.Color;
 const Writer = @import("Writer.zig");
-const StyleCompiler = @import("convertStyleCustomWriter.zig");
+const StyleCompiler = @import("style_compiler.zig");
 
 pub const Shadow = @This();
 

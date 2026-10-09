@@ -1,7 +1,7 @@
-const Components = @import("../Components.zig");
+const Components = @import("../components.zig");
 const Self = Components.ComponentBuilder;
 const types = @import("../types.zig");
-const Vapor = @import("../Vapor.zig");
+const Vapor = @import("../vapor.zig");
 
 pub fn edges(self: *const Self, edges_tag: ?[]const u8) Self {
     if (edges_tag) |_edges| {

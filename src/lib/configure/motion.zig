@@ -1,13 +1,13 @@
-const Configuration = @import("../Configuration.zig");
+const Configuration = @import("../configuration.zig");
 const UINode = @import("../UITree.zig").UINode;
 const std = @import("std");
 const types = @import("../types.zig");
 const ElemDecl = types.ElementDeclaration;
-const Vapor = @import("../Vapor.zig");
+const Vapor = @import("../vapor.zig");
 const utils = @import("../utils.zig");
 const hashKey = utils.hashKey;
-const StringTable = @import("../StringTable.zig").StringTable;
-const Packer = @import("../Packer.zig");
+const StringTable = @import("../string_table.zig").StringTable;
+const Packer = @import("../packer.zig");
 const VisualModule = @import("visual.zig");
 const checkVisual = VisualModule.checkVisual;
 

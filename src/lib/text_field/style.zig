@@ -1,8 +1,8 @@
-const TextFieldMod = @import("../TextField.zig");
+const TextFieldMod = @import("../text_field.zig");
 const Self = TextFieldMod.TextFieldBuilder;
 const std = @import("std");
 const types = @import("../types.zig");
-const Vapor = @import("../Vapor.zig");
+const Vapor = @import("../vapor.zig");
 const Color = types.Color;
 
 pub fn ellipsis(self: *const Self, value: types.Ellipsis) Self {

@@ -880,7 +880,7 @@ test "static components are reachable via the generic builder" {
 // -----------------------------------------------------------------------------
 // Keyed diff: middle insertion / deletion
 //
-// Reconciler.zig carries a TODO saying the different-length keyed paths
+// reconciler.zig carries a TODO saying the different-length keyed paths
 // duplicate a button when a form toggles. These drive those paths directly.
 // -----------------------------------------------------------------------------
 
@@ -974,7 +974,7 @@ test "keyed diff cannot recognise a node that moved (identity is positional)" {
 // -----------------------------------------------------------------------------
 // Style compiler
 //
-// convertStyleCustomWriter fills fixed static buffers via Writer. Now that
+// style_compiler.zig fills fixed static buffers via Writer. Now that
 // Writer refuses out-of-space writes rather than running off the end, the
 // behaviour under pressure is truncation — these pin both the normal output and
 // that boundary.

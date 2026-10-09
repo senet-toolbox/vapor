@@ -1,8 +1,8 @@
-const Components = @import("../Components.zig");
+const Components = @import("../components.zig");
 const Self = Components.ComponentBuilder;
 const std = @import("std");
-const Vapor = @import("../Vapor.zig");
-const Accessibility = @import("../Accessibility.zig").Accessibility;
+const Vapor = @import("../vapor.zig");
+const Accessibility = @import("../accessibility.zig").Accessibility;
 
 pub fn a11y(self: *const Self, accessibility: Accessibility) Self {
     var n = self.*;

@@ -1,13 +1,13 @@
-const Components = @import("../Components.zig");
+const Components = @import("../components.zig");
 const Self = Components.ComponentBuilder;
 const std = @import("std");
 const types = @import("../types.zig");
-const Vapor = @import("../Vapor.zig");
+const Vapor = @import("../vapor.zig");
 const println = Vapor.println;
-const Element = @import("../Element.zig").Element;
+const Element = @import("../element.zig").Element;
 const utils = @import("../utils.zig");
 const hashKey = utils.hashKey;
-const Draggable = @import("../Draggable.zig").Draggable;
+const Draggable = @import("../draggable.zig").Draggable;
 
 pub fn bind(self: *const Self, value: anytype) Self {
     var n = self.*;

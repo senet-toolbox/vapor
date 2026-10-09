@@ -1,6 +1,6 @@
 const types = @import("../types.zig");
 const ThemeTokens = @import("theme").ThemeTokens;
-const Vapor = @import("../Vapor.zig");
+const Vapor = @import("../vapor.zig");
 
 pub const Thematic = packed struct {
     token: ThemeTokens,

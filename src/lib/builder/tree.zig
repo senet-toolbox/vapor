@@ -1,8 +1,8 @@
-const Components = @import("../Components.zig");
+const Components = @import("../components.zig");
 const Self = Components.ComponentBuilder;
-const Vapor = @import("../Vapor.zig");
+const Vapor = @import("../vapor.zig");
 const UINode = @import("../UITree.zig").UINode;
-const LifeCycle = @import("../Vapor.zig").LifeCycle;
+const LifeCycle = @import("../vapor.zig").LifeCycle;
 
 pub fn child(self: *const Self, item: anytype) void {
     if (@TypeOf(item) == Self) {

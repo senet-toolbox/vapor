@@ -1,7 +1,7 @@
 const types = @import("../types.zig");
 const NewShadow = @import("../Shadow.zig");
-const Transition = @import("../Transition.zig").Transition;
-const TransitionProperty = @import("../Transition.zig").TransitionProperty;
+const Transition = @import("../transition.zig").Transition;
+const TransitionProperty = @import("../transition.zig").TransitionProperty;
 
 pub const Visual = struct {
     /// Color color as RGBA array [red, green, blue, alpha] (0-255 each)

@@ -1,14 +1,14 @@
 const std = @import("std");
-const Vapor = @import("Vapor.zig");
-const KeyGenerator = @import("Key.zig").KeyGenerator;
+const Vapor = @import("vapor.zig");
+const KeyGenerator = @import("key.zig").KeyGenerator;
 const utils = @import("utils.zig");
 const hashKey = utils.hashKey;
 const Writer = @import("Writer.zig");
-const Packer = @import("Packer.zig");
-const ClassType = @import("ClassCache.zig").ClassType;
-const Configuration = @import("Configuration.zig");
-const Accessibility = @import("Accessibility.zig").Accessibility;
-const Abstractions = @import("Abstractions.zig");
+const Packer = @import("packer.zig");
+const ClassType = @import("class_cache.zig").ClassType;
+const Configuration = @import("configuration.zig");
+const Accessibility = @import("accessibility.zig").Accessibility;
+const Abstractions = @import("abstractions.zig");
 
 const ManagedMemoryPool = Abstractions.ManagedMemoryPool;
 

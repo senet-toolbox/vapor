@@ -1,8 +1,8 @@
 const Animation = @import("../Animation.zig");
 const std = @import("std");
-const Vapor = @import("../Vapor.zig");
+const Vapor = @import("../vapor.zig");
 const Allocator = std.mem.Allocator;
-const StyleCompiler = @import("../convertStyleCustomWriter.zig");
+const StyleCompiler = @import("../style_compiler.zig");
 const getExitAnimationStyle = StyleCompiler.getExitAnimationStyle;
 const UINode = @import("../UITree.zig").UINode;
 

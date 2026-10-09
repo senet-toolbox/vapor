@@ -1,10 +1,10 @@
-const TextFieldMod = @import("../TextField.zig");
+const TextFieldMod = @import("../text_field.zig");
 const Self = TextFieldMod.TextFieldBuilder;
 const types = @import("../types.zig");
-const Vapor = @import("../Vapor.zig");
-const LifeCycle = @import("../Vapor.zig").LifeCycle;
+const Vapor = @import("../vapor.zig");
+const LifeCycle = @import("../vapor.zig").LifeCycle;
 const ElementDecl = types.ElementDeclaration;
-const Element = @import("../Element.zig").Element;
+const Element = @import("../element.zig").Element;
 const utils = @import("../utils.zig");
 const hashKey = utils.hashKey;
 

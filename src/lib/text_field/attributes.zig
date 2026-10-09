@@ -1,7 +1,7 @@
-const TextFieldMod = @import("../TextField.zig");
+const TextFieldMod = @import("../text_field.zig");
 const Self = TextFieldMod.TextFieldBuilder;
-const Vapor = @import("../Vapor.zig");
-const Accessibility = @import("../Accessibility.zig").Accessibility;
+const Vapor = @import("../vapor.zig");
+const Accessibility = @import("../accessibility.zig").Accessibility;
 
 /// Gives the field a stable identity, the same as `.id()` on the
 /// element builders.

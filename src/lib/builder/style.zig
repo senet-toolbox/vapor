@@ -1,8 +1,8 @@
-const Components = @import("../Components.zig");
+const Components = @import("../components.zig");
 const Self = Components.ComponentBuilder;
 const std = @import("std");
 const types = @import("../types.zig");
-const Vapor = @import("../Vapor.zig");
+const Vapor = @import("../vapor.zig");
 const Color = types.Color;
 const Shadow = @import("../Shadow.zig");
 

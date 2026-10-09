@@ -1,5 +1,5 @@
 const std = @import("std");
-const Vapor = @import("Vapor.zig");
+const Vapor = @import("vapor.zig");
 const Color = Vapor.Types.Color;
 const Writer = @import("Writer.zig");
 

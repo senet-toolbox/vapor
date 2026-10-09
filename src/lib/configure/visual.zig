@@ -1,12 +1,12 @@
-const Configuration = @import("../Configuration.zig");
+const Configuration = @import("../configuration.zig");
 const UINode = @import("../UITree.zig").UINode;
 const std = @import("std");
 const types = @import("../types.zig");
-const Vapor = @import("../Vapor.zig");
+const Vapor = @import("../vapor.zig");
 const utils = @import("../utils.zig");
 const hashKey = utils.hashKey;
-const StringTable = @import("../StringTable.zig").StringTable;
-const Packer = @import("../Packer.zig");
+const StringTable = @import("../string_table.zig").StringTable;
+const Packer = @import("../packer.zig");
 
 /// Helper to pack a color union (`.Literal` or `.Thematic`) into a PackedColor struct.
 fn packColor(source_color: types.Color, packed_color: *types.PackedColor) void {

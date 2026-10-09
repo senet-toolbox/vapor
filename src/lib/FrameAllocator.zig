@@ -4,7 +4,7 @@ const Allocator = mem.Allocator;
 const Arena = std.heap.ArenaAllocator;
 const UINode = @import("UITree.zig").UINode;
 const Item = @import("UITree.zig").Item;
-const Vapor = @import("Vapor.zig");
+const Vapor = @import("vapor.zig");
 
 // The FrameAllocator is a simple allocator that allocates memory per render cycle.
 // It is used to allocate memory for the render commands and the UI tree, text, and styles, etc.

@@ -1,5 +1,5 @@
 const std = @import("std");
-const Vapor = @import("Vapor.zig");
+const Vapor = @import("vapor.zig");
 
 pub const monthsStrings: []const []const u8 = &.{
     "January",

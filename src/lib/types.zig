@@ -1,9 +1,9 @@
 const std = @import("std");
 const UINode = @import("UITree.zig").UINode;
-const Vapor = @import("Vapor.zig");
-pub const Transition = @import("Transition.zig").Transition;
-pub const TransitionProperty = @import("Transition.zig").TransitionProperty;
-pub const PackedTransition = @import("Transition.zig").PackedTransition;
+const Vapor = @import("vapor.zig");
+pub const Transition = @import("transition.zig").Transition;
+pub const TransitionProperty = @import("transition.zig").TransitionProperty;
+pub const PackedTransition = @import("transition.zig").PackedTransition;
 const ColorTheme = @import("constants/Color.zig");
 const Animation = @import("Animation.zig");
 pub const ThemeTokens = @import("theme").ThemeTokens;
@@ -12,8 +12,8 @@ const isMobile = @import("utils.zig").isMobile;
 const Event = @import("Event.zig");
 const Theme = @import("theme");
 pub const NewShadow = @import("Shadow.zig");
-const StringTable = @import("StringTable.zig").StringTable;
-const Accessibility = @import("Accessibility.zig").Accessibility;
+const StringTable = @import("string_table.zig").StringTable;
+const Accessibility = @import("accessibility.zig").Accessibility;
 const Edges = @import("Edges.zig").Edges;
 
 pub const Layers = enum(u8) {

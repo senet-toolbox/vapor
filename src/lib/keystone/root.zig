@@ -1,7 +1,7 @@
 const std = @import("std");
-const Vapor = @import("../Vapor.zig");
+const Vapor = @import("../vapor.zig");
 
-pub const EncodingKey = @import("JWT.zig").EncodingKey;
+pub const EncodingKey = @import("jwt.zig").EncodingKey;
 
 /// A collection of commonly used signature algorithms which
 /// JWT adopted from JOSE specifications.

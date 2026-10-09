@@ -20,29 +20,12 @@ pub fn build(b: *std.Build) void {
     const build_options_module = build_options.createModule();
     vapor_imports.append(.{ .name = "build_options", .module = build_options_module }) catch @panic("OOM");
 
-    const mod = b.addModule("vapor", .{
-        .root_source_file = b.path("src/comptime.zig"),
+    _ = b.addModule("vapor", .{
+        .root_source_file = b.path("src/root.zig"),
         .target = target,
         .optimize = optimize,
         .imports = vapor_imports.items,
     });
-
-    var exe_imports = std.array_list.Managed(std.Build.Module.Import).init(b.allocator);
-    exe_imports.append(.{ .name = "vapor", .module = mod }) catch @panic("OOM");
-
-    const exe_mod = b.createModule(.{
-        .root_source_file = b.path("src/main.zig"),
-        .target = target,
-        .optimize = optimize,
-        .imports = exe_imports.items,
-    });
-
-    const exe = b.addExecutable(.{
-        .name = "vapor",
-        .root_module = exe_mod,
-    });
-
-    b.installArtifact(exe);
 
     // The JS runtime the wasm talks to. It ships prebuilt in js/dist so apps
     // need no Node toolchain, and it travels with the Zig source so the two
@@ -85,7 +68,7 @@ pub fn build(b: *std.Build) void {
     });
 
     const test_vapor_module = b.createModule(.{
-        .root_source_file = b.path("src/comptime.zig"),
+        .root_source_file = b.path("src/root.zig"),
         .target = target,
         .optimize = optimize,
         .imports = &.{
@@ -124,7 +107,7 @@ pub fn build(b: *std.Build) void {
     const string_table_tests = b.addTest(.{
         .name = "string-table-tests",
         .root_module = b.createModule(.{
-            .root_source_file = b.path("src/lib/StringTable.zig"),
+            .root_source_file = b.path("src/lib/string_table.zig"),
             .target = target,
             .optimize = optimize,
         }),
@@ -141,7 +124,7 @@ pub fn build(b: *std.Build) void {
     });
     const run_pool_tests = b.addRunArtifact(pool_tests);
 
-    // Test blocks inside src/lib: see the `test` block in src/comptime.zig.
+    // Test blocks inside src/lib: see the `test` block in src/root.zig.
     const lib_tests = b.addTest(.{ .name = "vapor-lib-tests", .root_module = test_vapor_module });
     const run_lib_tests = b.addRunArtifact(lib_tests);
 
@@ -205,9 +188,9 @@ pub fn build(b: *std.Build) void {
 
     const check_step = addCheckStep(b, build_options_module, test_config_module, optimize);
 
-    // src/main.zig is an empty stub, so `zig build` on its own compiles almost
-    // none of the library. Hanging the check off the default and test steps is
-    // what makes either command a real signal.
+    // The library has no executable, so `zig build` on its own compiles
+    // nothing. Hanging the check off the default and test steps is what makes
+    // either command a real signal.
     b.getInstallStep().dependOn(check_step);
     test_step.dependOn(check_step);
 }
@@ -235,7 +218,7 @@ fn addCheckStep(
     //   link_libc  the SSR path reaches std.heap's C allocator, which is a
     //              compile error without it. macOS links libc implicitly, so
     //              omitting this only fails on Linux — i.e. only in CI.
-    //   pic        WASM.zig declares its imports as `extern "env"`. On
+    //   pic        wasm.zig declares its imports as `extern "env"`. On
     //              x86_64-linux that is a dynamic-library dependency and needs
     //              position-independent code.
     const CheckTarget = struct {

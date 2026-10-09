@@ -20,7 +20,7 @@ const builtin = @import("builtin");
 /// A consumer supplies `theme` and `config`; the check compiles against the
 /// fixtures in `tests/support/`. `tests/support/theme.zig` imports "vapor",
 /// which for the check step resolves to this file, so re-export what it needs.
-/// Routing it to a second module rooted at `comptime.zig` would give the check
+/// Routing it to a second module rooted at `root.zig` would give the check
 /// two distinct copies of every type.
 pub const Types = @import("lib/types.zig");
 
@@ -28,40 +28,40 @@ pub const Types = @import("lib/types.zig");
 /// here or in `host_only_modules`; `build.zig` fails the check if one is
 /// listed in neither.
 const modules = .{
-    @import("comptime.zig"),
-    @import("lib/Abstractions.zig"),
-    @import("lib/Accessibility.zig"),
+    @import("root.zig"),
+    @import("lib/abstractions.zig"),
+    @import("lib/accessibility.zig"),
     @import("lib/Animation.zig"),
-    @import("lib/Array.zig"),
-    @import("lib/Bridge.zig"),
+    @import("lib/array.zig"),
+    @import("lib/bridge.zig"),
     @import("lib/CSSGenerator.zig"),
-    @import("lib/ClassCache.zig"),
-    @import("lib/Components.zig"),
-    @import("lib/Configuration.zig"),
+    @import("lib/class_cache.zig"),
+    @import("lib/components.zig"),
+    @import("lib/configuration.zig"),
     @import("lib/DateTime.zig"),
-    @import("lib/Draggable.zig"),
-    @import("lib/Dynamic.zig"),
+    @import("lib/draggable.zig"),
+    @import("lib/dynamic.zig"),
     @import("lib/Edges.zig"),
-    @import("lib/Element.zig"),
+    @import("lib/element.zig"),
     @import("lib/Event.zig"),
-    @import("lib/Fetch.zig"),
+    @import("lib/fetch.zig"),
     @import("lib/FrameAllocator.zig"),
-    @import("lib/HashStyle.zig"),
-    @import("lib/Key.zig"),
-    @import("lib/Packer.zig"),
+    @import("lib/hash_style.zig"),
+    @import("lib/key.zig"),
+    @import("lib/packer.zig"),
     @import("lib/Polygon.zig"),
     @import("lib/Pool.zig"),
-    @import("lib/Reconciler.zig"),
+    @import("lib/reconciler.zig"),
     @import("lib/Router.zig"),
     @import("lib/Shadow.zig"),
-    @import("lib/StorageTable.zig"),
-    @import("lib/StringTable.zig"),
-    @import("lib/TextField.zig"),
-    @import("lib/TextFieldTable.zig"),
-    @import("lib/Transition.zig"),
+    @import("lib/storage_table.zig"),
+    @import("lib/string_table.zig"),
+    @import("lib/text_field.zig"),
+    @import("lib/text_field_table.zig"),
+    @import("lib/transition.zig"),
     @import("lib/UITree.zig"),
-    @import("lib/Vapor.zig"),
-    @import("lib/WASM.zig"),
+    @import("lib/vapor.zig"),
+    @import("lib/wasm.zig"),
     @import("lib/animation/removal.zig"),
     @import("lib/animation/presets.zig"),
     @import("lib/configure/motion.zig"),
@@ -88,29 +88,28 @@ const modules = .{
     @import("lib/types/color.zig"),
     @import("lib/types/input.zig"),
     @import("lib/types/background.zig"),
-    @import("lib/StaticGenerator.zig"),
-    @import("lib/Exports.zig"),
-    @import("lib/Hooks.zig"),
-    @import("lib/Events.zig"),
-    @import("lib/Timers.zig"),
-    @import("lib/Memory.zig"),
-    @import("lib/Query.zig"),
-    @import("lib/Hex.zig"),
-    @import("lib/Log.zig"),
-    @import("lib/Storage.zig"),
-    @import("lib/Browser.zig"),
+    @import("lib/static_generator.zig"),
+    @import("lib/exports.zig"),
+    @import("lib/hooks.zig"),
+    @import("lib/events.zig"),
+    @import("lib/timers.zig"),
+    @import("lib/memory.zig"),
+    @import("lib/query.zig"),
+    @import("lib/hex.zig"),
+    @import("lib/log.zig"),
+    @import("lib/storage.zig"),
+    @import("lib/browser.zig"),
     @import("lib/Writer.zig"),
     @import("lib/constants/Color.zig"),
-    @import("lib/convertStyleCustomWriter.zig"),
-    @import("lib/keystone/JWT.zig"),
+    @import("lib/style_compiler.zig"),
+    @import("lib/keystone/jwt.zig"),
     @import("lib/keystone/KeyStone.zig"),
     @import("lib/keystone/root.zig"),
-    @import("lib/kit/JSON.zig"),
-    @import("lib/kit/Kit.zig"),
-    @import("lib/structures/Structures.zig"),
+    @import("lib/kit/json.zig"),
+    @import("lib/kit/kit.zig"),
+    @import("lib/structures/structures.zig"),
     @import("lib/types.zig"),
     @import("lib/utils.zig"),
-    @import("main.zig"),
 };
 
 /// Modules that only build for a host target. They use filesystem access and
@@ -118,7 +117,7 @@ const modules = .{
 /// implementation for. Checked on the host target only.
 const host_only_modules = .{
     @import("lib/File.zig"),
-    @import("lib/HtmlGenerator.zig"),
+    @import("lib/html_generator.zig"),
 };
 
 /// How far to descend into nested public types. Container types nested more
@@ -170,26 +169,25 @@ fn refAll(comptime T: type, comptime depth: usize) void {
 fn isOurs(comptime T: type) bool {
     const name = @typeName(T);
     return std.mem.startsWith(u8, name, "lib.") or
-        std.mem.startsWith(u8, name, "comptime.") or
-        std.mem.startsWith(u8, name, "check.") or
-        std.mem.startsWith(u8, name, "main.");
+        std.mem.startsWith(u8, name, "root.") or
+        std.mem.startsWith(u8, name, "check.");
 }
 
 /// Generic entry points that ship as part of the public API. Each needs a
 /// concrete instantiation before the compiler will look at its body.
 ///
 /// The element builders — `Box`, `Row`, `Text`, `Button` and the rest of what
-/// `comptime.zig` re-exports — live in `Components.Builder` and
+/// `root.zig` re-exports — live in `Components.Builder` and
 /// `TextField.BuilderClose`. They are the most-used surface in the library, so
 /// they are pinned here for every state type the public API exposes.
 fn instantiations() void {
     inline for (.{ .pure, .dynamic }) |state_type| {
-        refAll(@import("lib/Components.zig").Builder(state_type), max_depth);
-        refAll(@import("lib/Components.zig").BuilderClose(state_type), max_depth);
-        refAll(@import("lib/TextField.zig").BuilderClose(state_type), max_depth);
+        refAll(@import("lib/components.zig").Builder(state_type), max_depth);
+        refAll(@import("lib/components.zig").BuilderClose(state_type), max_depth);
+        refAll(@import("lib/text_field.zig").BuilderClose(state_type), max_depth);
     }
 
-    refAll(@import("lib/Array.zig").Array(u8), max_depth);
+    refAll(@import("lib/array.zig").Array(u8), max_depth);
 }
 
 /// Exported so it is always analysed, and with it everything it touches.

@@ -1,5 +1,5 @@
 const std = @import("std");
-const Vapor = @import("Vapor.zig");
+const Vapor = @import("vapor.zig");
 const Writer = @This();
 
 pub const Error = error{OutOfSpace};

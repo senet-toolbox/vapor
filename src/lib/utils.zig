@@ -1,6 +1,6 @@
 const std = @import("std");
 const UINode = @import("UITree.zig").UINode;
-const Vapor = @import("Vapor.zig");
+const Vapor = @import("vapor.zig");
 const Color = @import("types.zig").Color;
 var current_label_len: usize = 0;
 pub export fn getAriaLabel(node_ptr: ?*UINode) ?[*]const u8 {

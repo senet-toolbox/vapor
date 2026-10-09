@@ -1,4 +1,4 @@
-const Vapor = @import("../Vapor.zig");
+const Vapor = @import("../vapor.zig");
 const Animation = Vapor.Animation;
 const Writer = @import("../Writer.zig");
 

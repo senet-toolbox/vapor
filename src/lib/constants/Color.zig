@@ -1,5 +1,5 @@
 // Color.zig
-const Vapor = @import("../Vapor.zig");
+const Vapor = @import("../vapor.zig");
 const std = @import("std");
 pub const Theme = enum {
     light,

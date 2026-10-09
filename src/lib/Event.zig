@@ -1,10 +1,10 @@
 const std = @import("std");
-const Vapor = @import("Vapor.zig");
+const Vapor = @import("vapor.zig");
 const Wasm = Vapor.Wasm;
 const isWasi = Vapor.isWasi;
 const utils = @import("utils.zig");
 const hashKey = utils.hashKey;
-const DynamicObject = @import("Dynamic.zig");
+const DynamicObject = @import("dynamic.zig");
 
 pub const Event = @This();
 id: u32,

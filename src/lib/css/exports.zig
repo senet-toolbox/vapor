@@ -1,12 +1,12 @@
 //! Style getters the JS runtime calls. Each writes a node's CSS into a
 //! shared buffer and returns a pointer; the matching `get*Len` returns its length.
 
-const StyleCompiler = @import("../convertStyleCustomWriter.zig");
+const StyleCompiler = @import("../style_compiler.zig");
 const UINode = @import("../UITree.zig").UINode;
-const Vapor = @import("../Vapor.zig");
+const Vapor = @import("../vapor.zig");
 const Writer = @import("../Writer.zig");
-const StringTable = @import("../StringTable.zig").StringTable;
-const KeyGenerator = @import("../Key.zig").KeyGenerator;
+const StringTable = @import("../string_table.zig").StringTable;
+const KeyGenerator = @import("../key.zig").KeyGenerator;
 const writePropValue = @import("values.zig").writePropValue;
 const generateAnimationsFrames = @import("keyframes.zig").generateAnimationsFrames;
 

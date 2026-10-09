@@ -1,7 +1,7 @@
 const Values = @import("values.zig");
 const Writer = @import("../Writer.zig");
 const Types = @import("../types.zig");
-const Vapor = @import("../Vapor.zig");
+const Vapor = @import("../vapor.zig");
 
 pub fn gridToCSS(grid: Types.PackedGrid, writer: anytype) !void {
     writer.write("linear-gradient(90deg, ") catch {};

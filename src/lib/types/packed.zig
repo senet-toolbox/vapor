@@ -1,7 +1,7 @@
 const types = @import("../types.zig");
-const PackedTransition = @import("../Transition.zig").PackedTransition;
-const StringTable = @import("../StringTable.zig").StringTable;
-const Vapor = @import("../Vapor.zig");
+const PackedTransition = @import("../transition.zig").PackedTransition;
+const StringTable = @import("../string_table.zig").StringTable;
+const Vapor = @import("../vapor.zig");
 
 pub const PackedResponsive = struct {
     flags_layout: [3]bool = .{ false, false, false },
