@@ -2,12 +2,14 @@ const Vapor = @import("vapor.zig");
 const Wasm = @import("wasm.zig");
 const std = @import("std");
 
+/// Removes everything this site saved in localStorage.
 pub fn clearPersistentStorage() void {
     if (Vapor.isWasi) {
         Wasm.clearLocalStorageWasm();
     } else {}
 }
 
+/// Saves `value` in localStorage under `key`: a string, number, bool or enum.
 pub fn store(key: []const u8, value: anytype) void {
     if (!Vapor.isWasi) return;
     switch (@typeInfo(@TypeOf(value))) {
@@ -42,6 +44,8 @@ pub fn store(key: []const u8, value: anytype) void {
     }
 }
 
+/// Reads back what `store` saved under `key` as a `T`; `null` if the key is
+/// missing or does not parse as `T`. Exported as `Vapor.load`.
 pub fn getStore(comptime T: type, key: []const u8) ?T {
     if (!Vapor.isWasi) return null;
     switch (T) {
@@ -98,16 +102,19 @@ test parseStored {
     try std.testing.expectEqual(@as(?u32, null), parseStored(u32, "zig"));
 }
 
+/// Sets a cookie: `setCookie("theme=dark; path=/")`.
 pub fn setCookie(cookie: []const u8) void {
     if (!Vapor.isWasi) return;
     Wasm.setCookieWasm(cookie.ptr, cookie.len);
 }
 
+/// All cookies as one string (`document.cookie`).
 pub fn getCookies() []const u8 {
     const cookie = Wasm.getCookiesWasm();
     return std.mem.span(cookie);
 }
 
+/// The value of the cookie `name`, or `null`.
 pub fn getCookie(name: []const u8) ?[]const u8 {
     if (!Vapor.isWasi) return null;
     const cookie = Wasm.getCookieWasm(name.ptr, name.len);

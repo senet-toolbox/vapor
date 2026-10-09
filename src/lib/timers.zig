@@ -4,6 +4,8 @@ const std = @import("std");
 
 pub var animation_frame_callback: ?*Vapor.Node = null;
 
+/// Calls `callback` with `args` before the browser's next repaint
+/// (requestAnimationFrame). Returns the frame request id.
 pub fn runOnAnimationFrame(callback: anytype, args: anytype) u32 {
     const Args = @TypeOf(args);
     const Closure = struct {
@@ -53,6 +55,8 @@ pub export fn callAnimationFrameCallback(callback_ptr: u32) void {
     }
 }
 
+/// Milliseconds since the page loaded (`performance.now()`); 0 outside the
+/// browser.
 pub fn nowMs() f64 {
     if (Vapor.isWasi) {
         return Vapor.performance_now();
@@ -61,12 +65,12 @@ pub fn nowMs() f64 {
     }
 }
 
-/// name: name of the interval
-/// cb: callback function
-/// args: arguments to pass to the callback function
-/// delay: delay in ms
+/// Calls `callback` with `args` every `delay_ms` milliseconds. `name`
+/// identifies the interval.
 pub fn loopInterval(name: []const u8, delay_ms: u32, callback: anytype, args: anytype) void {
-    const erased = Vapor.ErasedCallback.make(Vapor.arena(.frame), callback, args) catch |err| {
+    // The interval outlives the render that starts it, so the closure cannot
+    // live in the frame arena, which is recycled two renders later.
+    const erased = Vapor.ErasedCallback.make(Vapor.arena(.persist), callback, args) catch |err| {
         Vapor.printlnErr("loopInterval '{s}': could not allocate closure, interval not started: {any}", .{ name, err });
         return;
     };
@@ -83,6 +87,8 @@ pub fn loopInterval(name: []const u8, delay_ms: u32, callback: anytype, args: an
     }
 }
 
+/// Calls `cb` with `args` once, after `ms` milliseconds. `callback_name`
+/// identifies it, so `cancelTimeout` can stop it.
 pub fn timeout(callback_name: []const u8, ms: u32, cb: anytype, args: anytype) void {
     const Args = @TypeOf(args);
     const Closure = struct {
@@ -121,6 +127,7 @@ pub fn timeout(callback_name: []const u8, ms: u32, cb: anytype, args: anytype) v
     }
 }
 
+/// Stops the timeout started under `callback_name`, if it has not fired.
 pub fn cancelTimeout(callback_name: []const u8) void {
     const callback_id = Vapor.hashKey(callback_name);
     if (Vapor.isWasi) {
@@ -128,6 +135,7 @@ pub fn cancelTimeout(callback_name: []const u8) void {
     }
 }
 
+/// Calls `cb` once, after `ms` milliseconds.
 pub fn registerTimeout(ms: u32, cb: *const fn () void) void {
     const id = Vapor.callback_registry.count() + 1;
     Vapor.callback_registry.put(id, cb) catch |err| {
@@ -140,6 +148,8 @@ pub fn registerTimeout(ms: u32, cb: *const fn () void) void {
     }
 }
 
+/// Runs `callback` with `args` inside a view transition
+/// (`document.startViewTransition`), so the browser animates the change.
 pub fn startViewTransition(callback: anytype, args: anytype) void {
     const erased = Vapor.ErasedCallback.make(Vapor.arena(.frame), callback, args) catch |err| {
         Vapor.printlnErr("view transition: could not allocate closure, transition skipped: {any}", .{err});

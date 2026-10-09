@@ -21,12 +21,16 @@ pub const HookType = enum(u8) {
     after = 1,
 };
 
+/// Calls `callback` when the user navigates with the browser's back or forward
+/// buttons.
 pub fn onPopState(callback: *const fn () void) void {
     Vapor.pop_state_funcs.append(callback) catch |err| {
         Vapor.printlnErr("Button Function Registry {any}\n", .{err});
     };
 }
 
+/// Registers `callback` for history pushes. Nothing calls these callbacks at
+/// present.
 pub fn onPushState(callback: *const fn () void) void {
     Vapor.push_state_funcs.append(callback) catch |err| {
         Vapor.printlnErr("Button Function Registry {any}\n", .{err});
@@ -63,6 +67,8 @@ pub fn onMount(callback: anytype, args: anytype) void {
     ui_node.on_callbacks[0] = callback_id;
 }
 
+/// Calls `callback` with `args` once, after the current render has been applied
+/// to the page, when element sizes are known.
 pub fn onLayout(callback: anytype, args: anytype) void {
     const Args = @TypeOf(args);
     const Closure = struct {
@@ -102,6 +108,8 @@ pub fn onCommit(callback: *const fn () void) void {
     };
 }
 
+/// Like `onCommit`, with arguments: calls `callback` with `args` once the
+/// current render's tree is built.
 pub fn onCommitCtx(callback: anytype, args: anytype) void {
     const Args = @TypeOf(args);
     const Closure = struct {
@@ -133,6 +141,7 @@ pub fn onCommitCtx(callback: anytype, args: anytype) void {
     };
 }
 
+/// Internal: runs and clears the `onCommitCtx` callbacks.
 pub fn onCommitCtxCallback() void {
     const length = Vapor.on_commit_ctx_funcs.items.len;
     if (length == 0) return;

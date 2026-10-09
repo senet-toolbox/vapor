@@ -2,6 +2,8 @@ const Vapor = @import("vapor.zig");
 const Wasm = @import("wasm.zig");
 const std = @import("std");
 
+/// Currently does nothing: the body was removed, so calls (including
+/// `Vapor.printErr` and vapor's own error reports) produce no output.
 pub fn printlnErr(
     comptime fmt: []const u8,
     args: anytype,
@@ -35,6 +37,7 @@ pub const LogLevel = enum(u32) {
     }
 };
 
+/// Logs at `level` to the browser console, unless logging is off.
 pub fn print(
     level: LogLevel,
     comptime fmt: []const u8,
@@ -48,6 +51,7 @@ pub fn print(
     printRaw(level, msg);
 }
 
+/// Logs an already-formatted message at `level` to the browser console.
 pub fn printRaw(level: LogLevel, msg: []const u8) void {
     // var full_buf: [2048]u8 = undefined;
     const full = std.fmt.allocPrint(Vapor.allocator_global, "[%c{s}%c] {s}", .{ level.label(), msg }) catch return;
@@ -57,22 +61,27 @@ pub fn printRaw(level: LogLevel, msg: []const u8) void {
 }
 
 // Convenience wrappers (optional)
+/// Logs at error level to the browser console, unless logging is off.
 pub fn printErr(comptime fmt: []const u8, args: anytype) void {
     print(.err, fmt, args);
 }
 
+/// Logs at warning level to the browser console, unless logging is off.
 pub fn printWarn(comptime fmt: []const u8, args: anytype) void {
     print(.warn, fmt, args);
 }
 
+/// Logs at info level to the browser console, unless logging is off.
 pub fn printInfo(comptime fmt: []const u8, args: anytype) void {
     print(.info, fmt, args);
 }
 
+/// Logs at debug level to the browser console, unless logging is off.
 pub fn printDebug(comptime fmt: []const u8, args: anytype) void {
     print(.debug, fmt, args);
 }
 
+/// Logs an error with its source location (`@src()`), unless logging is off.
 pub fn printlnSrcErr(
     comptime fmt: []const u8,
     args: anytype,
@@ -89,6 +98,7 @@ pub fn printlnSrcErr(
     }
 }
 
+/// Currently does nothing.
 pub fn printlnWithColor(
     comptime fmt: []const u8,
     args: anytype,
@@ -101,6 +111,7 @@ pub fn printlnWithColor(
     _ = title;
 }
 
+/// Currently does nothing.
 pub fn printlnColor(
     comptime fmt: []const u8,
     args: anytype,
@@ -111,6 +122,7 @@ pub fn printlnColor(
     _ = color;
 }
 
+/// Currently does nothing.
 pub fn printlnAllocation(
     comptime fmt: []const u8,
     args: anytype,
@@ -119,6 +131,7 @@ pub fn printlnAllocation(
     _ = args;
 }
 
+/// Currently does nothing.
 pub fn printlnSrc(
     comptime fmt: []const u8,
     args: anytype,
@@ -129,6 +142,7 @@ pub fn printlnSrc(
     _ = src;
 }
 
+/// Logs a line to the browser console (unless logging is off), and to stderr natively.
 pub fn println(
     comptime fmt: []const u8,
     args: anytype,
@@ -142,6 +156,7 @@ pub fn println(
     }
 }
 
+/// Shows a browser alert with the formatted message.
 pub fn alert(comptime fmt: []const u8, args: anytype) void {
     if (Vapor.isWasi) {
         const message = Vapor.fmtln(fmt, args);
@@ -149,6 +164,8 @@ pub fn alert(comptime fmt: []const u8, args: anytype) void {
     }
 }
 
+/// A `std.Options.logFn` that sends `std.log` to the browser console (unless
+/// logging is off): `pub const std_options = .{ .logFn = Vapor.lib.log };`.
 pub fn log(
     comptime level: std.log.Level,
     comptime scope: @EnumLiteral(),

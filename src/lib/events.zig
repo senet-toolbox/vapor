@@ -160,6 +160,8 @@ pub fn attachEventCallback(ui_node: *UINode, event_type: Vapor.EventType, cb: fn
     return attachEventCtxCallback(ui_node, event_type, cb, .{});
 }
 
+/// Calls `cb` with the event whenever `event_type` fires on the document.
+/// Returns an id for `removeGlobalListener`, or `null` outside the browser.
 pub fn addGlobalListener(event_type: Vapor.EventType, cb: fn (*Event) void) ?u32 {
     if (!Vapor.isWasi) return null;
 
@@ -181,7 +183,7 @@ pub fn addGlobalListener(event_type: Vapor.EventType, cb: fn (*Event) void) ?u32
     return @intCast(id);
 }
 
-/// USes persist under the hood
+/// Like `addGlobalListener`, but calls `cb` with `args` and then the event.
 pub fn addGlobalListenerCtx(event_type: Vapor.EventType, cb: anytype, args: anytype) ?u32 {
     if (!Vapor.isWasi) return null;
 
@@ -203,6 +205,7 @@ pub fn addGlobalListenerCtx(event_type: Vapor.EventType, cb: anytype, args: anyt
     return @intCast(id);
 }
 
+/// Removes the document listener `cb_idx` that `addGlobalListener` returned.
 pub fn removeGlobalListener(event_type: Vapor.EventType, cb_idx: u32) ?bool {
     const event_type_str = std.enums.tagName(types.EventType, event_type) orelse return null;
     Wasm.removeEventListener(event_type_str.ptr, event_type_str.len, cb_idx);

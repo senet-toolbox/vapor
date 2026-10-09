@@ -225,8 +225,9 @@ pub const unpin = lib.unpin;
 pub const compact = lib.compact;
 
 // ── Logging ─────────────────────────────────────────────────────────────────
-// Output goes to the browser console in debug builds (build option
-// `enable_debug`) and to stderr natively.
+// Output goes to the browser console, and to stderr natively. Logging is on
+// in every build; turn it off with `Vapor.lib.build_options.enable_debug =
+// false`. `printErr` and `printlnSrc` are currently no-ops.
 
 pub const println = lib.println;
 pub const printlnSrc = lib.printlnSrc;

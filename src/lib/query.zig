@@ -182,6 +182,8 @@ pub fn collectComponentIds(node: *UINode, selected_type: Vapor.ElementType, comp
     }
 }
 
+/// Ids of every rendered element of `target_type`. The caller owns the slice
+/// (allocated with vapor's global allocator).
 pub fn queryComponentIds(target_type: Vapor.ElementType) ![][]const u8 {
     const root = Vapor.current_ctx.root orelse return error.NoTree;
     var component_ids = std.array_list.Managed([]const u8).init(Vapor.allocator_global);
@@ -194,6 +196,7 @@ pub fn queryComponentIds(target_type: Vapor.ElementType) ![][]const u8 {
     return try component_ids.toOwnedSlice();
 }
 
+/// The node with id `uuid` in the subtree under `node`, or `null`.
 pub fn findNodeByUUID(node: *UINode, uuid: []const u8) ?*UINode {
     // 1. Check the current node
     if (std.mem.eql(u8, node.uuid, uuid)) {
@@ -213,12 +216,15 @@ pub fn findNodeByUUID(node: *UINode, uuid: []const u8) ?*UINode {
     return null;
 }
 
+/// The rendered node with id `uuid`.
 pub fn queryByUUID(uuid: []const u8) !*UINode {
     const root = Vapor.current_ctx.root orelse return error.NoTree;
     const node = findNodeByUUID(root, uuid) orelse return error.NodeNotFound;
     return node;
 }
 
+/// Sets the property `attribute` of the DOM element `uuid` to `value`, directly
+/// on the page; the next render does not know about it.
 pub fn mutateById(uuid: []const u8, attribute: []const u8, value: []const u8) void {
     if (Vapor.isWasi) {
         Wasm.mutateDomElementStringWasm(uuid.ptr, uuid.len, attribute.ptr, attribute.len, value.ptr, value.len);
@@ -231,6 +237,7 @@ pub const MutationType = union(enum) {
     float: f32,
 };
 
+/// Like `mutateById`, for string, integer or float values.
 pub fn mutateElementById(uuid: []const u8, attribute: []const u8, value: MutationType) void {
     switch (value) {
         .string => |string| {
@@ -263,6 +270,8 @@ pub const Offsets = struct {
     height: f32 = 0,
 };
 
+/// The element's offset box (`offsetTop`, `offsetWidth`, ...) relative to its
+/// offset parent, or `null` outside the browser.
 pub fn getComponentOffsets(uuid: []const u8) ?Offsets {
     const bounds_ptr = if (Vapor.isWasi) blk: {
         break :blk Wasm.getOffsetsWasm(uuid.ptr, uuid.len);
@@ -280,6 +289,8 @@ pub fn getComponentOffsets(uuid: []const u8) ?Offsets {
     };
 }
 
+/// The element's box relative to the viewport (`getBoundingClientRect`), or
+/// `null` outside the browser.
 pub fn getComponentBounds(uuid: []const u8) ?Bounds {
     const bounds_ptr = if (Vapor.isWasi) blk: {
         break :blk Wasm.getBoundingClientRectWasm(uuid.ptr, uuid.len);
