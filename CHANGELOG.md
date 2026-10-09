@@ -4,7 +4,32 @@ All notable changes to this project are documented here. This project follows
 [Semantic Versioning](https://semver.org/): breaking changes bump the major
 version and are listed with a migration note.
 
-## [2.2.0] — unreleased
+## [Unreleased]
+
+### Internal cleanup (no API change)
+
+- The remaining oversized files are split by concern, each re-exporting what
+  it moved so every public name still resolves at its old path (checked
+  mechanically, along with the wasm's export and import tables):
+  - `convertStyleCustomWriter.zig` (2,242 lines): `css/` (values,
+    background, keyframes, exports).
+  - `Components.zig` (2,182): `ComponentBuilder`'s methods live in
+    `builder/` (elements, attributes, events, layout, style, tree) and the
+    struct aliases them, so `Box().padding(...)` is unchanged.
+  - `TextField.zig` (1,641): the same, under `text_field/`.
+  - `Configuration.zig` (1,631): the style packers move to `configure/`.
+  - `Animation.zig` (1,498): presets and the removal queue move to
+    `animation/`.
+  - JS runtime: `wasi.js` (2,422) becomes `env/` (one module per binding
+    domain) plus `instance.js`, `struct_bridge.js` and `event_type.js`;
+    `traversal.js` and `wasi_obj.js` lose element construction, teardown and
+    the memory readers to their own modules.
+- `TextField.BuilderClose(state_type)` now returns one builder type,
+  `TextFieldBuilder`, for every state type, as `Components.Builder` already
+  did. Only `.pure` was ever instantiated.
+- Removed the remaining commented-out code and two dead runtime bindings.
+
+## [2.2.0] — 2026-10-09
 
 ### Fetch API
 
