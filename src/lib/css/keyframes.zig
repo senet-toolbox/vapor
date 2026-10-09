@@ -13,7 +13,7 @@ pub fn generateAnimationsFrames(writer: *Writer) void {
     }
 }
 
-pub fn writeKeyframesBlock(anim: Animation, writer: *Writer) void {
+fn writeKeyframesBlock(anim: Animation, writer: *Writer) void {
     writer.write("@keyframes ") catch {};
     writer.write(anim._name) catch {};
     writer.write(" {\n") catch {};
@@ -41,7 +41,7 @@ pub fn writeKeyframesBlock(anim: Animation, writer: *Writer) void {
     writer.write("}\n") catch {};
 }
 
-pub fn writeFrameProperties(frame: Animation.Keyframe, writer: *Writer) void {
+fn writeFrameProperties(frame: Animation.Keyframe, writer: *Writer) void {
     var has_transform = false;
     var has_filter = false;
 
@@ -94,7 +94,7 @@ pub fn writeFrameProperties(frame: Animation.Keyframe, writer: *Writer) void {
     }
 }
 
-pub fn writeAnimTransformValue(p: Animation.PropValue, writer: *Writer) void {
+fn writeAnimTransformValue(p: Animation.PropValue, writer: *Writer) void {
     const func_name = p.type.toCss();
     writer.write(func_name) catch {};
     writer.writeByte('(') catch {};
@@ -135,7 +135,7 @@ pub fn writeAnimTransformValue(p: Animation.PropValue, writer: *Writer) void {
     writer.writeByte(')') catch {};
 }
 
-pub fn writeAnimStandardValue(p: Animation.PropValue, writer: *Writer) void {
+fn writeAnimStandardValue(p: Animation.PropValue, writer: *Writer) void {
     switch (p.value) {
         .number => |val| {
             // Write Float
@@ -172,7 +172,7 @@ pub fn writeAnimStandardValue(p: Animation.PropValue, writer: *Writer) void {
 
 pub const ValueType = enum { from, to };
 
-pub fn writePropertiesAtValue(writer: *Writer, animation: Animation, value_type: ValueType) void {
+fn writePropertiesAtValue(writer: *Writer, animation: Animation, value_type: ValueType) void {
     var has_transform = false;
     var has_filter = false;
 
@@ -226,7 +226,7 @@ pub fn writePropertiesAtValue(writer: *Writer, animation: Animation, value_type:
     }
 }
 
-pub fn writeTransformValue(writer: *Writer, prop: Animation.Property, value_type: ValueType) void {
+fn writeTransformValue(writer: *Writer, prop: Animation.Property, value_type: ValueType) void {
     const value = switch (value_type) {
         .from => prop.from_value,
         .to => prop.to_value,
@@ -239,7 +239,7 @@ pub fn writeTransformValue(writer: *Writer, prop: Animation.Property, value_type
     writer.writeByte(')') catch {};
 }
 
-pub fn writeFilterValue(writer: *Writer, prop: Animation.Property, value_type: ValueType) void {
+fn writeFilterValue(writer: *Writer, prop: Animation.Property, value_type: ValueType) void {
     const value = switch (value_type) {
         .from => prop.from_value,
         .to => prop.to_value,
@@ -258,7 +258,7 @@ pub fn writeFilterValue(writer: *Writer, prop: Animation.Property, value_type: V
     writer.writeByte(')') catch {};
 }
 
-pub fn writeStandaloneProperty(writer: *Writer, prop: Animation.Property, value_type: ValueType) void {
+fn writeStandaloneProperty(writer: *Writer, prop: Animation.Property, value_type: ValueType) void {
     const value = switch (value_type) {
         .from => prop.from_value,
         .to => prop.to_value,
