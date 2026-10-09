@@ -5,6 +5,7 @@ const Writer = @import("Writer.zig");
 
 pub const Edges = @This();
 
+/// Creates the edges registry. Call it once in `init`, before any `.build()`.
 pub fn new() void {
     Vapor.edges_table = std.StringHashMap(Edges).init(Vapor.arena(.persist));
 }
@@ -121,18 +122,22 @@ fn selectEdges(self: Edges, val_top: bool, val_bottom: bool, val_left: bool, val
     return e;
 }
 
+/// Selects the top edge; the next settings apply to it.
 pub fn top(self: Edges) Edges {
     return self.selectEdges(true, false, false, false);
 }
 
+/// Selects the bottom edge; the next settings apply to it.
 pub fn bottom(self: Edges) Edges {
     return self.selectEdges(false, true, false, false);
 }
 
+/// Selects the left edge; the next settings apply to it.
 pub fn left(self: Edges) Edges {
     return self.selectEdges(false, false, true, false);
 }
 
+/// Selects the right edge; the next settings apply to it.
 pub fn right(self: Edges) Edges {
     return self.selectEdges(false, false, false, true);
 }
@@ -156,12 +161,14 @@ pub fn all(self: Edges) Edges {
 // STATE SELECTION
 // ============================================
 
+/// The next settings apply while the element is hovered.
 pub fn onHover(self: Edges) Edges {
     var e = self;
     e.editing_hover = true;
     return e;
 }
 
+/// The next settings apply when not hovered (the default).
 pub fn onNormal(self: Edges) Edges {
     var e = self;
     e.editing_hover = false;
@@ -189,28 +196,35 @@ fn applyToSelected(self: Edges, comptime field: []const u8, value: anytype) Edge
     return e;
 }
 
+/// Line thickness in pixels, for the selected edges.
 pub fn thickness(self: Edges, px: f32) Edges {
     return self.applyToSelected("thickness", px);
 }
 
+/// Line colour, for the selected edges.
 pub fn color(self: Edges, c: Color) Edges {
     return self.applyToSelected("color", c);
 }
 
+/// Distance from the element in pixels, for the selected edges.
 pub fn offset(self: Edges, px: f32) Edges {
     return self.applyToSelected("offset", px);
 }
 
+/// How far the line stops short of the corners, in percent, for the selected
+/// edges.
 pub fn inset(self: Edges, percent: f32) Edges {
     return self.applyToSelected("inset", percent);
 }
 
+/// Animates hover changes over `ms` milliseconds.
 pub fn transition(self: Edges, ms: u32) Edges {
     var e = self;
     e.transition_ms = ms;
     return e;
 }
 
+/// CSS timing function for the transition.
 pub fn ease(self: Edges, easing_fn: []const u8) Edges {
     var e = self;
     e.easing = easing_fn;
@@ -221,6 +235,7 @@ pub fn ease(self: Edges, easing_fn: []const u8) Edges {
 // CSS GENERATION
 // ============================================
 
+/// Writes the edges' CSS rules to `writer`.
 pub fn writeCss(self: Edges, writer: *Writer) void {
     switch (self.mode) {
         .single => self.writeSingleModeCss(writer),
@@ -600,6 +615,8 @@ fn writeFloat(self: Edges, writer: *Writer, val: f32) void {
 // BUILD / REGISTER
 // ============================================
 
+/// Registers the edges under their name so `.edges(name)` can use them.
+/// Requires `Edges.new()` first.
 pub fn build(self: Edges) void {
     if (Vapor.edges_table == null) return;
     Vapor.edges_table.?.put(self.class, self) catch |err| {

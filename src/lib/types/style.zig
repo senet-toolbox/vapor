@@ -89,6 +89,7 @@ pub const Visual = struct {
 
     color_mix: ?types.ColorMix = null,
 
+    /// Font size in pixels, weight and colour.
     pub fn font(size: u8, weight: ?u16, color: ?types.Color) Visual {
         return .{
             .font_size = size,
@@ -97,12 +98,14 @@ pub const Visual = struct {
         };
     }
 
+    /// Only a text colour.
     pub fn textColor(color: types.Color) Visual {
         return .{
             .text_color = color,
         };
     }
 
+    /// A solid border of `thickness` in `color`.
     pub fn borderSolid(thickness: types.Border, color: types.Color) Visual {
         return .{
             .border = types.BorderGrouped{
@@ -113,14 +116,17 @@ pub const Visual = struct {
     }
 
     // Background shortcuts
+    /// Only a background colour.
     pub fn bg(background: types.Color) Visual {
         return .{ .background = background };
     }
 
+    /// A 1-pixel border in `color` with fully rounded ends.
     pub fn pill(color: types.Color) Visual {
         return .{ .border = .pill(color) };
     }
 
+    /// `visual_true` if `condition`, else `visual_false`.
     pub fn when(condition: bool, visual_true: Visual, visual_false: Visual) Visual {
         if (condition) {
             return visual_true;
@@ -345,6 +351,7 @@ pub const Style = struct {
         return result;
     }
 
+    /// Copies every field `target` sets onto this style.
     pub fn extend(self: *Style, target: Style) void {
         if (target.id != null) self.id = target.id;
         if (target.style_id != null) self.style_id = target.style_id;

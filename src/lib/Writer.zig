@@ -16,6 +16,7 @@ start: usize = 0,
 /// truncated, never past the end of `buffer`.
 overflowed: bool = false,
 
+/// Writes into `buffer`, keeping its last byte free for a terminating NUL.
 pub fn init(writer: *Writer, buffer: []u8) void {
     writer.* = .{
         .buffer = buffer,
@@ -26,6 +27,7 @@ pub fn init(writer: *Writer, buffer: []u8) void {
     };
 }
 
+/// Empties the writer and clears `overflowed`.
 pub fn reset(self: *Writer) void {
     self.pos = 0;
     self.start = 0;
@@ -76,26 +78,31 @@ pub fn resetSegment(self: *Writer) void {
     self.pos = self.start;
 }
 
+/// Appends one byte.
 pub fn writeByte(self: *Writer, byte: u8) Error!void {
     const dest = try self.reserve(1);
     dest[0] = byte;
 }
 
+/// Appends `byte` as a decimal number.
 pub fn writeU8Num(self: *Writer, byte: u8) Error!void {
     try self.write(fastLargeIntToString(byte));
 }
 
+/// Appends `value`; on overflow, truncates and sets `overflowed`.
 pub fn write(self: *Writer, value: []const u8) Error!void {
     const dest = try self.reserve(value.len);
     @memcpy(dest, value);
 }
 
+/// Appends `value` with two decimals.
 pub fn writeF32(self: *Writer, value: f32) Error!void {
     const formatted = std.fmt.bufPrint(self.buffer[self.pos..self.size], "{d:.2}", .{value}) catch
         return self.overflow(0);
     self.pos += formatted.len;
 }
 
+/// Appends `value` as a decimal number.
 pub fn writeF16(self: *Writer, value: f16) Error!void {
     try self.write(fastFloatToString(value));
 }
@@ -172,22 +179,26 @@ fn fastFloatToString(value: f32) []const u8 {
     return float_buffer[0..buf_idx];
 }
 
+/// Appends `value` as a decimal number.
 pub fn writeI32(self: *Writer, value: i32) Error!void {
     const formatted = std.fmt.bufPrint(self.buffer[self.pos..self.size], "{d}", .{value}) catch
         return self.overflow(0);
     self.pos += formatted.len;
 }
 
+/// Appends `value` as a decimal number.
 pub fn writeI16(self: *Writer, value: i16) Error!void {
     const formatted = std.fmt.bufPrint(self.buffer[self.pos..self.size], "{d}", .{value}) catch
         return self.overflow(0);
     self.pos += formatted.len;
 }
 
+/// Appends `value` as a decimal number.
 pub fn writeU16(self: *Writer, value: u16) Error!void {
     try self.write(fastLargeIntToString(value));
 }
 
+/// Appends `value` as a decimal number.
 pub fn writeUsize(self: *Writer, value: usize) Error!void {
     try self.write(fastLargeIntToString(value));
 }
@@ -209,10 +220,12 @@ fn fastLargeIntToString(value: anytype) []const u8 {
     return large_int_buffer[buf_idx..];
 }
 
+/// Appends `value` as a decimal number.
 pub fn writeU32(self: *Writer, value: u32) Error!void {
     try self.write(fastLargeIntToString(value));
 }
 
+/// Logs the written text (`std.log.info`).
 pub fn print(self: *Writer) !void {
     const len: usize = self.pos;
     std.log.info("{s}", .{self.buffer[0..len]});

@@ -30,6 +30,7 @@ pub const GradientDirection = packed struct {
     pub const to_right = GradientDirection{ .type = .to_right };
     pub const to_top_left = GradientDirection{ .type = .to_top_left };
     pub const to_top_right = GradientDirection{ .type = .to_top_right };
+    /// A gradient angle in degrees.
     pub fn deg(value: f32) GradientDirection {
         return .{ .angle = value, .type = .angle };
     }
@@ -75,6 +76,7 @@ pub const BackgroundLayer = union(enum) {
         };
     }
 
+    /// A dot pattern: dots of `radius` every `spacing` pixels, in `color`.
     pub fn dot(radius: f16, spacing: u8, color: types.Color) BackgroundLayer {
         return .{
             .Dot = .{
@@ -85,6 +87,7 @@ pub const BackgroundLayer = union(enum) {
         };
     }
 
+    /// A linear or radial gradient through `colors`, in direction `dir`.
     pub fn gradient(gradient_type: GradientType, dir: GradientDirection, colors: []const types.Color) BackgroundLayer {
         return .{
             .Gradient = .{
@@ -95,6 +98,7 @@ pub const BackgroundLayer = union(enum) {
         };
     }
 
+    /// A line pattern: lines `thickness` pixels thick every `spacing` pixels.
     pub fn line(thickness: u8, spacing: u8, dir: LinesDirection, color: types.Color) BackgroundLayer {
         return .{
             .Lines = .{
@@ -113,6 +117,7 @@ pub const BackgroundClip = enum(u8) {
     paddingBox,
     contentBox,
 
+    /// The CSS `background-clip` value.
     pub fn toCss(self: BackgroundClip) []const u8 {
         return switch (self) {
             .none => "border-box",

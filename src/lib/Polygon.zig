@@ -5,6 +5,7 @@ const Writer = @import("Writer.zig");
 
 pub const Polygons = @This();
 
+/// Creates the polygon registry. Call it once in `init`, before any `.build()`.
 pub fn new() void {
     Vapor.polygons_table = std.StringHashMap(Polygons).init(Vapor.arena(.persist));
 }
@@ -64,6 +65,8 @@ easing: []const u8 = "ease",
 // CONSTRUCTORS
 // ============================================
 
+/// Starts a polygon shape for the CSS class `class_name`. Apply it to an
+/// element with `.class(class_name)` after `.build()`.
 pub fn init(class_name: []const u8) Polygons {
     return Polygons{
         .class = class_name,
@@ -74,6 +77,7 @@ pub fn init(class_name: []const u8) Polygons {
 // PRESET SHAPES
 // ============================================
 
+/// A triangle pointing in `dir`.
 pub fn triangle(self: Polygons, dir: TriangleDirection) Polygons {
     var p = self;
     p.config.shape = .triangle;
@@ -82,22 +86,27 @@ pub fn triangle(self: Polygons, dir: TriangleDirection) Polygons {
     return p;
 }
 
+/// A triangle pointing up.
 pub fn triangleUp(self: Polygons) Polygons {
     return self.triangle(.up);
 }
 
+/// A triangle pointing down.
 pub fn triangleDown(self: Polygons) Polygons {
     return self.triangle(.down);
 }
 
+/// A triangle pointing left.
 pub fn triangleLeft(self: Polygons) Polygons {
     return self.triangle(.left);
 }
 
+/// A triangle pointing right.
 pub fn triangleRight(self: Polygons) Polygons {
     return self.triangle(.right);
 }
 
+/// A square.
 pub fn square(self: Polygons) Polygons {
     var p = self;
     p.config.shape = .square;
@@ -105,6 +114,7 @@ pub fn square(self: Polygons) Polygons {
     return p;
 }
 
+/// A regular pentagon.
 pub fn pentagon(self: Polygons) Polygons {
     var p = self;
     p.config.shape = .pentagon;
@@ -112,6 +122,7 @@ pub fn pentagon(self: Polygons) Polygons {
     return p;
 }
 
+/// A regular hexagon.
 pub fn hexagon(self: Polygons) Polygons {
     var p = self;
     p.config.shape = .hexagon;
@@ -119,6 +130,7 @@ pub fn hexagon(self: Polygons) Polygons {
     return p;
 }
 
+/// A regular heptagon.
 pub fn heptagon(self: Polygons) Polygons {
     var p = self;
     p.config.shape = .heptagon;
@@ -126,6 +138,7 @@ pub fn heptagon(self: Polygons) Polygons {
     return p;
 }
 
+/// A regular octagon.
 pub fn octagon(self: Polygons) Polygons {
     var p = self;
     p.config.shape = .octagon;
@@ -133,6 +146,7 @@ pub fn octagon(self: Polygons) Polygons {
     return p;
 }
 
+/// A regular polygon with `sides` sides.
 pub fn ngon(self: Polygons, sides: u8) Polygons {
     var p = self;
     p.config.shape = .custom;
@@ -140,6 +154,7 @@ pub fn ngon(self: Polygons, sides: u8) Polygons {
     return p;
 }
 
+/// A star with `points_count` points.
 pub fn star(self: Polygons, points_count: u8) Polygons {
     var p = self;
     p.config.shape = .star;
@@ -147,10 +162,12 @@ pub fn star(self: Polygons, points_count: u8) Polygons {
     return p;
 }
 
+/// A five-pointed star.
 pub fn star5(self: Polygons) Polygons {
     return self.star(5);
 }
 
+/// A six-pointed star.
 pub fn star6(self: Polygons) Polygons {
     return self.star(6);
 }
@@ -167,6 +184,7 @@ pub fn custom(self: Polygons, points: []const Point) Polygons {
 // MODIFIERS
 // ============================================
 
+/// Rotates the shape by `degrees`.
 pub fn rotate(self: Polygons, degrees: f32) Polygons {
     var p = self;
     p.config.rotation = degrees;
@@ -184,12 +202,14 @@ pub fn innerRadius(self: Polygons, ratio: f32) Polygons {
 // STYLING
 // ============================================
 
+/// Fill colour.
 pub fn fill(self: Polygons, c: Color) Polygons {
     var p = self;
     p.background = c;
     return p;
 }
 
+/// Outline colour and width.
 pub fn stroke(self: Polygons, c: Color, width: f32) Polygons {
     var p = self;
     p.border_color = c;
@@ -197,12 +217,14 @@ pub fn stroke(self: Polygons, c: Color, width: f32) Polygons {
     return p;
 }
 
+/// Animates hover changes over `ms` milliseconds.
 pub fn transition(self: Polygons, ms: u32) Polygons {
     var p = self;
     p.transition_ms = ms;
     return p;
 }
 
+/// CSS timing function for the transition, e.g. "ease-out".
 pub fn ease(self: Polygons, easing_fn: []const u8) Polygons {
     var p = self;
     p.easing = easing_fn;
@@ -213,18 +235,21 @@ pub fn ease(self: Polygons, easing_fn: []const u8) Polygons {
 // HOVER STATES
 // ============================================
 
+/// Fill colour while hovered.
 pub fn hoverFill(self: Polygons, c: Color) Polygons {
     var p = self;
     p.hover_background = c;
     return p;
 }
 
+/// Outline colour while hovered.
 pub fn hoverStroke(self: Polygons, c: Color) Polygons {
     var p = self;
     p.hover_border_color = c;
     return p;
 }
 
+/// Scale while hovered (1 is unchanged).
 pub fn hoverScale(self: Polygons, scale: f32) Polygons {
     var p = self;
     p.hover_scale = scale;
@@ -235,6 +260,7 @@ pub fn hoverScale(self: Polygons, scale: f32) Polygons {
 // CSS GENERATION
 // ============================================
 
+/// Writes the shape's CSS rules to `writer`.
 pub fn writeCss(self: Polygons, writer: *Writer) void {
     // Base styles
     writer.write(".") catch {};
@@ -445,6 +471,7 @@ fn writeFloat(writer: *Writer, val: f32) void {
 // BUILD / REGISTER
 // ============================================
 
+/// Registers the shape so its CSS is emitted. Requires `Polygons.new()` first.
 pub fn build(self: Polygons) void {
     if (Vapor.polygons_table == null) return;
     Vapor.polygons_table.?.put(self.class, self) catch |err| {

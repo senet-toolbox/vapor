@@ -17,6 +17,7 @@ pub const Layer = struct {
     spread: i16 = 0,
     color: Color = .{ .Literal = .{} },
 
+    /// A shadow layer in `color`, with zero offset and blur.
     pub fn init(color: Color) Layer {
         return .{ .color = color };
     }
@@ -50,6 +51,8 @@ pub const Layer = struct {
         return l;
     }
 
+    /// Writes every layer as a CSS `box-shadow` list, or "none".
+    /// Writes the layer as CSS (`x y blur spread color`).
     pub fn writeCss(self: Layer, writer: *Writer) !void {
         if (self.inset) _ = try writer.write("inset ");
         try writer.writeI16(self.x);
@@ -158,6 +161,7 @@ pub fn writeCss(self: Shadow, writer: *Writer) !void {
     }
 }
 
+/// Same as `writeCss`.
 pub fn toCss(self: Shadow, writer: *Writer) !void {
     try self.writeCss(writer);
 }
