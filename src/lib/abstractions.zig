@@ -21,7 +21,9 @@ pub fn ManagedMemoryPool(comptime T: type) type {
         }
 
         pub fn destroy(self: *Self, ptr: *T) void {
-            self.pool.destroy(ptr);
+            // The pool over-aligns its items; `ptr` came from `create`, so it
+            // carries that alignment even though `*T` does not say so.
+            self.pool.destroy(@alignCast(ptr));
         }
     };
 }

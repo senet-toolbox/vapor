@@ -188,6 +188,11 @@ fn instantiations() void {
     }
 
     refAll(@import("lib/array.zig").Array(u8), max_depth);
+    refAll(@import("lib/array.zig").BoundedArray(u8, 4), max_depth);
+    refAll(@import("lib/structures/structures.zig").RingBuffer(u8, 4), max_depth);
+    refAll(@import("lib/structures/structures.zig").BoundedArray(u8, 4), max_depth);
+    refAll(@import("lib/abstractions.zig").ManagedMemoryPool(u32), max_depth);
+    refAll(@import("lib/abstractions.zig").ManagedAutoHashMap(u32, u32), max_depth);
 }
 
 /// Exported so it is always analysed, and with it everything it touches.
