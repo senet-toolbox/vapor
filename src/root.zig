@@ -228,15 +228,12 @@ pub const compact = lib.compact;
 // ── Logging ─────────────────────────────────────────────────────────────────
 // Output goes to the browser console, and to stderr natively. Logging is on
 // in every build; turn it off with `Vapor.lib.build_options.enable_debug =
-// false`. `printErr` and `printlnSrc` are currently no-ops.
+// false`. For errors use `print(.err, ...)`, `printErrSrc`, or `std.log`
+// routed through `Vapor.lib.log` (see `std_options` in the app template).
 
 pub const println = lib.println;
-pub const printlnSrc = lib.printlnSrc;
 pub const print = lib.print;
-pub const printErr = lib.printlnErr;
 pub const printErrSrc = lib.printlnSrcErr;
-/// Same as `printErrSrc`.
-pub const printSrcErr = lib.printlnSrcErr;
 pub const alert = lib.alert;
 
 // ── Platform ────────────────────────────────────────────────────────────────

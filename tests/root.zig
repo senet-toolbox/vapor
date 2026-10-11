@@ -1020,9 +1020,8 @@ fn docGenericApi() !void {
     _ = Vapor.cast(*u32, @as(*anyopaque, @ptrCast(&x)));
     Vapor.println("{d}", .{1});
     Vapor.print(.info, "{d}", .{1});
-    Vapor.printErr("{d}", .{1});
+    Vapor.print(.err, "{d}", .{1});
     Vapor.printErrSrc("{d}", .{1}, @src());
-    Vapor.printlnSrc("{d}", .{1}, @src());
     Vapor.alert("{d}", .{1});
     const req = Vapor.fetch("/doc", .{});
     req.handle(docFetched, .{@as(u32, 1)});
