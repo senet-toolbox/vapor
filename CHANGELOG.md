@@ -6,6 +6,42 @@ version and are listed with a migration note.
 
 ## [Unreleased]
 
+Breaking: the next release is a major version.
+
+### Breaking
+
+- `Vapor.printErr` and `Vapor.printlnSrc` are removed; both printed
+  nothing. `printSrcErr` (a second name for `printErrSrc`) is removed.
+  Use `Vapor.print(.err, ...)`, `printErrSrc`, or `std.log` routed through
+  `Vapor.lib.log`.
+- `Padding`, `Margin` and `BorderThickness` (was `Border`) share one shape:
+  `top`/`bottom`/`left`/`right` fields and `all`, `tb`, `lr`, `tblr`,
+  `vertical`, `horizontal`, `xy`, `t`/`b`/`l`/`r`, `tl`/`tr`/`bl`/`br`.
+  `BorderGrouped` is now `Border`.
+  Migration, all caught by the compiler:
+  - `Padding`/`BorderThickness` `.top(n)` / `.left(n)` / ... → `.t(n)` /
+    `.l(n)`, or a literal `.{ .top = n }`.
+  - `BorderThickness` `.tb(n)` / `.lr(n)` → `.vertical(n)` /
+    `.horizontal(n)` (`tb`/`lr` now take two values, as on `Padding`).
+  - `Types.Border` used as a thickness → `Types.BorderThickness`.
+- `.view` memory is now freed when the app leaves the page (see Fixed). A
+  global that points into it must be reset in the page's deinit or
+  reallocated on the next visit.
+
+### Deprecated
+
+Kept as aliases until the next major version:
+
+- `BorderGrouped` → `Border`; `Border.simple` → `thin`, `.t/.b/.l/.r` →
+  `.top/.bottom/.left/.right`, `.tb(color)`/`.lr(color)` →
+  `.vertical(1, color)`/`.horizontal(1, color)`.
+- snake_case functions → camelCase: `square_px` → `squarePx`,
+  `square_percent`, `hw_px`, `hw_percent`, `min_max_vp`,
+  `mobile_desktop`, `mobile_desktop_percent`, `none_x`/`none_y`,
+  `scroll_x`/`scroll_y`, `top_bottom`, `left_right`, `direction_scale`,
+  `left_percent`, `top_percent`, `size_weight`, `size_color`,
+  `String.append_str`, `Padding.top_left` (→ `tl`) and the other corners.
+
 ### Fixed
 
 Found while documenting the API; each has a unit or browser test unless
@@ -49,6 +85,17 @@ noted.
   carried a stray quote.
 - `hashToBase62(0)` returned an uninitialized byte; `firstLetterToUpper("")`
   sliced out of bounds.
+- `.view` memory was never freed: `arena(.view)` handed out an arena
+  nothing reset. It is now freed when the app leaves the page, after the
+  page's deinit runs.
+- Unused CSS rules were never removed, so the stylesheet grew with every
+  new style (a drag that changes a width each frame added a rule per
+  frame). The class reference counts this relied on never worked; classes
+  are now marked by each render and a rule unused for 3 seconds is
+  deleted.
+- A responsive style with two breakpoints wrote its first `@media` rule
+  twice, and after the first render the runtime overwrote it with a plain
+  rule, so the mobile style applied at every width.
 - `clearPersitantStorage` is spelled `clearPersistentStorage` (the old name
   remains as a deprecated alias); `error.SeperatorNotFound` is
   `error.SeparatorNotFound`.
@@ -59,9 +106,8 @@ noted.
   opens with an overview and an example the test suite compiles.
 - Every public function an app calls has a doc comment, and every source
   file has a module header. Docs state current behaviour, including the
-  no-ops: `Vapor.printErr` and `printlnSrc` print nothing, `.inherit()`
-  records fields nothing reads, `onPushState` callbacks are never called,
-  `.view` memory is never reset, and unused CSS rules are never removed.
+  no-ops: `.inherit()` records fields nothing reads and `onPushState`
+  callbacks are never called.
 
 ### Internal
 
