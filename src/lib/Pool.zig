@@ -92,29 +92,6 @@ pub fn init(allocator: std.mem.Allocator, capacity: u32) !Pool {
     };
 }
 
-/// Same as `init`.
-pub fn initGlobalPool(allocator: std.mem.Allocator, capacity: u32) !Pool {
-    return Pool{
-        .slot_32 = try allocator.alloc([32]u8, capacity),
-        .slots_64 = try allocator.alloc([64]u8, capacity),
-        .slots_128 = try allocator.alloc([128]u8, capacity),
-        .slots_256 = try allocator.alloc([256]u8, capacity),
-        .slots_512 = try allocator.alloc([512]u8, capacity),
-        .slots_1024 = try allocator.alloc([1024]u8, capacity),
-        .free_list_32 = try allocator.alloc(u32, capacity),
-        .free_list_64 = try allocator.alloc(u32, capacity),
-        .free_list_128 = try allocator.alloc(u32, capacity),
-        .free_list_256 = try allocator.alloc(u32, capacity),
-        .free_list_512 = try allocator.alloc(u32, capacity),
-        .free_list_1024 = try allocator.alloc(u32, capacity),
-        .free_count_32 = capacity,
-        .free_count_64 = capacity,
-        .free_count_128 = capacity,
-        .free_count_256 = capacity,
-        .free_count_512 = capacity,
-        .free_count_1024 = capacity,
-    };
-}
 /// Frees the pool's slots.
 pub fn deinitGlobalPool(pool: *Pool, allocator: std.mem.Allocator) void {
     allocator.free(pool.slot_32);
@@ -405,3 +382,7 @@ test "string pool" {
 
     try std.testing.expectEqual(pool.free_count_32, 10);
 }
+
+// Deprecated names, removed in the next major version.
+/// Deprecated: use `init`.
+pub const initGlobalPool = init;

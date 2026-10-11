@@ -152,8 +152,8 @@ pub fn Center() *Self {
     return self;
 }
 
-/// `<button type="submit">` for the enclosing `Form`. Exported as `SubmitButton`.
-pub fn FormButton() Self {
+/// `<button type="submit">` for the enclosing `Form`.
+pub fn SubmitButton() Self {
     const elem_decl = ElementDecl{
         .state_type = Self._state_type,
         .elem_type = .SubmitButton,

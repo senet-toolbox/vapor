@@ -142,19 +142,16 @@ fn hashVisual(hasher: *std.hash.XxHash32, v: *const Visual) void {
     if (v.line_height) |lh| hasher.update(std.mem.asBytes(&lh));
     if (v.font_weight) |fw| hasher.update(std.mem.asBytes(&fw));
     if (v.font_style) |fs| hasher.update(std.mem.asBytes(&fs));
-    if (v.border_radius) |br| hasher.update(std.mem.asBytes(&br));
-    if (v.border_thickness) |bt| hasher.update(std.mem.asBytes(&bt));
-
-    if (v.border_color) |bc| hashColor(hasher, &bc);
     if (v.text_color) |tc| hashColor(hasher, &tc);
     if (v.fill) |f| hashColor(hasher, &f);
     if (v.stroke) |s| hashColor(hasher, &s);
 
     // Border grouped
     if (v.border) |b| {
-        hasher.update(std.mem.asBytes(&b.thickness));
+        if (b.thickness) |t| hasher.update(std.mem.asBytes(&t));
         if (b.color) |c| hashColor(hasher, &c);
         if (b.radius) |r| hasher.update(std.mem.asBytes(&r));
+        if (b.style) |s| hasher.update(std.mem.asBytes(&s));
     }
 
     if (v.ellipsis) |e| hasher.update(std.mem.asBytes(&e));

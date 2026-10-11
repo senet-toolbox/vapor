@@ -120,15 +120,6 @@ pub fn fontWeight(self: *const Self, value: u16) Self {
     return n;
 }
 
-/// Same as `fontWeight`.
-pub fn weight(self: *const Self, value: u16) Self {
-    var n = self.*;
-    var v = n._visual orelse types.Visual{};
-    v.font_weight = value;
-    n._visual = v;
-    return n;
-}
-
 /// CSS font family, e.g. `"Inter, sans-serif"`.
 pub fn fontFamily(self: *const Self, font_family: []const u8) Self {
     var n = self.*;
@@ -213,13 +204,6 @@ pub fn scale(self: *const Self, value: f16) Self {
     return n;
 }
 
-/// A shared `Vapor.Style` to start from; the chained methods override it.
-pub fn baseStyle(self: *const Self, style_ptr: *const Vapor.Style) Self {
-    var n = self.*;
-    n._style = style_ptr;
-    return n;
-}
-
 /// Styles for interaction states: hover, focus and focus-within.
 pub fn interaction(self: *const Self, interactive: types.Interactive) Self {
     var n = self.*;
@@ -229,15 +213,6 @@ pub fn interaction(self: *const Self, interactive: types.Interactive) Self {
 
 /// Text colour. `null` removes it.
 pub fn textColor(self: *const Self, color: ?Color) Self {
-    var n = self.*;
-    var v = n._visual orelse types.Visual{};
-    v.text_color = color;
-    n._visual = v;
-    return n;
-}
-
-/// Same as `textColor`.
-pub fn fontColor(self: *const Self, color: ?Color) Self {
     var n = self.*;
     var v = n._visual orelse types.Visual{};
     v.text_color = color;
@@ -315,16 +290,6 @@ pub fn layers(self: *const Self, value: ?[]const types.BackgroundLayer) Self {
     var n = self.*;
     var v = n._visual orelse types.Visual{};
     v.layers = value;
-    n._visual = v;
-    return n;
-}
-
-/// Same as `background`: it takes a colour. For an actual gradient, use
-/// `.layer` with a gradient layer.
-pub fn gradient(self: *const Self, value: types.Color) Self {
-    var n = self.*;
-    var v = n._visual orelse types.Visual{};
-    v.background = value;
     n._visual = v;
     return n;
 }
@@ -445,7 +410,7 @@ pub fn border(self: *const Self, value: types.Border) Self {
 pub fn borderStyle(self: *const Self, value: types.BorderStyle) Self {
     var n = self.*;
     var v = n._visual orelse types.Visual{};
-    var b = v.border orelse types.Border{ .color = null, .thickness = .all(0) };
+    var b = v.border orelse types.Border{};
     b.style = value;
     v.border = b;
     n._visual = v;
@@ -456,7 +421,7 @@ pub fn borderStyle(self: *const Self, value: types.BorderStyle) Self {
 pub fn radius(self: *const Self, value: types.BorderRadius) Self {
     var n = self.*;
     var v = n._visual orelse types.Visual{};
-    var b = v.border orelse types.Border{ .color = null, .thickness = .all(0) };
+    var b = v.border orelse types.Border{};
     b.radius = value;
     v.border = b;
     n._visual = v;
@@ -486,7 +451,7 @@ pub fn listStyle(self: *const Self, value: types.ListStyle) Self {
     return n;
 }
 
-/// Same as `baseStyle`.
+/// A shared `Vapor.Style` to start from; the chained methods override it.
 pub fn style(self: *const Self, style_ptr: *const Vapor.Style) Self {
     var n = self.*;
     n._style = style_ptr;

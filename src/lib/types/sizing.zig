@@ -58,22 +58,6 @@ pub const Size = packed struct {
         };
     }
 
-    /// `size` pixels wide and high. Same as `squarePx`.
-    pub fn px(size: f32) Size {
-        return .{
-            .width = .px(size),
-            .height = .px(size),
-        };
-    }
-
-    /// `size` percent of the parent's width and height. Same as `square_percent`.
-    pub fn percent(size: f32) Size {
-        return .{
-            .width = .percent(size),
-            .height = .percent(size),
-        };
-    }
-
     /// Creates a height sizing
     pub fn h(size: Sizing) Size {
         return .{
@@ -118,6 +102,10 @@ pub const Size = packed struct {
     pub const hw_px = hwPx;
     /// Deprecated: use `hwPercent`.
     pub const hw_percent = hwPercent;
+    /// Deprecated: use `squarePx`.
+    pub const px = squarePx;
+    /// Deprecated: use `squarePercent`.
+    pub const percent = squarePercent;
 };
 
 pub const Sizing = packed struct {
@@ -170,22 +158,7 @@ pub const Sizing = packed struct {
         } };
     }
 
-    /// `mobile` percent on mobile, `desktop` percent otherwise, decided when the
-    /// style is built (see `Vapor.isMobile`).
-    pub fn at(mobile: f32, desktop: f32) Sizing {
-        if (isMobile()) {
-            return .{ .type = .percent, .size = .{
-                .min = mobile,
-                .max = mobile,
-            } };
-        }
-        return .{ .type = .percent, .size = .{
-            .min = desktop,
-            .max = desktop,
-        } };
-    }
-
-    /// Same as `at`.
+    /// `mobile` percent below 768px, `desktop` percent above.
     pub fn mobileDesktopPercent(mobile: f32, desktop: f32) Sizing {
         if (isMobile()) {
             return .{ .type = .percent, .size = .{
@@ -226,6 +199,8 @@ pub const Sizing = packed struct {
     pub const mobile_desktop_percent = mobileDesktopPercent;
     /// Deprecated: use `mobileDesktop`.
     pub const mobile_desktop = mobileDesktop;
+    /// Deprecated: use `mobileDesktopPercent`.
+    pub const at = mobileDesktopPercent;
 };
 
 pub const PosType = enum(u8) {

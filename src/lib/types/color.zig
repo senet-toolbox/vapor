@@ -101,23 +101,6 @@ pub const Color = union(enum) {
         } };
     }
 
-    /// Same as `transparentize`.
-    pub fn transparentizeHex(color: Color, alpha: f32) Color {
-        if (color == .Thematic) return Color{ .Thematic = .{
-            .token = color.Thematic.token,
-            .alpha = alpha,
-        } };
-        const r = color.Literal.r;
-        const g = color.Literal.g;
-        const b = color.Literal.b;
-        return .{ .Literal = .{
-            .r = r,
-            .g = g,
-            .b = b,
-            .a = alpha,
-        } };
-    }
-
     /// Writes the colour as CSS (`rgba(...)` or a theme variable) to `writer`.
     pub fn toCss(self: Color, writer: anytype) !void {
         switch (self) {
@@ -171,6 +154,11 @@ pub const Color = union(enum) {
             else => return color,
         }
     }
+
+    // Deprecated names, removed in the next major version.
+
+    /// Deprecated: use `transparentize`.
+    pub const transparentizeHex = transparentize;
 };
 
 pub const ColorProp = enum(u8) {

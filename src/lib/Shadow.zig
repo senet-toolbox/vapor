@@ -163,11 +163,6 @@ pub fn writeCss(self: Shadow, writer: *Writer) !void {
     }
 }
 
-/// Same as `writeCss`.
-pub fn toCss(self: Shadow, writer: *Writer) !void {
-    try self.writeCss(writer);
-}
-
 // -- 6. Tests --
 
 test "inset and drop layers compose into one box-shadow" {
@@ -184,3 +179,7 @@ test "inset and drop layers compose into one box-shadow" {
 
     try std.testing.expectEqualStrings("inset 0px -2px 0px rgb(5,55,148),0px 1px 3px rgba(0,0,0,0.40)", css);
 }
+
+// Deprecated names, removed in the next major version.
+/// Deprecated: use `writeCss`.
+pub const toCss = writeCss;

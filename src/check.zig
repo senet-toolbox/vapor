@@ -178,13 +178,13 @@ fn isOurs(comptime T: type) bool {
 ///
 /// The element builders — `Box`, `Row`, `Text`, `Button` and the rest of what
 /// `root.zig` re-exports — live in `Components.Builder` and
-/// `TextField.BuilderClose`. They are the most-used surface in the library, so
+/// `TextField.Builder`. They are the most-used surface in the library, so
 /// they are pinned here for every state type the public API exposes.
 fn instantiations() void {
     inline for (.{ .pure, .dynamic }) |state_type| {
         refAll(@import("lib/components.zig").Builder(state_type), max_depth);
-        refAll(@import("lib/components.zig").BuilderClose(state_type), max_depth);
-        refAll(@import("lib/text_field.zig").BuilderClose(state_type), max_depth);
+        refAll(@import("lib/components.zig").Builder(state_type), max_depth);
+        refAll(@import("lib/text_field.zig").Builder(state_type), max_depth);
     }
 
     refAll(@import("lib/array.zig").Array(u8), max_depth);

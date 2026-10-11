@@ -69,13 +69,6 @@ pub fn layout(self: *const Self, value: types.Layout) Self {
 }
 
 /// Where to place this element relative to its CSS anchor (see `Anchor`).
-pub fn anchorPlacement(self: *const Self, value: types.AnchorPlacement) Self {
-    var n = self.*;
-    n._placement = value;
-    return n;
-}
-
-/// Same as `anchorPlacement`.
 pub fn placement(self: *const Self, value: types.AnchorPlacement) Self {
     var n = self.*;
     n._placement = value;
@@ -202,28 +195,6 @@ pub fn margin(self: *const Self, value: types.Margin) Self {
     var n = self.*;
     n._margin = value;
     return n;
-}
-
-/// Hides (`true`) or shows (`false`) the element by setting its `hidden`
-/// attribute directly on the page. It acts on an element that is already on the
-/// page, so it has no effect on the first render; to leave something out, do not
-/// render it.
-pub fn hide(self: *const Self, hidden: bool) *const Self {
-    const ui_node = self._ui_node orelse {
-        Vapor.printlnSrcErr("Node is null", .{}, @src());
-        @panic("vapor: Node is null");
-    };
-    if (!Vapor.isWasi) return self;
-
-    // `hidden` is a boolean attribute: any value, "false" included, hides.
-    const uuid = ui_node.uuid;
-    const key = "hidden";
-    if (hidden) {
-        Vapor.Wasm.setAttributeWasm(uuid.ptr, uuid.len, key.ptr, key.len, "".ptr, 0);
-    } else {
-        Vapor.Wasm.removeAttributeWasm(uuid.ptr, uuid.len, key.ptr, key.len);
-    }
-    return self;
 }
 
 /// Style overrides for one screen size: mobile below 768px, tablet from 768px,

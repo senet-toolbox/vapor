@@ -6,7 +6,7 @@ const Vapor = @import("vapor.zig");
 
 // Draggable behavior that can be attached to any element
 pub const Draggable = struct {
-    element: *Vapor.Binded = undefined,
+    element: *Vapor.Element = undefined,
 
     // State
     initial_x: f32 = 0,
@@ -29,7 +29,7 @@ pub const Draggable = struct {
     on_drag: ?*const fn (self: *Draggable, evt: *Vapor.Event) void = null,
     on_drag_ctx: ?*const fn (self: *Draggable, evt: *Vapor.Event, ctx: ?*anyopaque) void = null,
     on_drag_end: ?*const fn (self: *Draggable, evt: *Vapor.Event) void = null,
-    on_drop: ?*const fn (self: *Draggable, evt: *Vapor.Event, target: ?*Vapor.Binded) void = null,
+    on_drop: ?*const fn (self: *Draggable, evt: *Vapor.Event, target: ?*Vapor.Element) void = null,
 
     // Internal listener IDs
     move_listener_id: ?u32 = null,
@@ -49,7 +49,7 @@ pub const Draggable = struct {
 
         // Behavior
         axis: Axis = .both,
-        handle: ?*Vapor.Binded = null, // Optional drag handle
+        handle: ?*Vapor.Element = null, // Optional drag handle
         revert_on_invalid_drop: bool = false,
         animate_revert: bool = true,
         cursor: []const u8 = "move",
@@ -72,7 +72,7 @@ pub const Draggable = struct {
     // Initialize a draggable with fluent API
     /// Drag state for `element` (bound with `.ref`). Attach it with the element's
     /// `.createDraggable(d)`.
-    pub fn init(element: *Vapor.Binded) *Draggable {
+    pub fn init(element: *Vapor.Element) *Draggable {
         const self = Vapor.arena(.persist).create(Draggable) catch |err| {
             Vapor.printlnErr("Draggable.init: allocation failed: {any}", .{err});
             @panic("vapor: out of memory creating a Draggable");
@@ -126,7 +126,7 @@ pub const Draggable = struct {
     }
 
     /// Drags only when the pointer goes down on `h`.
-    pub fn handle(self: *Draggable, h: *Vapor.Binded) *Draggable {
+    pub fn handle(self: *Draggable, h: *Vapor.Element) *Draggable {
         self.config.handle = h;
         return self;
     }
@@ -151,7 +151,7 @@ pub const Draggable = struct {
 
     /// Calls `callback` when the element is dropped, with the element under the
     /// pointer, if any.
-    pub fn onDrop(self: *Draggable, callback: *const fn (*Draggable, *Vapor.Event, ?*Vapor.Binded) void) *Draggable {
+    pub fn onDrop(self: *Draggable, callback: *const fn (*Draggable, *Vapor.Event, ?*Vapor.Element) void) *Draggable {
         self.on_drop = callback;
         return self;
     }
@@ -293,8 +293,8 @@ pub const Draggable = struct {
     }
 };
 
-// Extension method for Vapor.Binded
-/// Same as `Draggable.init`.
-pub fn draggable(element: *Vapor.Binded) *Draggable {
-    return Draggable.init(element);
-}
+// Extension method for Vapor.Element
+
+// Deprecated names, removed in the next major version.
+/// Deprecated: use `Draggable.init`.
+pub const draggable = Draggable.init;

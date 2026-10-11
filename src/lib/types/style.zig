@@ -35,15 +35,9 @@ pub const Visual = struct {
     /// Font style (normal, italic)
     font_style: ?types.FontStyle = null,
 
-    /// Border radius configuration for rounded corners
-    border_radius: ?types.BorderRadius = null,
-
-    /// Border thickness specification
-    border_thickness: ?types.BorderThickness = null,
-
-    /// Border color as RGBA array [red, green, blue, alpha]
-    border_color: ?types.Color = null,
-
+    /// Border thickness, colour, corner radius and line style. Each part is
+    /// optional: `.{ .radius = .all(8) }` rounds the corners without a border,
+    /// and a hover style of `.{ .color = ... }` changes only the colour.
     border: ?types.Border = null,
 
     /// Text color as RGBA array [red, green, blue, alpha]

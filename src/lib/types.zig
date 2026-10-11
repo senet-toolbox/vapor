@@ -447,20 +447,6 @@ pub const Transform = struct {
         }
     }
 
-    /// Same as `direction_scale`.
-    pub fn distAndScale(dir: Transform.Direction, dist: f32, scale_size: f32) Transform {
-        switch (dir) {
-            .up => return .{ .trans_y = -dist, .scale_size = scale_size, .type = &.{ .translateY, .scale }, .size_type = .px },
-            .down => return .{ .trans_y = dist, .scale_size = scale_size, .type = &.{ .translateY, .scale }, .size_type = .px },
-            .left => return .{ .trans_x = -dist, .scale_size = scale_size, .type = &.{ .translateX, .scale }, .size_type = .px },
-            .right => return .{ .trans_x = dist, .scale_size = scale_size, .type = &.{ .translateX, .scale }, .size_type = .px },
-            .up_and_left => return .{ .trans_y = -dist, .trans_x = -dist, .scale_size = scale_size, .type = &.{ .translateY, .translateX, .scale }, .size_type = .px },
-            .up_and_right => return .{ .trans_y = -dist, .trans_x = dist, .scale_size = scale_size, .type = &.{ .translateY, .translateX, .scale }, .size_type = .px },
-            .down_and_left => return .{ .trans_y = dist, .trans_x = -dist, .scale_size = scale_size, .type = &.{ .translateY, .translateX, .scale }, .size_type = .px },
-            .down_and_right => return .{ .trans_y = dist, .trans_x = dist, .scale_size = scale_size, .type = &.{ .translateY, .translateX, .scale }, .size_type = .px },
-        }
-    }
-
     /// Moves down `dist` pixels.
     pub fn down(dist: f32) Transform {
         return .{ .trans_y = dist, .type = &.{.translateY}, .size_type = .px };
@@ -513,6 +499,8 @@ pub const Transform = struct {
     pub const left_percent = leftPercent;
     /// Deprecated: use `topPercent`.
     pub const top_percent = topPercent;
+    /// Deprecated: use `directionScale`.
+    pub const distAndScale = directionScale;
 };
 
 pub const Focus = struct {

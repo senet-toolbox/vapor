@@ -86,14 +86,12 @@ pub const TextFieldBuilder = struct {
     pub const ellipsis = StyleMethods.ellipsis;
     pub const scroll = StyleMethods.scroll;
     pub const fontWeight = StyleMethods.fontWeight;
-    pub const fontColor = StyleMethods.fontColor;
-    pub const whitespace = StyleMethods.whitespace;
+    pub const textColor = StyleMethods.textColor;
     pub const fontSize = StyleMethods.fontSize;
     pub const fontFamily = StyleMethods.fontFamily;
     pub const animationEnter = StyleMethods.animationEnter;
     pub const animation = StyleMethods.animation;
     pub const animationExit = StyleMethods.animationExit;
-    pub const baseStyle = StyleMethods.baseStyle;
     pub const interaction = StyleMethods.interaction;
     pub const whiteSpace = StyleMethods.whiteSpace;
     pub const style = StyleMethods.style;
@@ -117,7 +115,6 @@ pub const TextFieldBuilder = struct {
     pub const pointer = StyleMethods.pointer;
     pub const noDecoration = StyleMethods.noDecoration;
     pub const hoverText = StyleMethods.hoverText;
-    pub const childGap = StyleMethods.childGap;
     pub const spacing = StyleMethods.spacing;
     pub const padding = StyleMethods.padding;
     pub const pl = StyleMethods.pl;
@@ -154,7 +151,6 @@ pub const TextFieldBuilder = struct {
     pub const onBlur = EventMethods.onBlur;
     pub const onScroll = EventMethods.onScroll;
     pub const onEvent = EventMethods.onEvent;
-    pub const onEventCtx = EventMethods.onEventCtx;
     pub const onMount = EventMethods.onMount;
     pub const onChange = EventMethods.onChange;
     pub const onKeyDown = EventMethods.onKeyDown;
@@ -269,10 +265,23 @@ pub const TextFieldBuilder = struct {
         }
         return self._ui_node.?.uuid;
     }
+
+    // Deprecated names, removed in the next major version.
+
+    /// Deprecated: use `textColor`.
+    pub const fontColor = textColor;
+    /// Deprecated: use `whiteSpace`.
+    pub const whitespace = whiteSpace;
+    /// Deprecated: use `spacing`.
+    pub const childGap = spacing;
+    /// Deprecated: use `style`.
+    pub const baseStyle = style;
+    /// Deprecated: use `onEvent`.
+    pub const onEventCtx = onEvent;
 };
 
 /// Kept for source compatibility; every state type gets the same builder.
-pub fn BuilderClose(comptime state_type: types.StateType) type {
+pub fn Builder(comptime state_type: types.StateType) type {
     _ = state_type;
     return TextFieldBuilder;
 }

@@ -37,22 +37,13 @@ pub fn fontWeight(self: *const Self, value: u16) Self {
     return n;
 }
 
-/// Same as `textColor`.
-pub fn fontColor(self: *const Self, color: ?Color) Self {
+/// Text colour.
+pub fn textColor(self: *const Self, color: ?Color) Self {
     var n = self.*;
     var v = n._visual orelse types.Visual{};
     v.text_color = color;
     n._visual = v;
     return n;
-}
-
-/// Same as `whiteSpace`.
-pub fn whitespace(self: *const Self, value: types.WhiteSpace) Self {
-    var new_self: Self = self.*;
-    var visual = new_self._visual orelse types.Visual{};
-    visual.white_space = value;
-    new_self._visual = visual;
-    return new_self;
 }
 
 /// Font size in pixels.
@@ -100,13 +91,6 @@ pub fn animation(self: *const Self, animation_tag: ?[]const u8) Self {
 pub fn animationExit(self: *const Self, animation_tag: ?[]const u8) Self {
     var new_self: Self = self.*;
     new_self._animation_exit = animation_tag;
-    return new_self;
-}
-
-/// A shared `Vapor.Style` to start from; the chained methods override it.
-pub fn baseStyle(self: *const Self, style_ptr: *const Vapor.Style) Self {
-    var new_self: Self = self.*;
-    new_self._style = style_ptr;
     return new_self;
 }
 
@@ -324,13 +308,6 @@ pub fn hoverText(self: *const Self, color: types.Color) Self {
     return new_self;
 }
 
-/// Same as `spacing`.
-pub fn childGap(self: *const Self, value: u8) Self {
-    var new_self: Self = self.*;
-    new_self._child_gap = value;
-    return new_self;
-}
-
 /// Gap between children, in pixels.
 pub fn spacing(self: *const Self, value: u8) Self {
     var new_self: Self = self.*;
@@ -456,7 +433,9 @@ pub fn border(self: *const Self, value: types.Border) Self {
 pub fn radius(self: *const Self, value: types.BorderRadius) Self {
     var new_self: Self = self.*;
     var visual = new_self._visual orelse types.Visual{};
-    visual.border_radius = value;
+    var b = visual.border orelse types.Border{};
+    b.radius = value;
+    visual.border = b;
     new_self._visual = visual;
     return new_self;
 }

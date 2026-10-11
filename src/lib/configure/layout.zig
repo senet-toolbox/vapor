@@ -126,8 +126,8 @@ pub fn configureResponsive(ui_node: *UINode, style: *const Vapor.Style) u32 {
 
         if (s.visual) |visual| {
             if (ui_node.type == .Button or ui_node.type == .ButtonCycle or ui_node.type == .CtxButton) {
-                if (!Configuration.packed_responsive.mobile_visual.has_border_thickeness) {
-                    Configuration.packed_responsive.mobile_visual.has_border_thickeness = true;
+                if (!Configuration.packed_responsive.mobile_visual.has_border_thickness) {
+                    Configuration.packed_responsive.mobile_visual.has_border_thickness = true;
                     Configuration.packed_responsive.mobile_visual.border_thickness = .all(0);
                     Configuration.packed_responsive.mobile_visual.background = .{ .color = .{ .a = 0, .r = 0, .g = 0, .b = 0 }, .has_color = true };
                 }
@@ -180,8 +180,8 @@ pub fn configureResponsive(ui_node: *UINode, style: *const Vapor.Style) u32 {
 
         if (s.visual) |visual| {
             if (ui_node.type == .Button or ui_node.type == .ButtonCycle or ui_node.type == .CtxButton) {
-                if (!Configuration.packed_responsive.desktop_visual.has_border_thickeness) {
-                    Configuration.packed_responsive.desktop_visual.has_border_thickeness = true;
+                if (!Configuration.packed_responsive.desktop_visual.has_border_thickness) {
+                    Configuration.packed_responsive.desktop_visual.has_border_thickness = true;
                     Configuration.packed_responsive.desktop_visual.border_thickness = .all(0);
                     Configuration.packed_responsive.desktop_visual.background = .{ .color = .{ .a = 0, .r = 0, .g = 0, .b = 0 }, .has_color = true };
                 }

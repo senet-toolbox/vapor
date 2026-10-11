@@ -127,7 +127,7 @@ fn cond() void {
     });
 }
 
-// ── /hide : .hide(false) shows the element again ───────────────────────────
+// ── /hide : .hidden(false) shows the element again ─────────────────────────
 
 var panel_hidden = false;
 
@@ -140,7 +140,7 @@ fn hidePage() void {
         Button(toggleHidden, .{}).id("toggle-hidden").children({
             Text("Toggle").end();
         });
-        Text("Panel").id("panel").hide(panel_hidden).end();
+        Text("Panel").id("panel").hidden(panel_hidden).end();
     });
 }
 

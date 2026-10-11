@@ -282,13 +282,15 @@ const tests = {
     assertEqual(await p.evaluate(contents), ["Toggle", "Stable", "Unkeyed after"], "without banner");
   },
 
-  async ".hide(false) shows an element .hide(true) hid"(p) {
+  async ".hidden(false) shows an element .hidden(true) hid"(p) {
     await p.goto("/hide");
     await p.waitFor(`!!document.getElementById("panel")`, "hide page");
+    const display = `getComputedStyle(document.getElementById("panel")).display`;
+    assertEqual((await p.evaluate(display)) !== "none", true, "panel shown at first");
     await p.click("toggle-hidden");
-    await p.waitFor(`document.getElementById("panel").hidden === true`, "panel hidden");
+    await p.waitFor(`${display} === "none"`, "panel hidden");
     await p.click("toggle-hidden");
-    await p.waitFor(`document.getElementById("panel").hidden === false`, "panel shown again");
+    await p.waitFor(`${display} !== "none"`, "panel shown again");
   },
 
   async "onFocus and onBlur fire on ordinary elements"(p) {

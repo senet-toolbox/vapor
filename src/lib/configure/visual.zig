@@ -117,8 +117,8 @@ fn configureLayers(visual: *const Vapor.Types.Visual, current_hash_v: u32) u32 {
 pub fn configureVisual(ui_node: *UINode, style: *const Vapor.Style) u32 {
     var hash_v: u32 = 0;
     if (ui_node.type == .Button or ui_node.type == .ButtonCycle or ui_node.type == .CtxButton) {
-        if (!Configuration.packed_visual.has_border_thickeness) {
-            Configuration.packed_visual.has_border_thickeness = true;
+        if (!Configuration.packed_visual.has_border_thickness) {
+            Configuration.packed_visual.has_border_thickness = true;
             Configuration.packed_visual.border_thickness = .all(0);
             Configuration.packed_visual.background = .{ .color = .{ .a = 0, .r = 0, .g = 0, .b = 0 }, .has_color = true };
         }
@@ -245,8 +245,10 @@ pub fn checkVisual(visual: *const types.Visual, packet_visual: *types.PackedVisu
     }
 
     if (visual.border) |border| {
-        packet_visual.border_thickness = border.thickness;
-        packet_visual.has_border_thickeness = true;
+        if (border.thickness) |thickness| {
+            packet_visual.border_thickness = thickness;
+            packet_visual.has_border_thickness = true;
+        }
         if (border.color) |color| {
             packet_visual.has_border_color = true;
             var border_color = packet_visual.border_color;
@@ -257,7 +259,9 @@ pub fn checkVisual(visual: *const types.Visual, packet_visual: *types.PackedVisu
             packet_visual.has_border_radius = true;
             packet_visual.border_radius = radius;
         }
-        packet_visual.border_style = border.style;
+        // A border with a thickness is solid unless told otherwise.
+        packet_visual.border_style = border.style orelse
+            if (border.thickness != null) .solid else .default;
     }
 
     if (visual.font_size) |font_size| {

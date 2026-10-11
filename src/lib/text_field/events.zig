@@ -95,19 +95,6 @@ pub fn onEvent(self: *const Self, event: types.EventType, func: anytype, args: a
     return self;
 }
 
-/// Same as `onEvent`, but returns a pointer to the builder.
-pub fn onEventCtx(self: *const Self, event: types.EventType, func: anytype, args: anytype) *const Self {
-    const ui_node = self._ui_node orelse {
-        Vapor.printlnSrcErr("Node is null", .{}, @src());
-        @panic("vapor: Node is null");
-    };
-    Vapor.attachEventCtxCallback(ui_node, event, func, args) catch |err| {
-        Vapor.println("OnEventCtx: Could not attach event callback {any}\n", .{err});
-        @panic("vapor: OnEventCtx: Could not attach event callback");
-    };
-    return self;
-}
-
 /// Calls `callback` with `args` once the element is on the page.
 pub fn onMount(self: *const Self, callback: anytype, args: anytype) *const Self {
     const ui_node = self._ui_node orelse {

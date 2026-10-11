@@ -40,11 +40,6 @@ pub fn hashKey(key: []const u8) u32 {
     return std.hash.XxHash32.hash(0, key);
 }
 
-/// Same as `hashKey`.
-pub fn hash(value: []const u8) u32 {
-    return std.hash.XxHash32.hash(0, value);
-}
-
 const base62_chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 
 /// Writes `hash_value` in base 62 into `out` (up to 6 characters) and returns
@@ -444,3 +439,7 @@ test "hashToBase62 encodes zero as \"0\"" {
     var out: [6]u8 = undefined;
     try std.testing.expectEqualStrings("0", out[0..hashToBufferBase62(0, &out)]);
 }
+
+// Deprecated names, removed in the next major version.
+/// Deprecated: use `hashKey`.
+pub const hash = hashKey;

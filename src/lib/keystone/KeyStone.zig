@@ -226,11 +226,6 @@ pub fn oauthUrl(provider: Provider) ?[]const u8 {
     return buildAuthorizeUrl(provider, client, true) catch null;
 }
 
-/// Same as `signInWithOauth`.
-pub fn signIn(provider: Provider) void {
-    signInWithOauth(provider);
-}
-
 /// Sends the browser to the provider's sign-in page.
 pub fn signInWithOauth(provider: Provider) void {
     const client = keystone.getClient(provider) orelse return;
@@ -278,11 +273,6 @@ pub fn bootstrap() void {
     }).handle(handleAuthSessionResponse, .{});
 }
 
-/// Same as `bootstrap`.
-pub fn restoreSession() void {
-    bootstrap();
-}
-
 /// Asks the backend for a fresh access token.
 pub fn refreshSession() void {
     const url = Vapor.frame.fmt("{s}/auth/session/refresh", .{keystone.backend_url});
@@ -323,11 +313,6 @@ pub fn disableFocusSync() void {
 pub fn isAuthenticated() bool {
     const token = getAccessToken() orelse return false;
     return !JWT.isExpired(token);
-}
-
-/// Same as `getAccessToken`.
-pub fn getSession() ?[]const u8 {
-    return getAccessToken();
 }
 
 /// The stored access token, or `null`.
@@ -860,3 +845,11 @@ fn getClient(self: *const KeyStone, provider: Provider) ?ClientConfig {
         .azure => self.clients.azure,
     };
 }
+
+// Deprecated names, removed in the next major version.
+/// Deprecated: use `signInWithOauth`.
+pub const signIn = signInWithOauth;
+/// Deprecated: use `bootstrap`.
+pub const restoreSession = bootstrap;
+/// Deprecated: use `getAccessToken`.
+pub const getSession = getAccessToken;

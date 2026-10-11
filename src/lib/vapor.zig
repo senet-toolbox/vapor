@@ -179,7 +179,7 @@ pub var packed_layers: std.AutoHashMap(u32, []Vapor.Types.PackedLayer) = undefin
 pub var packed_colors: std.AutoHashMap(u32, []Vapor.Types.PackedColor) = undefined;
 pub var packed_transitions: std.AutoHashMap(u32, []Vapor.Types.TransitionProperty) = undefined;
 pub var packed_transforms: std.AutoHashMap(u32, []Vapor.Types.TransformType) = undefined;
-pub var element_registry: std.AutoHashMap(u32, *Binded) = undefined;
+pub var element_registry: std.AutoHashMap(u32, *Element) = undefined;
 
 pub const ObserverNode = union(enum) {
     type: ElementType,
@@ -322,7 +322,7 @@ pub fn init(config: VaporConfig) void {
     observer_nodes = std.StringHashMap(std.array_list.Managed(ObserverNode)).init(allocator);
     added_nodes = std.array_list.Managed(*UINode).init(allocator);
     dirty_nodes = std.array_list.Managed(*UINode).init(allocator);
-    element_registry = std.AutoHashMap(u32, *Binded).init(allocator);
+    element_registry = std.AutoHashMap(u32, *Element).init(allocator);
 }
 
 fn initRegistries(persistent_allocator: std.mem.Allocator) void {
@@ -403,15 +403,6 @@ pub const LifeCycle = struct {
 /// `timeout` callbacks and fetch results trigger one by themselves; call this
 /// after changing state anywhere else.
 pub fn cycle() void {
-    if (isWasi) {
-        Vapor.global_rerender = true;
-        // render_phase = .generating;
-        Wasm.requestRerenderWasm();
-    }
-}
-
-/// Requests a rerender. Same as `cycle`.
-pub fn batch() void {
     if (isWasi) {
         Vapor.global_rerender = true;
         // render_phase = .generating;
@@ -1129,8 +1120,6 @@ pub const Clipboard = struct {
     fn paste(_: []const u8) void {}
 };
 
-pub const Binded = Element;
-
 const ExportsModule = @import("exports.zig");
 comptime {
     _ = ExportsModule;
@@ -1175,3 +1164,7 @@ pub const std_options = std.Options{
 };
 
 pub const ArrayArena = @import("array.zig").Array;
+
+// Deprecated names, removed in the next major version.
+/// Deprecated: use `cycle`.
+pub const batch = cycle;

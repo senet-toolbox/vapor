@@ -1047,7 +1047,7 @@ fn docEventMethods() void {
     _ = box.onBlur(docEventHandler);
     _ = box.onChange(docCtxHandler, .{@as(u32, 1)});
     _ = box.onEvent(.click, docCtxHandler, .{@as(u32, 1)});
-    _ = box.onEventCtx(.click, docCtxHandler, .{@as(u32, 1)});
+    _ = box.onEvent(.click, docCtxHandler, .{@as(u32, 1)});
     _ = box.onHover(docCtxHandler, .{@as(u32, 1)});
     _ = box.onLeave(docCtxHandler, .{@as(u32, 1)});
     _ = box.onHoverCtx(docCtxHandler, .{@as(u32, 1)});
@@ -1056,7 +1056,6 @@ fn docEventMethods() void {
     _ = box.onMount(docHook, .{@as(u32, 1)});
     _ = box.onUpdate(docHook, .{@as(u32, 1)});
     _ = box.onDestroy(docHook, .{@as(u32, 1)});
-    _ = box.onMountCtx(docHook, .{@as(u32, 1)});
     _ = box.onEvent(.keydown, docCtxHandler, .{@as(u32, 1)});
     Vapor.Box().child(Vapor.Text("x"));
     Vapor.Row().items(.{ Vapor.Text("a"), Vapor.Text("b") });
@@ -1070,7 +1069,7 @@ fn docEventMethods() void {
     _ = field.onHover(docEventHandler);
     _ = field.onLeave(docEventHandler);
     _ = field.onEvent(.click, docCtxHandler, .{@as(u32, 1)});
-    _ = field.onEventCtx(.click, docCtxHandler, .{@as(u32, 1)});
+    _ = field.onEvent(.click, docCtxHandler, .{@as(u32, 1)});
     _ = field.onMount(docHook, .{@as(u32, 1)});
     _ = field.onChange(docCtxHandler, .{@as(u32, 1)});
     _ = field.onHoverCtx(docCtxHandler, .{@as(u32, 1)});
@@ -1186,7 +1185,7 @@ test "static components are reachable via the generic builder" {
     // namespace is gone; keep that path compiling.
     comptime {
         _ = @TypeOf(Vapor.Builder(.static).Box);
-        _ = @TypeOf(Vapor.BuilderClose(.static).Text("x"));
+        _ = @TypeOf(Vapor.Builder(.static).Text("x"));
     }
 }
 
@@ -1510,4 +1509,36 @@ test "deprecated names still resolve" {
     try std.testing.expectEqual(T.Sizing.minMaxVp(1, 2), T.Sizing.min_max_vp(1, 2));
     try std.testing.expectEqual(T.Pos.mobileDesktop(.px(1), .px(2)), T.Pos.mobile_desktop(.px(1), .px(2)));
     try std.testing.expectEqual(T.Transform.leftPercent(5), T.Transform.left_percent(5));
+}
+
+fn visualCss(visual: Vapor.Types.Visual, buf: []u8) ![]const u8 {
+    var packed_visual: Vapor.Types.PackedVisual = .{};
+    Vapor.Testing.ConfigureVisual.checkVisual(&visual, &packed_visual);
+    var writer: Vapor.Writer = undefined;
+    writer.init(buf);
+    StyleCompiler.generateVisual(&packed_visual, &writer);
+    return writer.getAll();
+}
+
+// Visual had border_radius/border_thickness/border_color fields beside
+// `border` that never reached the CSS, and a `border` always wrote a width
+// (zero by default), so a hover could not change only the colour.
+test "each part of a border is written only when given" {
+    var buf: [1024]u8 = undefined;
+
+    const rounded = try visualCss(.{ .border = .{ .radius = .all(8) } }, &buf);
+    try std.testing.expect(std.mem.indexOf(u8, rounded, "border-radius") != null);
+    try std.testing.expect(std.mem.indexOf(u8, rounded, "border-width") == null);
+    try std.testing.expect(std.mem.indexOf(u8, rounded, "border-style") == null);
+
+    const recolour = try visualCss(.{ .border = .{ .color = .white } }, &buf);
+    try std.testing.expect(std.mem.indexOf(u8, recolour, "border-color") != null);
+    try std.testing.expect(std.mem.indexOf(u8, recolour, "border-width") == null);
+
+    const thin = try visualCss(.{ .border = .thin(.white) }, &buf);
+    try std.testing.expect(std.mem.indexOf(u8, thin, "border-width:1px") != null);
+    try std.testing.expect(std.mem.indexOf(u8, thin, "border-style: solid") != null);
+
+    const dashed = try visualCss(.{ .border = .{ .thickness = .all(2), .style = .dashed } }, &buf);
+    try std.testing.expect(std.mem.indexOf(u8, dashed, "border-style: dashed") != null);
 }

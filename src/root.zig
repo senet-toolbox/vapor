@@ -61,7 +61,7 @@ pub const RedirectLink = PureComponent.RedirectLink;
 pub const Button = PureComponent.Button;
 pub const Form = PureComponent.Form;
 /// A `<button type="submit">` for a `Form`.
-pub const SubmitButton = PureComponent.FormButton;
+pub const SubmitButton = PureComponent.SubmitButton;
 pub const FieldSet = PureComponent.FieldSet;
 pub const Table = PureComponent.Table;
 pub const TableHead = PureComponent.TableHead;
@@ -73,40 +73,34 @@ pub const Anchor = PureComponent.Anchor;
 
 // Leaves: finish with `.end()`.
 
-pub const Text = PureComponentClose.Text;
-pub const TextFmt = PureComponentClose.TextFmt;
-pub const Heading = PureComponentClose.Heading;
-pub const Label = PureComponentClose.Label;
-pub const Code = PureComponentClose.Code;
-pub const Number = PureComponentClose.Number;
-pub const Html = PureComponentClose.Html;
-pub const Image = PureComponentClose.Image;
-pub const Icon = PureComponentClose.Icon;
-pub const Svg = PureComponentClose.Svg;
-pub const Graphic = PureComponentClose.Graphic;
-pub const Video = PureComponentClose.Video;
-pub const Iframe = PureComponentClose.Iframe;
-pub const Spacer = PureComponentClose.Spacer;
-pub const Divider = PureComponentClose.Divider;
+pub const Text = PureComponent.Text;
+pub const TextFmt = PureComponent.TextFmt;
+pub const Heading = PureComponent.Heading;
+pub const Label = PureComponent.Label;
+pub const Code = PureComponent.Code;
+pub const Number = PureComponent.Number;
+pub const Html = PureComponent.Html;
+pub const Image = PureComponent.Image;
+pub const Icon = PureComponent.Icon;
+pub const Svg = PureComponent.Svg;
+pub const Graphic = PureComponent.Graphic;
+pub const Video = PureComponent.Video;
+pub const Iframe = PureComponent.Iframe;
+pub const Spacer = PureComponent.Spacer;
+pub const Divider = PureComponent.Divider;
 pub const TextField = text_field.TextFieldBuilder.TextField;
 pub const TextArea = text_field.TextFieldBuilder.TextArea;
-pub const Null = PureComponentClose.Null;
-pub const Null2 = PureComponentClose.Null2;
+pub const Null = PureComponent.Null;
+pub const Null2 = PureComponent.Null2;
 
 /// The type every element builder above returns (`Box()`, `Text(...)`, ...).
 /// Name it to write helpers that take or return a builder.
 pub const PureComponent = components.ComponentBuilder;
-/// Same type as `PureComponent`; kept for older code.
-pub const PureComponentClose = components.ComponentBuilder;
 /// `Builder(state)` returns `PureComponent` for every state.
 pub const Builder = components.Builder;
-/// Same as `Builder`; kept for older code.
-pub const BuilderClose = components.BuilderClose;
 /// The builder `TextField(...)` and `TextArea()` return.
 /// `TextFieldBuilder(state)` returns the same type for every state.
-pub const TextFieldBuilder = text_field.BuilderClose;
-/// Same as `TextFieldBuilder`; kept for older code.
-pub const TextAreaBuilder = text_field.BuilderClose;
+pub const TextFieldBuilder = text_field.Builder;
 
 // ── Styling ─────────────────────────────────────────────────────────────────
 
@@ -118,12 +112,8 @@ pub const setGlobalStyleVariables = lib.setGlobalStyleVariables;
 /// Adds raw CSS to the page's stylesheet.
 pub const injectCSS = @import("lib/CSSGenerator.zig").injectCSS;
 pub const hexToRgba = lib.hexToRgba;
-/// Same as `Types.Color.transparentize`: `color` with its alpha replaced.
-pub const transparentizeHex = types.Color.transparentize;
 /// The icon set your app's `config` module declares.
 pub const IconTokens = @import("config").IconTokens;
-/// Same as `IconTokens`.
-pub const IconType = IconTokens;
 /// ARIA attributes for an element; pass to `.a11y(...)`.
 pub const Accessibility = @import("lib/accessibility.zig").Accessibility;
 /// Decorative lines along an element's sides, drawn with ::before/::after.
@@ -174,7 +164,7 @@ pub const getComponentOffsets = lib.getComponentOffsets;
 pub const Bounds = lib.Bounds;
 pub const mutateById = lib.mutateById;
 /// A handle to a rendered element, filled in by a builder's `.ref(&element)`.
-pub const Binded = @import("lib/element.zig").Element;
+pub const Element = @import("lib/element.zig").Element;
 
 // ── Data ────────────────────────────────────────────────────────────────────
 
@@ -297,7 +287,23 @@ pub const Testing = if (builtin.is_test) struct {
     pub const JWT = @import("lib/keystone/jwt.zig");
     pub const HtmlGenerator = @import("lib/html_generator.zig");
     pub const StyleCompiler = @import("lib/style_compiler.zig");
+    pub const ConfigureVisual = @import("lib/configure/visual.zig");
 } else struct {};
+
+// ── Deprecated names, removed in the next major version ────────────────────
+
+/// Deprecated: use `Element`.
+pub const Binded = Element;
+/// Deprecated: use `PureComponent`.
+pub const PureComponentClose = PureComponent;
+/// Deprecated: use `Builder`.
+pub const BuilderClose = Builder;
+/// Deprecated: use `TextFieldBuilder`.
+pub const TextAreaBuilder = TextFieldBuilder;
+/// Deprecated: use `Types.Color.transparentize`.
+pub const transparentizeHex = types.Color.transparentize;
+/// Deprecated: use `IconTokens`.
+pub const IconType = IconTokens;
 
 // A test binary only collects test blocks from its own root module, so the
 // ones inside src/lib run from the `vapor-lib-tests` step, which is rooted

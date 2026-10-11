@@ -170,16 +170,6 @@ pub const persist = struct {
         return Vapor.arena(.persist);
     }
 
-    /// Same as `arena`.
-    pub fn allocator() std.mem.Allocator {
-        return Vapor.arena(.persist);
-    }
-
-    /// Same as `array`.
-    pub fn Array(comptime T: type) ArrayArena(T) {
-        return ArrayArena(T).init(.persist);
-    }
-
     /// Joins `parts` with `separator` (`.{ "a", "b" }` and ", " give "a, b"); the result lasts for the life of the app (until you free it).
     pub fn join(parts: []const []const u8, separator: []const u8) []const u8 {
         const _allocator = Vapor.arena(.persist);
@@ -238,6 +228,13 @@ pub const persist = struct {
     pub fn startsWith(str: []const u8, prefix: []const u8) bool {
         return utils.startsWith(str, prefix);
     }
+
+    // Deprecated names, removed in the next major version.
+
+    /// Deprecated: use `arena`.
+    pub const allocator = persist.arena;
+    /// Deprecated: use `array`.
+    pub const Array = persist.array;
 };
 
 pub const view = struct {
@@ -270,11 +267,6 @@ pub const view = struct {
         return ArrayArena(T).init(.view);
     }
 
-    /// Same as `array`.
-    pub fn Array(comptime T: type) ArrayArena(T) {
-        return ArrayArena(T).init(.view);
-    }
-
     /// The allocator for view memory (see `arena`).
     pub fn arena() std.mem.Allocator {
         return Vapor.arena(.view);
@@ -304,6 +296,11 @@ pub const view = struct {
     pub fn startsWith(str: []const u8, prefix: []const u8) bool {
         return utils.startsWith(str, prefix);
     }
+
+    // Deprecated names, removed in the next major version.
+
+    /// Deprecated: use `array`.
+    pub const Array = view.array;
 };
 
 pub const frame = struct {
@@ -349,11 +346,6 @@ pub const frame = struct {
 
     /// An empty growable list whose memory lasts for this render (freed two renders later).
     pub fn array(comptime T: type) ArrayArena(T) {
-        return ArrayArena(T).init(.frame);
-    }
-
-    /// Same as `array`.
-    pub fn Array(comptime T: type) ArrayArena(T) {
         return ArrayArena(T).init(.frame);
     }
 
@@ -414,4 +406,9 @@ pub const frame = struct {
     pub fn startsWith(str: []const u8, prefix: []const u8) bool {
         return utils.startsWith(str, prefix);
     }
+
+    // Deprecated names, removed in the next major version.
+
+    /// Deprecated: use `array`.
+    pub const Array = frame.array;
 };

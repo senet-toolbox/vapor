@@ -262,13 +262,14 @@ pub const BorderStyle = enum(u8) {
 /// style. `.border(.thin(.palette(.border)))`, or a literal:
 /// `.{ .thickness = .b(1), .color = .hex("#E4E4E4") }`.
 pub const Border = struct {
-    thickness: BorderThickness = .none,
+    thickness: ?BorderThickness = null,
     color: ?types.Color = null,
     radius: ?BorderRadius = null,
-    style: BorderStyle = .solid,
+    /// Solid when a thickness is given and this is left null.
+    style: ?BorderStyle = null,
 
-    /// No border.
-    pub const none = Border{};
+    /// No border: zero thickness on every side.
+    pub const none = Border{ .thickness = .none };
 
     /// Thickness, colour and corner radius.
     pub fn solid(thickness: BorderThickness, color: types.Color, radius: BorderRadius) Border {

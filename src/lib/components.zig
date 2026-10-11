@@ -147,9 +147,6 @@ fn mergeVisualFields(target: *types.Visual, source: types.Visual) void {
     if (source.fill != null) target.fill = source.fill;
     if (source.stroke != null) target.stroke = source.stroke;
     if (source.border != null) target.border = source.border;
-    if (source.border_radius != null) target.border_radius = source.border_radius;
-    if (source.border_thickness != null) target.border_thickness = source.border_thickness;
-    if (source.border_color != null) target.border_color = source.border_color;
     if (source.text_color != null) target.text_color = source.text_color;
     if (source.font_size != null) target.font_size = source.font_size;
     if (source.font_weight != null) target.font_weight = source.font_weight;
@@ -451,7 +448,7 @@ pub const ComponentBuilder = struct {
     pub const List = ElementConstructors.List;
     pub const ListItem = ElementConstructors.ListItem;
     pub const Center = ElementConstructors.Center;
-    pub const FormButton = ElementConstructors.FormButton;
+    pub const SubmitButton = ElementConstructors.SubmitButton;
     pub const Button = ElementConstructors.Button;
     pub const Stack = ElementConstructors.Stack;
     pub const Link = ElementConstructors.Link;
@@ -480,7 +477,6 @@ pub const ComponentBuilder = struct {
     pub const pos = LayoutMethods.pos;
     pub const zIndex = LayoutMethods.zIndex;
     pub const layout = LayoutMethods.layout;
-    pub const anchorPlacement = LayoutMethods.anchorPlacement;
     pub const placement = LayoutMethods.placement;
     pub const center = LayoutMethods.center;
     pub const spacing = LayoutMethods.spacing;
@@ -509,7 +505,6 @@ pub const ComponentBuilder = struct {
     pub const wrap = LayoutMethods.wrap;
     pub const scroll = LayoutMethods.scroll;
     pub const showScrollBar = LayoutMethods.showScrollBar;
-    pub const hide = LayoutMethods.hide;
     pub const responsive = LayoutMethods.responsive;
 
     const AttributeMethods = @import("builder/attributes.zig");
@@ -541,10 +536,8 @@ pub const ComponentBuilder = struct {
     pub const whiteSpace = StyleMethods.whiteSpace;
     pub const fontSize = StyleMethods.fontSize;
     pub const fontWeight = StyleMethods.fontWeight;
-    pub const weight = StyleMethods.weight;
     pub const fontFamily = StyleMethods.fontFamily;
     pub const textColor = StyleMethods.textColor;
-    pub const fontColor = StyleMethods.fontColor;
     pub const font = StyleMethods.font;
     pub const blur = StyleMethods.blur;
     pub const background = StyleMethods.background;
@@ -552,7 +545,6 @@ pub const ComponentBuilder = struct {
     pub const shadow = StyleMethods.shadow;
     pub const layer = StyleMethods.layer;
     pub const layers = StyleMethods.layers;
-    pub const gradient = StyleMethods.gradient;
     pub const textDecoration = StyleMethods.textDecoration;
     pub const hoverScale = StyleMethods.hoverScale;
     pub const hover = StyleMethods.hover;
@@ -570,7 +562,6 @@ pub const ComponentBuilder = struct {
     pub const colorMix = StyleMethods.colorMix;
     pub const listStyle = StyleMethods.listStyle;
     pub const style = StyleMethods.style;
-    pub const baseStyle = StyleMethods.baseStyle;
     pub const interaction = StyleMethods.interaction;
     pub const inlineStyle = StyleMethods.inlineStyle;
     pub const morph = StyleMethods.morph;
@@ -598,8 +589,6 @@ pub const ComponentBuilder = struct {
     pub const onLeave = EventMethods.onLeave;
     pub const cycle = EventMethods.cycle;
     pub const onEvent = EventMethods.onEvent;
-    pub const onEventCtx = EventMethods.onEventCtx;
-    pub const onMountCtx = EventMethods.onMountCtx;
     pub const onHoverCtx = EventMethods.onHoverCtx;
     pub const onDragStart = EventMethods.onDragStart;
     pub const createDraggable = EventMethods.createDraggable;
@@ -616,16 +605,31 @@ pub const ComponentBuilder = struct {
     pub const close = TreeMethods.close;
     pub const end = TreeMethods.end;
     pub const getUUID = TreeMethods.getUUID;
+
+    // Deprecated names, removed in the next major version.
+
+    /// Deprecated: use `textColor`.
+    pub const fontColor = textColor;
+    /// Deprecated: use `fontWeight`.
+    pub const weight = fontWeight;
+    /// Deprecated: use `style`.
+    pub const baseStyle = style;
+    /// Deprecated: use `placement`.
+    pub const anchorPlacement = placement;
+    /// Deprecated: use `onMount`.
+    pub const onMountCtx = onMount;
+    /// Deprecated: use `hidden`.
+    pub const hide = hidden;
+    /// Deprecated: use `SubmitButton`.
+    pub const FormButton = SubmitButton;
+    /// Deprecated: use `background`.
+    pub const gradient = background;
+    /// Deprecated: use `onEvent`.
+    pub const onEventCtx = onEvent;
 };
 
 /// Kept for source compatibility; every state type gets the same builder.
 pub fn Builder(comptime state_type: types.StateType) type {
-    _ = state_type;
-    return ComponentBuilder;
-}
-
-/// Same as `Builder`.
-pub fn BuilderClose(comptime state_type: types.StateType) type {
     _ = state_type;
     return ComponentBuilder;
 }

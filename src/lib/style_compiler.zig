@@ -47,7 +47,7 @@ pub const colorToCSS = ValuesModule.colorToCSS;
 pub fn writeStyleField(field: Types.StyleFields, visual: *const Types.PackedVisual, writer: writer_t) void {
     switch (field) {
         .border => {
-            if (visual.has_border_thickeness) {
+            if (visual.has_border_thickness) {
                 const border_thickness = visual.border_thickness;
                 writePropValue("border-width", .{ .tag = .border, .data = .{ .border = border_thickness } }, writer);
                 writer.write("border-style: solid;\n") catch {};
@@ -176,7 +176,7 @@ pub fn generateVisual(visual: *const Types.PackedVisual, writer: writer_t) void 
         writePropValue("font-style", .{ .tag = .font_style, .data = .{ .font_style = visual.font_style } }, writer);
     }
 
-    if (visual.has_border_thickeness) {
+    if (visual.has_border_thickness) {
         const border_thickness = visual.border_thickness;
         writePropValue("border-width", .{ .tag = .border, .data = .{ .border = border_thickness } }, writer);
     }

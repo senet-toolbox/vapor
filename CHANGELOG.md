@@ -24,6 +24,12 @@ Breaking: the next release is a major version.
   - `BorderThickness` `.tb(n)` / `.lr(n)` → `.vertical(n)` /
     `.horizontal(n)` (`tb`/`lr` now take two values, as on `Padding`).
   - `Types.Border` used as a thickness → `Types.BorderThickness`.
+- `Visual.border_radius`, `border_thickness` and `border_color` are
+  removed; they never reached the CSS. Use `border`, whose parts are now
+  all optional: `.border = .{ .radius = .all(8) }` rounds corners without
+  a border, and a hover of `.border = .{ .color = c }` changes only the
+  colour. A border with a thickness is solid unless `.style` says
+  otherwise.
 - `.view` memory is now freed when the app leaves the page (see Fixed). A
   global that points into it must be reset in the page's deinit or
   reallocated on the next visit.
@@ -35,6 +41,23 @@ Kept as aliases until the next major version:
 - `BorderGrouped` → `Border`; `Border.simple` → `thin`, `.t/.b/.l/.r` →
   `.top/.bottom/.left/.right`, `.tb(color)`/`.lr(color)` →
   `.vertical(1, color)`/`.horizontal(1, color)`.
+- `Binded` → `Element`.
+- Pairs that did the same thing keep one name: `PureComponentClose` →
+  `PureComponent`, `BuilderClose` → `Builder`, `TextAreaBuilder` →
+  `TextFieldBuilder`, `transparentizeHex` → `Color.transparentize`,
+  `IconType` → `IconTokens`; builder methods `fontColor` → `textColor`,
+  `weight` → `fontWeight`, `baseStyle` → `style`, `anchorPlacement` →
+  `placement`, `onMountCtx` → `onMount`, `onEventCtx` → `onEvent`,
+  `gradient` → `background`, `FormButton` → `SubmitButton`, and on text
+  fields `whitespace` → `whiteSpace`, `childGap` → `spacing`; `Size.px`/
+  `Size.percent` → `squarePx`/`squarePercent`, `Sizing.at` →
+  `mobileDesktopPercent`, `Transform.distAndScale` → `directionScale`,
+  `Shadow.toCss` → `writeCss`, `persist.allocator` → `persist.arena`,
+  `{persist,view,frame}.Array` → `array`, `KeyStone.signIn` →
+  `signInWithOauth`, `restoreSession` → `bootstrap`, `getSession` →
+  `getAccessToken`, `draggable` → `Draggable.init`.
+- `.hide(bool)` → `.hidden(bool)`. `.hide` set the DOM attribute after the
+  fact and did nothing on the first render; `.hidden` always applies.
 - snake_case functions → camelCase: `square_px` → `squarePx`,
   `square_percent`, `hw_px`, `hw_percent`, `min_max_vp`,
   `mobile_desktop`, `mobile_desktop_percent`, `none_x`/`none_y`,
@@ -93,6 +116,9 @@ noted.
   frame). The class reference counts this relied on never worked; classes
   are now marked by each render and a rule unused for 3 seconds is
   deleted.
+- `TextField(...).radius(...)` did nothing.
+- A border's line style was left out of its class hash, so changing only
+  the style kept the old rule.
 - A responsive style with two breakpoints wrote its first `@media` rule
   twice, and after the first render the runtime overwrote it with a plain
   rule, so the mobile style applied at every width.
