@@ -264,23 +264,17 @@ pub fn configure(ui_ctx: *UIContext, elem_decl: ElemDecl) *UINode {
         if (current_open.target) |target| {
             const class = Vapor.frame.fmt("t_vis-{s}", .{target});
             const new_class_hash = hashKey(class);
-            _ = Vapor.class_cache.get(new_class_hash) orelse {
-                Vapor.class_cache.set(new_class_hash, .defined) catch |err| {
-                    Vapor.printlnErr("class cache: not recorded, rule may be re-emitted: {any}", .{err});
-                };
+            if (Vapor.class_cache.defineOnce(new_class_hash)) {
                 Vapor.generator.writeTargetStyle(current_open, hash_tv, &target_packed_visual);
-            };
+            }
         }
 
         if (s.style_id != null) {
             const class = current_open.class.?;
             const new_class_hash = hashKey(class);
-            _ = Vapor.class_cache.get(new_class_hash) orelse {
-                Vapor.class_cache.set(new_class_hash, .defined) catch |err| {
-                    Vapor.printlnErr("class cache: not recorded, rule may be re-emitted: {any}", .{err});
-                };
+            if (Vapor.class_cache.defineOnce(new_class_hash)) {
                 Vapor.generator.writeNodeStyle(current_open);
-            };
+            }
         } else {
             if (2316552965 == current_open.style_hash) {
                 current_open.class = "";
@@ -588,23 +582,17 @@ pub fn configureByNode(ui_node: ?*UINode, elem_decl: ElemDecl) *UINode {
     if (current_open.target) |target| {
         const class = Vapor.frame.fmt("t_vis-{s}", .{target});
         const new_class_hash = hashKey(class);
-        _ = Vapor.class_cache.get(new_class_hash) orelse {
-            Vapor.class_cache.set(new_class_hash, .defined) catch |err| {
-                Vapor.printlnErr("class cache: not recorded, rule may be re-emitted: {any}", .{err});
-            };
+        if (Vapor.class_cache.defineOnce(new_class_hash)) {
             Vapor.generator.writeTargetStyle(current_open, hash_tv, &target_packed_visual);
-        };
+        }
     }
 
     if (style.style_id != null) {
         const class = current_open.class.?;
         const new_class_hash = hashKey(class);
-        _ = Vapor.class_cache.get(new_class_hash) orelse {
-            Vapor.class_cache.set(new_class_hash, .defined) catch |err| {
-                Vapor.printlnErr("class cache: not recorded, rule may be re-emitted: {any}", .{err});
-            };
+        if (Vapor.class_cache.defineOnce(new_class_hash)) {
             Vapor.generator.writeNodeStyle(current_open);
-        };
+        }
     } else {
         // This adds 2ms for 10000 nodes
         buildClassString(

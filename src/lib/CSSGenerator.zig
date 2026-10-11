@@ -259,6 +259,7 @@ fn writeCommonStyleResponsive(
         // flag 0 is mobile
         // flag 0 is mobile (applies below tablet breakpoint)
         if (value_ptr.flags_layout[0]) {
+            writer.reset(); // each breakpoint is appended on its own
             writer.write("@media (max-width: 767px) {") catch {};
             writeToken(common_key);
             StyleWriter.generateLayout(&value_ptr.mobile_layout, &writer);
@@ -274,6 +275,7 @@ fn writeCommonStyleResponsive(
 
         // flag 2 is tablet (applies at tablet and above)
         if (value_ptr.flags_layout[2]) {
+            writer.reset(); // each breakpoint is appended on its own
             writer.write("@media (min-width: 768px) {") catch {};
             writeToken(common_key);
             StyleWriter.generateLayout(&value_ptr.tablet_layout, &writer);
@@ -288,6 +290,7 @@ fn writeCommonStyleResponsive(
         }
         // flag 1 is desktop (applies at desktop and above)
         if (value_ptr.flags_layout[1]) {
+            writer.reset(); // each breakpoint is appended on its own
             writer.write("@media (min-width: 1024px) {") catch {};
             writeToken(common_key);
             StyleWriter.generateLayout(&value_ptr.desktop_layout, &writer);

@@ -701,18 +701,13 @@ export function rebuildCacheFromStylesheet() {
 
   for (let i = 0; i < styleSheet.cssRules.length; i++) {
     const rule = styleSheet.cssRules[i];
-    // CSSStyleRule has selectorText, other rule types (like @keyframes) don't
     if (rule.selectorText) {
-      // Handle pseudo-selectors like .intr_123:hover
-      // We want to cache as ".intr_123" not ".intr_123:hover"
-      let selector = rule.selectorText;
-
-      // If you want the full selector including :hover
-      styleRuleCache.set(selector, i);
-
-      // Or if you want to normalize (strip pseudo-selectors):
-      // const baseSelector = selector.split(':')[0];
-      // styleRuleCache.set(baseSelector, i);
+      // The full selector, so ".intr_123" and ".intr_123:hover" are separate.
+      styleRuleCache.set(rule.selectorText, i);
+    } else if (rule.cssRules?.[0]?.selectorText) {
+      // A responsive class's @media rule, cached under the class itself.
+      const selector = rule.cssRules[0].selectorText;
+      if (!styleRuleCache.has(selector)) styleRuleCache.set(selector, i);
     }
   }
 }

@@ -15,7 +15,7 @@ pub const KeyGenerator = struct {
         writer.init(&buf_128);
     }
 
-    /// A class name from a style hash and a prefix, e.g. "vis-a8Kx3".
+    /// A class name from a style hash and a prefix, e.g. "vis_a8Kx3".
     pub fn generateHashKey(
         buf: []u8,
         hash: u32,

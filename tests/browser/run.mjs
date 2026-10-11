@@ -324,6 +324,36 @@ const tests = {
     await p.waitForText("hooks-count", "1/1");
   },
 
+  async "unused CSS rules are removed and responsive rules insert"(p) {
+    await p.goto("/styles");
+    await p.waitFor(`!!document.getElementById("styled")`, "styles page");
+    const rules = `[...document.styleSheets, ...document.adoptedStyleSheets].flatMap((s) => [...s.cssRules])`;
+    const media = `${rules}.filter((r) => r.media && r.cssRules[0]?.selectorText.startsWith(".resp_")).map((r) => r.cssText.replace(/resp_\\w+/, "resp"))`;
+    // Both breakpoints of #responsive made it into the sheet.
+    assertEqual(await p.evaluate(media), [
+      "@media (max-width: 767px) {\n  .resp { display: flex; flex-direction: row; gap: 4px; }\n}",
+      "@media (min-width: 1024px) {\n  .resp { display: flex; flex-direction: row; gap: 8px; }\n}",
+    ], "@media rules");
+
+    const width = `getComputedStyle(document.getElementById("styled")).width`;
+    const count = `${rules}.length`;
+    for (let i = 1; i <= 5; i++) {
+      await p.click("restyle");
+      await p.waitFor(`${width} === "${100 + i}px"`, `width ${100 + i}`);
+    }
+    const before = await p.evaluate(count);
+    // Past the grace period, the next render drops the five old classes.
+    await sleep(3500);
+    await p.click("restyle");
+    await p.waitFor(`${width} === "106px"`, "width 106");
+    await p.waitFor(`${count} <= ${before} - 4`, "old rules removed");
+    // Styling still applies after the sheet shrank, including to a class
+    // string seen before the removal.
+    assertEqual((await p.evaluate(media)).length, 2, "@media rules kept");
+    await p.click("restyle");
+    await p.waitFor(`${width} === "107px"`, "width 107");
+  },
+
   async "typing reaches Zig state"(p) {
     await p.goto("/input");
     await p.waitForText("greeting", "Hello, !");

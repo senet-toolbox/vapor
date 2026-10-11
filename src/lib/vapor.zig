@@ -293,7 +293,6 @@ pub fn init(config: VaporConfig) void {
     UIContext.element_style_hash_map = std.AutoHashMap(u32, [10]u32).init(allocator);
     UIContext.class_string_cache = std.AutoHashMap(u32, []const u8).init(allocator);
     UIContext.prev_style_hashes = std.AutoHashMap(u32, u32).init(allocator);
-    UIContext.style_info_map = std.AutoHashMap(u32, *UIContext.StyleInfo).init(allocator);
 
     Components.text_string_table = std.AutoHashMap(u32, Components.StringEntry).init(allocator);
     Accessibility.a11y_map = std.AutoHashMap(u32, Accessibility.Accessibility).init(allocator);
@@ -538,6 +537,7 @@ pub var changed_route: bool = false;
 pub fn renderCycle(route_ptr: [*:0]u8) !void {
     UIContext.cache_count = 0;
     status = .{};
+    class_cache.beginRender(if (isWasi) performance_now() else 0);
 
     const route = std.mem.span(route_ptr);
 

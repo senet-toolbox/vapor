@@ -311,6 +311,7 @@ test {
     _ = types.NewShadow;
     _ = @import("lib/keystone/jwt.zig");
     _ = @import("lib/Router.zig");
+    _ = @import("lib/class_cache.zig");
     _ = Fetch;
     _ = @import("lib/storage.zig");
     _ = @import("lib/element.zig");

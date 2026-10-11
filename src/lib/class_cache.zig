@@ -1,10 +1,13 @@
-//! Reference counts for generated CSS classes, so a rule is removed from the
-//! stylesheet once no element uses it.
+//! Garbage collection for generated CSS classes. Every render marks the
+//! classes its elements use; a class no render has used for `grace_ms` is
+//! queued as a tombstone, and the runtime deletes its rules from the
+//! stylesheet. The grace period keeps the rules of elements that are still
+//! playing an exit animation after leaving the tree.
 
-// The ClassCache is a simple cache for reference counting of the number of element that share the same class
 const std = @import("std");
 const Vapor = @import("vapor.zig");
 const Wasm = Vapor.Wasm;
+const utils = @import("utils.zig");
 
 pub const ClassType = enum {
     layout,
@@ -16,6 +19,7 @@ pub const ClassType = enum {
     defined,
     transform,
     responsive,
+    target_visual,
 };
 
 pub const ClassCache = struct {
@@ -24,27 +28,48 @@ pub const ClassCache = struct {
     // The Hash is the key into the map it represent the class name
     const Hash = u32;
 
+    /// How long a class must go unused before its rules are removed.
+    pub const grace_ms: f64 = 3000;
+    /// Sweeps are at least this far apart, so a burst of renders does not
+    /// walk the table each time.
+    pub const sweep_interval_ms: f64 = 1000;
+
     const Class = struct {
-        name: []const u8,
         type: ClassType,
-        count: u32,
-        tombstone: bool = false,
+        /// The render that last used the class.
+        last_render: u32,
+        /// When that render started.
+        last_seen_ms: f64,
     };
 
+    allocator: std.mem.Allocator,
+    /// Generated classes used by a recent render.
     map: std.AutoHashMap(Hash, Class),
-    scratch_arena: std.heap.ArenaAllocator,
-    tombstones: Vapor.Array(Hash) = undefined,
+    /// Hashes of user-named classes (`.style_id`, hover targets) whose rule
+    /// has been written. These are never removed.
+    defined: std.AutoHashMap(Hash, void),
+    /// Names of classes queued for removal, owned by `allocator`.
+    tombstones: std.array_list.Managed([]const u8),
+    render: u32 = 0,
+    now_ms: f64 = 0,
+    last_sweep_ms: f64 = 0,
 
     /// An empty cache.
     pub fn init(class_cache: *Self, allocator: std.mem.Allocator) !void {
-        class_cache.* = Self{
-            .map = undefined,
-            .scratch_arena = std.heap.ArenaAllocator.init(allocator),
-            .tombstones = undefined,
+        class_cache.* = .{
+            .allocator = allocator,
+            .map = std.AutoHashMap(Hash, Class).init(allocator),
+            .defined = std.AutoHashMap(Hash, void).init(allocator),
+            .tombstones = std.array_list.Managed([]const u8).init(allocator),
         };
-        const map = std.AutoHashMap(Hash, Class).init(class_cache.scratch_arena.allocator());
-        class_cache.map = map;
-        class_cache.tombstones = Vapor.Array(Hash).init(class_cache.scratch_arena.allocator());
+    }
+
+    /// Frees the cache.
+    pub fn deinit(self: *Self) void {
+        self.flushTombstones();
+        self.map.deinit();
+        self.defined.deinit();
+        self.tombstones.deinit();
     }
 
     /// The class-name prefix for a style group, e.g. "lay" for layout.
@@ -59,91 +84,92 @@ pub const ClassCache = struct {
             .defined => "def",
             .transform => "tran",
             .responsive => "resp",
+            .target_visual => "t_vis",
         };
     }
 
-    /// The cached class for `hash`, if any.
-    pub fn get(self: *Self, hash: Hash) ?Class {
-        return self.map.get(hash);
+    /// Starts a render at time `now_ms`; classes marked from here on count as
+    /// used by it.
+    pub fn beginRender(self: *Self, now_ms: f64) void {
+        self.render +%= 1;
+        self.now_ms = now_ms;
     }
 
-    /// Records a use of the class `hash`, creating it on first use.
-    pub fn set(self: *Self, hash: Hash, class_type: ClassType) !void {
-        // 1. Check existence FIRST to avoid allocation
-        if (self.map.getPtr(hash)) |class| {
-            class.count += 1;
-            return;
-        }
-
-        // 2. Only allocate if it's actually new
-        const class_type_as_str = getClassNameByType(class_type);
-        const full_class = try std.fmt.allocPrint(self.scratch_arena.allocator(), "{s}_{any}", .{ class_type_as_str, hash });
-
+    /// Records that the current render uses the generated class `hash`.
+    pub fn markUsed(self: *Self, hash: Hash, class_type: ClassType) !void {
         try self.map.put(hash, .{
-            .name = full_class,
             .type = class_type,
-            .count = 1,
+            .last_render = self.render,
+            .last_seen_ms = self.now_ms,
         });
     }
 
-    /// Drops one use of `hash`; at zero it becomes a tombstone.
-    pub fn decrement(self: *Self, hash: Hash) !void {
-        const class_ptr = self.map.getPtr(hash) orelse return error.ClassNotFound;
+    /// Whether the generated class `hash` is tracked.
+    pub fn contains(self: *Self, hash: Hash) bool {
+        return self.map.contains(hash);
+    }
 
-        // Safety check to prevent double-free logic
-        if (class_ptr.count == 0) return;
+    /// Records the user-named class `hash`. Returns true the first time, when
+    /// its rule still has to be written.
+    pub fn defineOnce(self: *Self, hash: Hash) bool {
+        const entry = self.defined.getOrPut(hash) catch return true;
+        return !entry.found_existing;
+    }
 
-        class_ptr.count -= 1;
+    /// Queues every class unused for `grace_ms` as a tombstone and forgets it.
+    /// Runs at most once per `sweep_interval_ms`.
+    pub fn sweep(self: *Self) !void {
+        if (self.now_ms - self.last_sweep_ms < sweep_interval_ms) return;
+        self.last_sweep_ms = self.now_ms;
 
-        if (class_ptr.count == 0) {
-            // Queue the HASH for deletion, don't store the whole Class copy
-            try self.tombstones.append(hash);
+        var stale: std.array_list.Managed(Hash) = .init(self.allocator);
+        defer stale.deinit();
+        var it = self.map.iterator();
+        while (it.next()) |entry| {
+            const class = entry.value_ptr;
+            if (class.last_render == self.render) continue;
+            if (self.now_ms - class.last_seen_ms < grace_ms) continue;
+            try stale.append(entry.key_ptr.*);
+        }
+        for (stale.items) |hash| {
+            const class = self.map.get(hash).?;
+            var buf: [6]u8 = undefined;
+            const name = try std.fmt.allocPrint(self.allocator, "{s}_{s}", .{
+                getClassNameByType(class.type),
+                utils.hashToBase62(hash, &buf),
+            });
+            errdefer self.allocator.free(name);
+            try self.tombstones.append(name);
+            _ = self.map.remove(hash);
         }
     }
 
-    /// Classes whose count reached zero.
-    pub fn getTombstones(self: *Self) []Hash {
-        return self.tombstones.items[0..];
-    }
-
-    /// Asks the runtime to delete the CSS rules of classes no element uses.
-    ///
-    /// Deliberately disabled: the guard below returns whenever there is work
-    /// to do. The refcounts are not reliable yet. A class shared by several
-    /// elements is counted once (configuration only calls `set` when the class
-    /// is missing), and removing an element never decrements its classes. So a
-    /// count can reach zero while elements still use the rule. Until both are
-    /// fixed, rules are kept and the stylesheet only grows.
+    /// Sweeps, then asks the runtime to delete the rules of the tombstones.
     pub fn batchRemove(self: *Self) void {
-        if (self.tombstones.items.len > 0) return;
+        self.sweep() catch |err| {
+            Vapor.printlnErr("class cache: sweep failed, unused rules kept: {any}", .{err});
+        };
+        if (self.tombstones.items.len == 0) return;
         if (Vapor.isWasi) {
             Wasm.batchRemoveTombStonesWasm();
         }
     }
 
-    /// The `index`-th tombstone.
-    pub fn getTombstone(self: *Self, index: usize) Hash {
-        return self.tombstones.items[index];
+    /// Classes queued for removal.
+    pub fn getTombstones(self: *Self) []const []const u8 {
+        return self.tombstones.items;
     }
 
-    // Call this AFTER the JS side has read the tombstones and removed CSS classes
-    /// Clears the tombstones and the whole cache, after the runtime removed them.
+    /// Clears the tombstones, after the runtime removed their rules.
     pub fn flushTombstones(self: *Self) void {
-        // Reset the list
+        for (self.tombstones.items) |name| self.allocator.free(name);
         self.tombstones.clearRetainingCapacity();
-        self.map.clearRetainingCapacity();
-        const did = self.scratch_arena.reset(.retain_capacity);
-        if (!did) {
-            Vapor.printlnSrcErr("Failed to ClassCache reset arena\nPlease report bug to maintainer", .{}, @src());
-        }
     }
 
     /// The class name of the `index`-th tombstone, for the runtime.
     pub fn getTombstoneName(self: *Self, index: usize) ?[]const u8 {
         if (index >= self.tombstones.items.len) return null;
-        const hash = self.tombstones.items[index];
-        const class = self.map.get(hash) orelse return null;
-        return class.name;
+        return self.tombstones.items[index];
     }
 };
 
@@ -152,18 +178,74 @@ export fn getTombstoneCount() usize {
 }
 
 export fn getTombstoneClassNamePtr(index: usize) ?[*]const u8 {
-    if (index >= Vapor.class_cache.tombstones.items.len) return null;
     const name = Vapor.class_cache.getTombstoneName(index) orelse return null;
-    Vapor.println("Tombstone: {s}\n", .{name});
     return name.ptr;
 }
 
 export fn getTombstoneClassNameLength(index: usize) usize {
-    if (index >= Vapor.class_cache.tombstones.items.len) return 0;
     const name = Vapor.class_cache.getTombstoneName(index) orelse return 0;
     return name.len;
 }
 
 export fn clearTombstones() void {
     Vapor.class_cache.flushTombstones();
+}
+
+test "a class unused for the grace period becomes a tombstone" {
+    var cache: ClassCache = undefined;
+    try cache.init(std.testing.allocator);
+    defer cache.deinit();
+
+    // Render 1 at t=0 uses both classes.
+    cache.beginRender(0);
+    try cache.markUsed(1, .layout);
+    try cache.markUsed(2, .visual);
+    try cache.sweep();
+
+    // Render 2 at t=1000 uses only class 1: class 2 is within its grace.
+    cache.beginRender(1000);
+    try cache.markUsed(1, .layout);
+    try cache.sweep();
+    try std.testing.expectEqual(@as(usize, 0), cache.getTombstones().len);
+
+    // Render 3 at t=4000: class 2 has been unused for 4s.
+    cache.beginRender(4000);
+    try cache.markUsed(1, .layout);
+    try cache.sweep();
+    try std.testing.expectEqual(@as(usize, 1), cache.getTombstones().len);
+    var buf: [6]u8 = undefined;
+    const expected = try std.fmt.allocPrint(std.testing.allocator, "vis_{s}", .{utils.hashToBase62(2, &buf)});
+    defer std.testing.allocator.free(expected);
+    try std.testing.expectEqualStrings(expected, cache.getTombstones()[0]);
+    try std.testing.expect(cache.contains(1));
+    try std.testing.expect(!cache.contains(2));
+
+    // A class used again after removal is tracked again.
+    cache.flushTombstones();
+    cache.beginRender(9000);
+    try cache.markUsed(2, .visual);
+    try cache.sweep();
+    try std.testing.expect(cache.contains(2));
+    try std.testing.expectEqual(@as(usize, 1), cache.getTombstones().len); // class 1
+}
+
+test "a class the current render uses is never removed" {
+    var cache: ClassCache = undefined;
+    try cache.init(std.testing.allocator);
+    defer cache.deinit();
+
+    cache.beginRender(0);
+    try cache.markUsed(7, .layout);
+    // Same render, much later (a long render): still in use.
+    cache.now_ms = 60_000;
+    try cache.sweep();
+    try std.testing.expectEqual(@as(usize, 0), cache.getTombstones().len);
+}
+
+test "defineOnce is true only the first time" {
+    var cache: ClassCache = undefined;
+    try cache.init(std.testing.allocator);
+    defer cache.deinit();
+    try std.testing.expect(cache.defineOnce(5));
+    try std.testing.expect(!cache.defineOnce(5));
 }

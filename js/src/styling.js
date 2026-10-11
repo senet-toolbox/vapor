@@ -25,40 +25,38 @@ export function addKeyframesToStylesheet(keyframesCSS) {
   // styleSheet.insertRule(keyframesCSS, styleSheet.cssRules.length);
 }
 
+/** The class a rule styles: ".lay_x" for ".lay_x:hover", or for the first
+ * rule inside an @media block. */
+function ruleClass(rule) {
+  const selector = rule.selectorText ?? rule.cssRules?.[0]?.selectorText;
+  if (!selector) return null;
+  const match = /^\.[\w-]+/.exec(selector);
+  return match ? match[0] : null;
+}
+
+/** Deletes the rules of the classes the wasm queued as unused. */
 export function batchRemoveTombStones() {
-  // console.log("batchRemoveTombStones");
   const tombstoneCount = wasmInstance.getTombstoneCount();
   if (tombstoneCount === 0) return;
 
-  // Collect classNames to remove
   const toRemove = new Set();
   for (let i = 0; i < tombstoneCount; i++) {
     const ptr = wasmInstance.getTombstoneClassNamePtr(i);
     if (ptr === 0) continue;
     const len = wasmInstance.getTombstoneClassNameLength(i);
-    const className = `.${readWasmString(ptr, len)}`;
-    toRemove.add(className);
+    toRemove.add(`.${readWasmString(ptr, len)}`);
   }
 
-  // Collect all rules we want to keep
-  const rulesToKeep = [];
-  for (let i = 0; i < styleSheet.cssRules.length; i++) {
-    const rule = styleSheet.cssRules[i];
-    const selector = rule.selectorText;
-    // Check base selector (without :hover etc) against toRemove
-    const baseSelector = selector ? selector.split(":")[0] : null;
-
-    if (!selector || !toRemove.has(baseSelector)) {
-      rulesToKeep.push(rule.cssText);
+  // Back to front, so deleting a rule does not shift the ones still to visit.
+  for (let i = styleSheet.cssRules.length - 1; i >= 0; i--) {
+    if (toRemove.has(ruleClass(styleSheet.cssRules[i]))) {
+      styleSheet.deleteRule(i);
     }
   }
 
-  // Rebuild stylesheet
-  styleSheet.replaceSync(rulesToKeep.join("\n"));
-
-  // Rebuild cache
   rebuildCacheFromStylesheet();
-
+  // A class string seen before may name a removed class; check them again.
+  processedStyleIds.clear();
   wasmInstance.clearTombstones();
 }
 
@@ -145,8 +143,12 @@ export function updateComponentStyle(
         const len = wasmInstance.getStyleLen();
         const css = readWasmString(ptr, len);
         const newIndex = styleSheet.cssRules.length;
-        // styleSheet.insertRule(`.${className} { ${css} }`, newIndex);
-        styleSheet.insertRule(css, newIndex);
+        // One @media rule per breakpoint; insertRule takes a single rule.
+        const parsed = new CSSStyleSheet();
+        parsed.replaceSync(css);
+        for (const rule of parsed.cssRules) {
+          styleSheet.insertRule(rule.cssText, styleSheet.cssRules.length);
+        }
         styleRuleCache.set(`.${className}`, newIndex);
       } else if (className.startsWith("tran_")) {
         const ptr = wasmInstance.getTransformsStyle(nodePtr, 0);
@@ -216,6 +218,7 @@ export function updateComponentStyle(
       const hasMapa = className.startsWith("mapa_");
       const hasAnimation = className.startsWith("anim_");
       const hasTransform = className.startsWith("tran_");
+      const hasResponsive = className.startsWith("resp_");
       const hasAny =
         hasVisual ||
         hasPosition ||
@@ -223,7 +226,8 @@ export function updateComponentStyle(
         hasInteractive ||
         hasMapa ||
         hasAnimation ||
-        hasTransform;
+        hasTransform ||
+        hasResponsive;
       // This means we have named class set by the user
       if (!hasAny) {
         const ruleIndex = styleRuleCache.get(`.${className}`);

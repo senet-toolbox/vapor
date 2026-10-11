@@ -31,6 +31,7 @@ pub export fn init() void {
     Vapor.Page(.{ .route = "/hide" }, hidePage, null);
     Vapor.Page(.{ .route = "/focus" }, focusPage, null);
     Vapor.Page(.{ .route = "/hooks" }, hooksPage, null);
+    Vapor.Page(.{ .route = "/styles" }, stylesPage, null);
     Vapor.Page(.{ .route = "/error" }, notFound, null);
 }
 
@@ -140,6 +141,28 @@ fn hidePage() void {
             Text("Toggle").end();
         });
         Text("Panel").id("panel").hide(panel_hidden).end();
+    });
+}
+
+// ── /styles : unused CSS rules are removed, responsive rules insert ───────
+
+var style_step: f32 = 0;
+
+fn restyle() void {
+    style_step += 1;
+}
+
+fn stylesPage() void {
+    Box().id("styles-page").children({
+        Button(restyle, .{}).id("restyle").children({
+            Text("Restyle").end();
+        });
+        // A new width each click, so a new class each render.
+        Box().id("styled").width(.px(100 + style_step)).height(.px(20)).end();
+        Box().id("responsive")
+            .responsive(.mobile, .{ .child_gap = 4 })
+            .responsive(.desktop, .{ .child_gap = 8 })
+            .end();
     });
 }
 

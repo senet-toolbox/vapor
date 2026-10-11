@@ -30,14 +30,6 @@ const Direction = types.Direction;
 const HooksIds = types.HooksIds;
 const InputParams = types.InputParams;
 
-pub const StyleInfo = struct {
-    packed_field_ptrs: PackedFieldPtrs,
-    style_hashes: [10]u32,
-    style_hash: u32,
-    class: ?[]const u8 = null,
-};
-
-pub var style_info_map: std.AutoHashMap(u32, *StyleInfo) = undefined;
 pub const PackedFieldPtrs = struct {
     visual_ptr: ?*const types.PackedVisual = null,
     layout_ptr: ?*const types.PackedLayout = null,
@@ -308,16 +300,6 @@ pub var prev_style_hashes: std.AutoHashMap(u32, u32) = undefined;
 pub fn captureHash(node: *UINode) void {
     // The hash cache is an optimisation; a miss just means recomputing.
     prev_style_hashes.put(node.hash, node.prev_style_hash_computed) catch return;
-    if (node.packed_field_ptrs == null) return;
-    if (style_info_map.get(node.prev_style_hash_computed) != null) return;
-    const style_info = Vapor.arena(.persist).create(StyleInfo) catch return;
-    style_info.* = .{
-        .packed_field_ptrs = node.packed_field_ptrs.?,
-        .style_hashes = node.style_hashes,
-        .style_hash = node.style_hash,
-        .class = node.class,
-    };
-    style_info_map.put(node.prev_style_hash_computed, style_info) catch return;
 }
 
 // Open takes a current stack and adds the elements depth first search
@@ -423,44 +405,18 @@ pub var packed_transforms: types.PackedTransforms = .{};
 
 pub var element_style_hash_map: std.AutoHashMap(u32, [10]u32) = undefined;
 pub var class_string_cache: std.AutoHashMap(u32, []const u8) = undefined;
-pub var global_classes: [10]u32 = .{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 var buf: [128]u8 = undefined;
 
-/// Compares the old class hash with the new class hash and decrements the old class if it exists
-fn compareClobber(old_optional: ?[10]u32, new_class_hash: u32, index: usize, class_type: ClassType) !void {
-    if (old_optional) |old| {
-        if (old[index] != new_class_hash and old[index] != 0) {
-            try Vapor.class_cache.decrement(old[index]);
-            try Vapor.class_cache.set(new_class_hash, class_type);
-        }
-        return;
+const class_types = [10]ClassType{ .defined, .layout, .position, .margin_padding, .visual, .animation, .interactive, .transform, .responsive, .target_visual };
+
+/// Marks the node's generated classes as used by this render (see ClassCache).
+fn markClasses(hashes: [10]u32) void {
+    for (hashes[1..], class_types[1..]) |hash, class_type| {
+        if (hash == 0) continue;
+        Vapor.class_cache.markUsed(hash, class_type) catch |err| {
+            Vapor.printlnErr("class cache: could not mark a class, its rule may be removed early: {any}", .{err});
+        };
     }
-
-    // If the old class is null we need to create a new class
-    try Vapor.class_cache.set(new_class_hash, class_type);
-}
-
-fn updateClassRefCounts(old: [10]u32, new: [10]u32) void {
-    inline for (1..8) |i| {
-        if (old[i] != new[i]) {
-            if (old[i] != 0) Vapor.class_cache.decrement(old[i]) catch {};
-            if (new[i] != 0) Vapor.class_cache.set(new[i], classTypeFromIndex(i)) catch {};
-        }
-    }
-}
-
-fn classTypeFromIndex(comptime i: usize) ClassType {
-    return switch (i) {
-        0 => .base,
-        1 => .layout,
-        2 => .position,
-        3 => .margin_padding,
-        4 => .visual,
-        5 => .animation,
-        6 => .interactive,
-        7 => .transform,
-        else => unreachable,
-    };
 }
 
 /// The node's class attribute, built from its style group hashes.
@@ -479,18 +435,30 @@ pub fn buildClassString(
     additional_classes: ?[]const u8,
 ) !void {
     const hashes = [10]u32{ 0, hash_l, hash_p, hash_m, hash_v, hash_a, hash_i, hash_t, hash_r, hash_tv };
-    const old = current_open.style_hashes;
-    if (std.mem.eql(u32, &old, &hashes)) return;
 
     // Compute combined hash for class string cache
     var combined: u32 = 0;
     inline for (hashes) |h| combined = combined *% 31 +% h;
 
+    // The groups whose class this node carries.
+    var used = [_]u32{0} ** 10;
+    if (field_ptrs.responsive_ptr != null) used[8] = hash_r;
+    if (field_ptrs.layout_ptr != null) used[1] = hash_l;
+    if (field_ptrs.position_ptr != null) used[2] = hash_p;
+    if (field_ptrs.margins_paddings_ptr != null) used[3] = hash_m;
+    if (field_ptrs.visual_ptr != null) used[4] = hash_v;
+    if (field_ptrs.animations_ptr != null) used[5] = hash_a;
+    if (field_ptrs.interactive_ptr != null) used[6] = hash_i;
+    if (field_ptrs.transforms_ptr != null) used[7] = hash_t;
+    used[9] = hash_tv;
+    markClasses(used);
+    // Configured again with the same style: the class string is already set.
+    if (std.mem.eql(u32, &current_open.style_hashes, &used)) return;
+    current_open.style_hashes = used;
+
     // Check class string cache
     if (class_string_cache.get(combined)) |cached| {
         current_open.class = cached;
-        current_open.style_hashes = hashes;
-        updateClassRefCounts(old, hashes);
         return;
     }
 
@@ -507,80 +475,57 @@ pub fn buildClassString(
         const common = KeyGenerator.generateHashKey(&buf, hash_r, "resp");
         writer.write(common) catch return error.CouldNotAllocate;
         writer.writeByte(' ') catch return error.CouldNotAllocate;
-        global_classes[8] = hash_r;
-        try compareClobber(old, hash_r, 8, .responsive);
     }
 
     if (field_ptrs.layout_ptr != null and hash_l > 0) {
         const common = KeyGenerator.generateHashKey(&buf, hash_l, "lay");
         writer.write(common) catch return error.CouldNotAllocate;
         writer.writeByte(' ') catch return error.CouldNotAllocate;
-        global_classes[1] = hash_l;
-        try compareClobber(old, hash_l, 1, .layout);
     }
 
     if (field_ptrs.position_ptr != null and hash_p > 0) {
         const common = KeyGenerator.generateHashKey(&buf, hash_p, "pos");
         writer.write(common) catch return error.CouldNotAllocate;
         writer.writeByte(' ') catch return error.CouldNotAllocate;
-        global_classes[2] = hash_p;
-        try compareClobber(old, hash_p, 2, .position);
     }
 
     if (field_ptrs.margins_paddings_ptr != null and hash_m > 0) {
         const common = KeyGenerator.generateHashKey(&buf, hash_m, "mapa");
         writer.write(common) catch return error.CouldNotAllocate;
         writer.writeByte(' ') catch return error.CouldNotAllocate;
-        global_classes[3] = hash_m;
-        try compareClobber(old, hash_m, 3, .margin_padding);
     }
 
     if (field_ptrs.visual_ptr != null and hash_v > 0) {
         const common = KeyGenerator.generateHashKey(&buf, hash_v, "vis");
         writer.write(common) catch return error.CouldNotAllocate;
         writer.writeByte(' ') catch return error.CouldNotAllocate;
-        global_classes[4] = hash_v;
-        try compareClobber(old, hash_v, 4, .visual);
     }
 
     if (field_ptrs.animations_ptr != null and hash_a > 0) {
         const common = KeyGenerator.generateHashKey(&buf, hash_a, "anim");
         writer.write(common) catch return error.CouldNotAllocate;
         writer.writeByte(' ') catch return error.CouldNotAllocate;
-        global_classes[5] = hash_a;
-        try compareClobber(old, hash_a, 5, .animation);
     }
 
     if (field_ptrs.interactive_ptr != null and hash_i > 0) {
         const common = KeyGenerator.generateHashKey(&buf, hash_i, "intr");
         writer.write(common) catch return error.CouldNotAllocate;
         writer.writeByte(' ') catch return error.CouldNotAllocate;
-        global_classes[6] = hash_i;
-        try compareClobber(old, hash_i, 6, .interactive);
     }
 
     if (field_ptrs.transforms_ptr != null and hash_t > 0) {
         const common = KeyGenerator.generateHashKey(&buf, hash_t, "tran");
         writer.write(common) catch return error.CouldNotAllocate;
         writer.writeByte(' ') catch return error.CouldNotAllocate;
-        global_classes[7] = hash_t;
-        try compareClobber(old, hash_t, 7, .transform);
     }
 
     if (hash_tv > 0) {
         const common = KeyGenerator.generateHashKey(&buf, hash_tv, "t_vis");
         writer.write(common) catch return error.CouldNotAllocate;
         writer.writeByte(' ') catch return error.CouldNotAllocate;
-        global_classes[9] = hash_tv;
-        try compareClobber(old, hash_tv, 9, .responsive);
     }
 
     if (writer.buffer[0..writer.pos].len == 0) return;
-
-    // We store the new class hash and list inside the element_style_hash_map
-    // and clobber the old class if it exists this way we ensure each element has only one
-
-    current_open.style_hashes = global_classes;
 
     const full_class = std.fmt.allocPrint(Vapor.arena(.persist), "{s}{s}", .{ writer.buffer[0..writer.pos], additional_classes orelse "" }) catch |err| {
         Vapor.printlnErr("Could not create string {any} To many classes have been created\n", .{err});
