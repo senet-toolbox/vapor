@@ -236,7 +236,9 @@ pub const Padding = BoxModule.Padding;
 pub const Margin = BoxModule.Margin;
 pub const BorderRadius = BoxModule.BorderRadius;
 pub const Border = BoxModule.Border;
+pub const BorderThickness = BoxModule.BorderThickness;
 pub const BorderStyle = BoxModule.BorderStyle;
+/// Deprecated: renamed `Border`.
 pub const BorderGrouped = BoxModule.BorderGrouped;
 pub const Overflow = BoxModule.Overflow;
 pub const Scroll = BoxModule.Scroll;
@@ -432,7 +434,7 @@ pub const Transform = struct {
     }
 
     /// Moves `dist` pixels in `dir` and scales by `scale_size`.
-    pub fn direction_scale(dir: Transform.Direction, dist: f32, scale_size: f32) Transform {
+    pub fn directionScale(dir: Transform.Direction, dist: f32, scale_size: f32) Transform {
         switch (dir) {
             .up => return .{ .trans_y = -dist, .scale_size = scale_size, .type = &.{ .translateY, .scale }, .size_type = .px },
             .down => return .{ .trans_y = dist, .scale_size = scale_size, .type = &.{ .translateY, .scale }, .size_type = .px },
@@ -474,12 +476,12 @@ pub const Transform = struct {
     }
 
     /// Moves along x by `percent` percent of the element's width.
-    pub fn left_percent(percent: f32) Transform {
+    pub fn leftPercent(percent: f32) Transform {
         return .{ .trans_x = percent, .type = &.{.translateX}, .size_type = .percent };
     }
 
     /// Moves along y by `percent` percent of the element's height.
-    pub fn top_percent(percent: f32) Transform {
+    pub fn topPercent(percent: f32) Transform {
         return .{ .trans_y = percent, .type = &.{.translateY}, .size_type = .percent };
     }
 
@@ -502,6 +504,15 @@ pub const Transform = struct {
     pub fn rotateXYZ(x: f16, y: f16, z: f16) Transform {
         return .{ .x = x, .y = y, .z = z, .type = &.{.rotateXYZ}, .size_type = .deg };
     }
+
+    // Deprecated names, removed in the next major version.
+
+    /// Deprecated: use `directionScale`.
+    pub const direction_scale = directionScale;
+    /// Deprecated: use `leftPercent`.
+    pub const left_percent = leftPercent;
+    /// Deprecated: use `topPercent`.
+    pub const top_percent = topPercent;
 };
 
 pub const Focus = struct {
@@ -515,7 +526,7 @@ pub const Focus = struct {
     line_height: ?i32 = null,
     font_weight: ?usize = null,
     border_radius: ?BorderRadius = null,
-    border_thickness: ?Border = null,
+    border_thickness: ?BorderThickness = null,
     border_color: ?Color = null,
     text_color: ?Color = null,
     padding: ?Padding = null,
@@ -542,13 +553,13 @@ pub const Hover = struct {
     font_weight: ?usize = null,
 
     border: ?struct {
-        thickness: Border = .all(1),
+        thickness: BorderThickness = .all(1),
         color: ?Color = null,
         radius: ?BorderRadius = null,
     } = null,
 
     border_radius: ?BorderRadius = null,
-    border_thickness: ?Border = null,
+    border_thickness: ?BorderThickness = null,
     border_color: ?Color = null,
 
     text_color: ?Color = null,
@@ -577,7 +588,7 @@ pub const CheckMark = struct {
     line_height: ?i32 = null,
     font_weight: ?usize = null,
     border_radius: ?BorderRadius = null,
-    border_thickness: ?Border = null,
+    border_thickness: ?BorderThickness = null,
     border_color: ?Color = null,
     text_color: ?Color = null,
     padding: ?Padding = null,
@@ -743,7 +754,7 @@ pub const ChildStyle = struct {
     line_height: ?i32 = null,
     font_weight: ?usize = null,
     border_radius: ?BorderRadius = null,
-    border_thickness: ?Border = null,
+    border_thickness: ?BorderThickness = null,
     border_color: ?Color = null,
     text_color: ?Color = null,
     padding: ?Padding = null,
@@ -891,19 +902,26 @@ const FontParams = struct {
         };
     }
     /// Size in pixels and weight.
-    pub fn size_weight(font_size: u8, font_weight: ?u16) FontParams {
+    pub fn sizeWeight(font_size: u8, font_weight: ?u16) FontParams {
         return .{
             ._size = font_size,
             ._weight = font_weight,
         };
     }
     /// Size in pixels and colour.
-    pub fn size_color(font_size: i32, font_color: ?Color) FontParams {
+    pub fn sizeColor(font_size: i32, font_color: ?Color) FontParams {
         return .{
             ._size = font_size,
             ._color = font_color,
         };
     }
+
+    // Deprecated names, removed in the next major version.
+
+    /// Deprecated: use `sizeWeight`.
+    pub const size_weight = sizeWeight;
+    /// Deprecated: use `sizeColor`.
+    pub const size_color = sizeColor;
 };
 
 pub const FontStyle = enum(u8) { default, normal, italic };

@@ -187,7 +187,7 @@ pub fn initFreelist(pool: *Pool) void {
 }
 
 /// A free 32-byte slot, or `null` when none is left.
-pub fn alloc_32(pool: *Pool) ?*[32]u8 {
+pub fn alloc32(pool: *Pool) ?*[32]u8 {
     if (pool.free_count_32 == 0) return null;
     // Pop from freelist
     pool.free_count_32 -= 1;
@@ -197,7 +197,7 @@ pub fn alloc_32(pool: *Pool) ?*[32]u8 {
 }
 
 /// A free 64-byte slot, or `null` when none is left.
-pub fn alloc_64(pool: *Pool) ?*[64]u8 {
+pub fn alloc64(pool: *Pool) ?*[64]u8 {
     if (pool.free_count_64 == 0) return null;
 
     // Pop from freelist
@@ -208,7 +208,7 @@ pub fn alloc_64(pool: *Pool) ?*[64]u8 {
 }
 
 /// A free 128-byte slot, or `null` when none is left.
-pub fn alloc_128(pool: *Pool) ?*[128]u8 {
+pub fn alloc128(pool: *Pool) ?*[128]u8 {
     if (pool.free_count_128 == 0) return null;
 
     // Pop from freelist
@@ -219,7 +219,7 @@ pub fn alloc_128(pool: *Pool) ?*[128]u8 {
 }
 
 /// A free 256-byte slot, or `null` when none is left.
-pub fn alloc_256(pool: *Pool) ?*[256]u8 {
+pub fn alloc256(pool: *Pool) ?*[256]u8 {
     if (pool.free_count_256 == 0) return null;
 
     // Pop from freelist
@@ -230,7 +230,7 @@ pub fn alloc_256(pool: *Pool) ?*[256]u8 {
 }
 
 /// A free 512-byte slot, or `null` when none is left.
-pub fn alloc_512(pool: *Pool) ?*[512]u8 {
+pub fn alloc512(pool: *Pool) ?*[512]u8 {
     if (pool.free_count_512 == 0) return null;
 
     // Pop from freelist
@@ -241,7 +241,7 @@ pub fn alloc_512(pool: *Pool) ?*[512]u8 {
 }
 
 /// A free 1024-byte slot, or `null` when none is left.
-pub fn alloc_1024(pool: *Pool) ?*[1024]u8 {
+pub fn alloc1024(pool: *Pool) ?*[1024]u8 {
     if (pool.free_count_1024 == 0) return null;
 
     // Pop from freelist
@@ -255,28 +255,28 @@ pub fn alloc_1024(pool: *Pool) ?*[1024]u8 {
 pub fn free(pool: *Pool, string_data: StringData) void {
     switch (string_data) {
         .pool_ptr_32 => |d| {
-            pool.free_32(d.ptr);
+            pool.free32(d.ptr);
         },
         .pool_ptr_64 => |d| {
-            pool.free_64(d.ptr);
+            pool.free64(d.ptr);
         },
         .pool_ptr_128 => |d| {
-            pool.free_128(d.ptr);
+            pool.free128(d.ptr);
         },
         .pool_ptr_256 => |d| {
-            pool.free_256(d.ptr);
+            pool.free256(d.ptr);
         },
         .pool_ptr_512 => |d| {
-            pool.free_512(d.ptr);
+            pool.free512(d.ptr);
         },
         .pool_ptr_1024 => |d| {
-            pool.free_1024(d.ptr);
+            pool.free1024(d.ptr);
         },
     }
 }
 
 /// Returns a 32-byte slot to the pool.
-pub fn free_32(pool: *Pool, ptr: *[32]u8) void {
+pub fn free32(pool: *Pool, ptr: *[32]u8) void {
     // Calculate index from pointer arithmetic
     const slot_index = (@intFromPtr(ptr) - @intFromPtr(pool.slot_32.ptr)) / 32;
 
@@ -286,7 +286,7 @@ pub fn free_32(pool: *Pool, ptr: *[32]u8) void {
 }
 
 /// Returns a 64-byte slot to the pool.
-pub fn free_64(pool: *Pool, ptr: *[64]u8) void {
+pub fn free64(pool: *Pool, ptr: *[64]u8) void {
     // Calculate index from pointer arithmetic
     const slot_index = (@intFromPtr(ptr) - @intFromPtr(pool.slots_64.ptr)) / 64;
 
@@ -296,7 +296,7 @@ pub fn free_64(pool: *Pool, ptr: *[64]u8) void {
 }
 
 /// Returns a 128-byte slot to the pool.
-pub fn free_128(pool: *Pool, ptr: *[128]u8) void {
+pub fn free128(pool: *Pool, ptr: *[128]u8) void {
     // Calculate index from pointer arithmetic
     const slot_index = (@intFromPtr(ptr) - @intFromPtr(pool.slots_128.ptr)) / 128;
 
@@ -306,7 +306,7 @@ pub fn free_128(pool: *Pool, ptr: *[128]u8) void {
 }
 
 /// Returns a 256-byte slot to the pool.
-pub fn free_256(pool: *Pool, ptr: *[256]u8) void {
+pub fn free256(pool: *Pool, ptr: *[256]u8) void {
     // Calculate index from pointer arithmetic
     const slot_index = (@intFromPtr(ptr) - @intFromPtr(pool.slots_256.ptr)) / 256;
 
@@ -316,7 +316,7 @@ pub fn free_256(pool: *Pool, ptr: *[256]u8) void {
 }
 
 /// Returns a 512-byte slot to the pool.
-pub fn free_512(pool: *Pool, ptr: *[512]u8) void {
+pub fn free512(pool: *Pool, ptr: *[512]u8) void {
     // Calculate index from pointer arithmetic
     const slot_index = (@intFromPtr(ptr) - @intFromPtr(pool.slots_512.ptr)) / 512;
 
@@ -326,7 +326,7 @@ pub fn free_512(pool: *Pool, ptr: *[512]u8) void {
 }
 
 /// Returns a 1024-byte slot to the pool.
-pub fn free_1024(pool: *Pool, ptr: *[1024]u8) void {
+pub fn free1024(pool: *Pool, ptr: *[1024]u8) void {
     // Calculate index from pointer arithmetic
     const slot_index = (@intFromPtr(ptr) - @intFromPtr(pool.slots_1024.ptr)) / 1024;
 
@@ -339,42 +339,42 @@ pub fn free_1024(pool: *Pool, ptr: *[1024]u8) void {
 pub fn createString(pool: *Pool, data: []const u8) !StringData {
     if (!pool.did_init) return error.FreeListPoolNotInitialized;
     if (data.len <= 32) {
-        const ptr = pool.alloc_32() orelse return error.ListEmpty;
+        const ptr = pool.alloc32() orelse return error.ListEmpty;
         @memcpy(ptr[0..data.len], data);
         return StringData{ .pool_ptr_32 = .{
             .ptr = ptr,
             .len = @intCast(data.len),
         } };
     } else if (data.len <= 64) {
-        const ptr = pool.alloc_64() orelse return error.ListEmpty;
+        const ptr = pool.alloc64() orelse return error.ListEmpty;
         @memcpy(ptr[0..data.len], data);
         return StringData{ .pool_ptr_64 = .{
             .ptr = ptr,
             .len = @intCast(data.len),
         } };
     } else if (data.len <= 128) {
-        const ptr = pool.alloc_128() orelse return error.ListEmpty;
+        const ptr = pool.alloc128() orelse return error.ListEmpty;
         @memcpy(ptr[0..data.len], data);
         return StringData{ .pool_ptr_128 = .{
             .ptr = ptr,
             .len = @intCast(data.len),
         } };
     } else if (data.len <= 256) {
-        const ptr = pool.alloc_256() orelse return error.ListEmpty;
+        const ptr = pool.alloc256() orelse return error.ListEmpty;
         @memcpy(ptr[0..data.len], data);
         return StringData{ .pool_ptr_256 = .{
             .ptr = ptr,
             .len = @intCast(data.len),
         } };
     } else if (data.len <= 512) {
-        const ptr = pool.alloc_512() orelse return error.ListEmpty;
+        const ptr = pool.alloc512() orelse return error.ListEmpty;
         @memcpy(ptr[0..data.len], data);
         return StringData{ .pool_ptr_512 = .{
             .ptr = ptr,
             .len = @intCast(data.len),
         } };
     } else if (data.len <= 1024) {
-        const ptr = pool.alloc_1024() orelse return error.ListEmpty;
+        const ptr = pool.alloc1024() orelse return error.ListEmpty;
         @memcpy(ptr[0..data.len], data);
         return StringData{ .pool_ptr_1024 = .{
             .ptr = ptr,
@@ -395,13 +395,13 @@ test "string pool" {
 
     pool.initFreelist();
 
-    const str1 = pool.alloc_32() orelse return error.AllocFailed;
-    const str2 = pool.alloc_32() orelse return error.AllocFailed;
-    const str3 = pool.alloc_32() orelse return error.AllocFailed;
+    const str1 = pool.alloc32() orelse return error.AllocFailed;
+    const str2 = pool.alloc32() orelse return error.AllocFailed;
+    const str3 = pool.alloc32() orelse return error.AllocFailed;
 
-    pool.free_32(str1);
-    pool.free_32(str2);
-    pool.free_32(str3);
+    pool.free32(str1);
+    pool.free32(str2);
+    pool.free32(str3);
 
     try std.testing.expectEqual(pool.free_count_32, 10);
 }

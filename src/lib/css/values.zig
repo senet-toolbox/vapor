@@ -85,7 +85,7 @@ pub const PropValue = struct {
         outline: Types.Outline,
         transition: Types.PackedTransition,
         shadow: Types.PackedShadow,
-        border: Types.Border,
+        border: Types.BorderThickness,
         border_radius: Types.BorderRadius,
         flex_type: Types.FlexType,
         string_literal: []const u8,
@@ -113,13 +113,13 @@ pub fn writePropValue(prop: []const u8, value: PropValue, writer: *Writer) void 
         .sizing => sizingTypeToCSS(value.data.sizing, writer) catch {},
         .font_style => fontStyleToCSS(value.data.font_style, writer) catch {},
         .padding => {
-            writer.writeU8Num(value.data.padding._top) catch {};
+            writer.writeU8Num(value.data.padding.top) catch {};
             writer.write("px ") catch {};
-            writer.writeU8Num(value.data.padding._right) catch {};
+            writer.writeU8Num(value.data.padding.right) catch {};
             writer.write("px ") catch {};
-            writer.writeU8Num(value.data.padding._bottom) catch {};
+            writer.writeU8Num(value.data.padding.bottom) catch {};
             writer.write("px ") catch {};
-            writer.writeU8Num(value.data.padding._left) catch {};
+            writer.writeU8Num(value.data.padding.left) catch {};
             writer.write("px") catch {};
         },
         .cursor => cursorToCSS(value.data.cursor, writer) catch {},
@@ -235,13 +235,13 @@ pub fn writePropValue(prop: []const u8, value: PropValue, writer: *Writer) void 
         },
         .border => {
             const border = value.data.border;
-            writer.writeU8Num(border._top) catch {};
+            writer.writeU8Num(border.top) catch {};
             writer.write("px ") catch {};
-            writer.writeU8Num(border._right) catch {};
+            writer.writeU8Num(border.right) catch {};
             writer.write("px ") catch {};
-            writer.writeU8Num(border._bottom) catch {};
+            writer.writeU8Num(border.bottom) catch {};
             writer.write("px ") catch {};
-            writer.writeU8Num(border._left) catch {};
+            writer.writeU8Num(border.left) catch {};
             writer.write("px") catch {};
         },
         .border_radius => {

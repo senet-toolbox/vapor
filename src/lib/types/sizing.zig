@@ -44,21 +44,21 @@ pub const Size = packed struct {
     pub const full = Size{ .width = .percent(100), .height = .percent(100) };
     pub const expand = Size{ .width = .expand, .height = .expand };
     /// `size` pixels wide and high.
-    pub fn square_px(size: f32) Size {
+    pub fn squarePx(size: f32) Size {
         return .{
             .width = .px(size),
             .height = .px(size),
         };
     }
     /// `size` percent of the parent's width and height.
-    pub fn square_percent(size: f32) Size {
+    pub fn squarePercent(size: f32) Size {
         return .{
             .width = .percent(size),
             .height = .percent(size),
         };
     }
 
-    /// `size` pixels wide and high. Same as `square_px`.
+    /// `size` pixels wide and high. Same as `squarePx`.
     pub fn px(size: f32) Size {
         return .{
             .width = .px(size),
@@ -94,19 +94,30 @@ pub const Size = packed struct {
         };
     }
     /// Creates a height and width sizing with pixel values
-    pub fn hw_px(height: f32, width: f32) Size {
+    pub fn hwPx(height: f32, width: f32) Size {
         return .{
             .width = .px(width),
             .height = .px(height),
         };
     }
     /// Creates a height and width sizing with percent values
-    pub fn hw_percent(height: f32, width: f32) Size {
+    pub fn hwPercent(height: f32, width: f32) Size {
         return .{
             .width = .percent(width),
             .height = .percent(height),
         };
     }
+
+    // Deprecated names, removed in the next major version.
+
+    /// Deprecated: use `squarePx`.
+    pub const square_px = squarePx;
+    /// Deprecated: use `squarePercent`.
+    pub const square_percent = squarePercent;
+    /// Deprecated: use `hwPx`.
+    pub const hw_px = hwPx;
+    /// Deprecated: use `hwPercent`.
+    pub const hw_percent = hwPercent;
 };
 
 pub const Sizing = packed struct {
@@ -152,7 +163,7 @@ pub const Sizing = packed struct {
     }
 
     /// Between `min` and `max` viewport units.
-    pub fn min_max_vp(min: f32, max: f32) Sizing {
+    pub fn minMaxVp(min: f32, max: f32) Sizing {
         return .{ .type = .min_max_vp, .size = .{
             .min = min,
             .max = max,
@@ -175,7 +186,7 @@ pub const Sizing = packed struct {
     }
 
     /// Same as `at`.
-    pub fn mobile_desktop_percent(mobile: f32, desktop: f32) Sizing {
+    pub fn mobileDesktopPercent(mobile: f32, desktop: f32) Sizing {
         if (isMobile()) {
             return .{ .type = .percent, .size = .{
                 .min = mobile,
@@ -189,7 +200,7 @@ pub const Sizing = packed struct {
     }
     //
     /// `mobile` on mobile, `desktop` otherwise, decided when the style is built.
-    pub fn mobile_desktop(mobile: Sizing, desktop: Sizing) Sizing {
+    pub fn mobileDesktop(mobile: Sizing, desktop: Sizing) Sizing {
         if (isMobile()) {
             return mobile;
         } else {
@@ -206,6 +217,15 @@ pub const Sizing = packed struct {
             .percent => return .{ .type = .clamp_percent, .size = .{ .min = min, .max = max, .preferred = preferred } },
         }
     }
+
+    // Deprecated names, removed in the next major version.
+
+    /// Deprecated: use `minMaxVp`.
+    pub const min_max_vp = minMaxVp;
+    /// Deprecated: use `mobileDesktopPercent`.
+    pub const mobile_desktop_percent = mobileDesktopPercent;
+    /// Deprecated: use `mobileDesktop`.
+    pub const mobile_desktop = mobileDesktop;
 };
 
 pub const PosType = enum(u8) {
@@ -231,7 +251,7 @@ pub const Pos = packed struct {
     }
 
     /// `mobile` percent on mobile, `desktop` percent otherwise.
-    pub fn mobile_desktop_percent(mobile: f32, desktop: f32) Pos {
+    pub fn mobileDesktopPercent(mobile: f32, desktop: f32) Pos {
         if (isMobile()) {
             return .{ .type = .percent, .value = mobile };
         }
@@ -239,13 +259,20 @@ pub const Pos = packed struct {
     }
     //
     /// `mobile` on mobile, `desktop` otherwise.
-    pub fn mobile_desktop(mobile: Pos, desktop: Pos) Pos {
+    pub fn mobileDesktop(mobile: Pos, desktop: Pos) Pos {
         if (isMobile()) {
             return mobile;
         } else {
             return desktop;
         }
     }
+
+    // Deprecated names, removed in the next major version.
+
+    /// Deprecated: use `mobileDesktopPercent`.
+    pub const mobile_desktop_percent = mobileDesktopPercent;
+    /// Deprecated: use `mobileDesktop`.
+    pub const mobile_desktop = mobileDesktop;
 };
 
 pub const SizeType = enum(u8) {

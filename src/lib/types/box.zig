@@ -1,224 +1,127 @@
-//! Box model values: `Padding`, `Margin`, `Border`, `BorderRadius`,
-//! `BorderGrouped`, `Scroll`.
+//! Box model values: `Padding`, `Margin`, `BorderThickness`, `BorderRadius`,
+//! `Border`, `Scroll`.
+//!
+//! `Padding`, `Margin` and `BorderThickness` share one shape: a value per
+//! side in pixels, built the same way. Set single sides with a struct
+//! literal (`.{ .top = 8 }`) or the one-letter constructors (`.t(8)`); the
+//! letters combine (`.tb`, `.lr`, `.tblr`, and corners `.tl`, `.br`, ...).
 
 const types = @import("../types.zig");
 
-pub const Padding = packed struct {
-    _top: u8 = 0,
-    _bottom: u8 = 0,
-    _left: u8 = 0,
-    _right: u8 = 0,
+/// A value per side, in pixels. `tag` keeps the three uses distinct types.
+fn Sides(comptime T: type, comptime tag: @EnumLiteral()) type {
+    _ = tag;
+    return packed struct {
+        top: T = 0,
+        bottom: T = 0,
+        left: T = 0,
+        right: T = 0,
 
-    /// `size` pixels on every side.
-    pub fn all(size: u8) Padding {
-        return Padding{
-            ._top = size,
-            ._bottom = size,
-            ._left = size,
-            ._right = size,
-        };
-    }
+        const Self = @This();
 
-    /// `size` pixels on top only.
-    pub fn top(size: u8) Padding {
-        return Padding{ ._top = size };
-    }
+        /// Zero on every side.
+        pub const none: Self = .{};
 
-    /// `size` pixels at the bottom only.
-    pub fn bottom(size: u8) Padding {
-        return Padding{ ._bottom = size };
-    }
+        /// `size` on every side.
+        pub fn all(size: T) Self {
+            return .{ .top = size, .bottom = size, .left = size, .right = size };
+        }
 
-    /// `size` pixels on the left only.
-    pub fn left(size: u8) Padding {
-        return Padding{ ._left = size };
-    }
+        /// Each side: top, bottom, left, right.
+        pub fn tblr(top: T, bottom: T, left: T, right: T) Self {
+            return .{ .top = top, .bottom = bottom, .left = left, .right = right };
+        }
 
-    /// `size` pixels on the right only.
-    pub fn right(size: u8) Padding {
-        return Padding{ ._right = size };
-    }
+        /// Top and bottom.
+        pub fn tb(top: T, bottom: T) Self {
+            return .{ .top = top, .bottom = bottom };
+        }
 
-    /// Each side in pixels: top, bottom, left, right.
-    pub fn tblr(t: u8, b: u8, l: u8, r: u8) Padding {
-        return Padding{
-            ._top = t,
-            ._bottom = b,
-            ._left = l,
-            ._right = r,
-        };
-    }
+        /// Left and right.
+        pub fn lr(left: T, right: T) Self {
+            return .{ .left = left, .right = right };
+        }
 
-    /// Top and bottom, in pixels.
-    pub fn tb(t: u8, b: u8) Padding {
-        return Padding{
-            ._top = t,
-            ._bottom = b,
-        };
-    }
+        /// `size` on the top and bottom.
+        pub fn vertical(size: T) Self {
+            return .{ .top = size, .bottom = size };
+        }
 
-    /// Left and right, in pixels.
-    pub fn lr(l: u8, r: u8) Padding {
-        return Padding{
-            ._left = l,
-            ._right = r,
-        };
-    }
+        /// `size` on the left and right.
+        pub fn horizontal(size: T) Self {
+            return .{ .left = size, .right = size };
+        }
 
-    /// `size` pixels on the left and right.
-    pub fn horizontal(size: u8) Padding {
-        return Padding{
-            ._left = size,
-            ._right = size,
-        };
-    }
+        /// `x` on the left and right, `y` on the top and bottom.
+        pub fn xy(x: T, y: T) Self {
+            return .{ .top = y, .bottom = y, .left = x, .right = x };
+        }
 
-    /// `size` pixels on the top and bottom.
-    pub fn vertical(size: u8) Padding {
-        return Padding{
-            ._top = size,
-            ._bottom = size,
-        };
-    }
+        /// Top only.
+        pub fn t(top: T) Self {
+            return .{ .top = top };
+        }
 
-    /// `x` pixels on the left and right, `y` on the top and bottom.
-    pub fn xy(x: u8, y: u8) Padding {
-        return Padding{
-            ._top = y,
-            ._bottom = y,
-            ._left = x,
-            ._right = x,
-        };
-    }
+        /// Bottom only.
+        pub fn b(bottom: T) Self {
+            return .{ .bottom = bottom };
+        }
 
-    /// Top and left, in pixels.
-    pub fn top_left(t: u8, l: u8) Padding {
-        return Padding{
-            ._top = t,
-            ._left = l,
-        };
-    }
+        /// Left only.
+        pub fn l(left: T) Self {
+            return .{ .left = left };
+        }
 
-    /// Top and right, in pixels.
-    pub fn top_right(t: u8, r: u8) Padding {
-        return Padding{
-            ._top = t,
-            ._right = r,
-        };
-    }
+        /// Right only.
+        pub fn r(right: T) Self {
+            return .{ .right = right };
+        }
 
-    /// Bottom and left, in pixels.
-    pub fn bottom_left(b: u8, l: u8) Padding {
-        return Padding{
-            ._bottom = b,
-            ._left = l,
-        };
-    }
+        /// Top and left.
+        pub fn tl(top: T, left: T) Self {
+            return .{ .top = top, .left = left };
+        }
 
-    /// Bottom and right, in pixels.
-    pub fn bottom_right(b: u8, r: u8) Padding {
-        return Padding{
-            ._bottom = b,
-            ._right = r,
-        };
-    }
-};
+        /// Top and right.
+        pub fn tr(top: T, right: T) Self {
+            return .{ .top = top, .right = right };
+        }
 
-pub const Margin = packed struct {
-    top: i16 = 0,
-    bottom: i16 = 0,
-    left: i16 = 0,
-    right: i16 = 0,
-    /// `size` pixels on every side; negative pulls the element outward.
-    pub fn all(size: i16) Margin {
-        return Margin{
-            .top = size,
-            .bottom = size,
-            .left = size,
-            .right = size,
-        };
-    }
-    /// Each side in pixels: top, bottom, left, right.
-    pub fn tblr(top: i16, bottom: i16, left: i16, right: i16) Margin {
-        return Margin{
-            .top = top,
-            .bottom = bottom,
-            .left = left,
-            .right = right,
-        };
-    }
-    /// Top and bottom, in pixels.
-    pub fn tb(top: i16, bottom: i16) Margin {
-        return Margin{
-            .top = top,
-            .bottom = bottom,
-        };
-    }
-    /// Bottom and right, in pixels.
-    pub fn br(bottom: i16, right: i16) Margin {
-        return Margin{
-            .bottom = bottom,
-            .right = right,
-        };
-    }
-    /// Left and right, in pixels.
-    pub fn lr(left: i16, right: i16) Margin {
-        return Margin{
-            .left = left,
-            .right = right,
-        };
-    }
-    /// Top only, in pixels.
-    pub fn t(top: i16) Margin {
-        return Margin{
-            .top = top,
-        };
-    }
-    /// Bottom only, in pixels.
-    pub fn b(bottom: i16) Margin {
-        return Margin{
-            .bottom = bottom,
-        };
-    }
-    /// Left only, in pixels.
-    pub fn l(left: i16) Margin {
-        return Margin{
-            .left = left,
-        };
-    }
-    /// Right only, in pixels.
-    pub fn r(right: i16) Margin {
-        return Margin{
-            .right = right,
-        };
-    }
+        /// Bottom and left.
+        pub fn bl(bottom: T, left: T) Self {
+            return .{ .bottom = bottom, .left = left };
+        }
 
-    /// `size` pixels on the top and bottom.
-    pub fn vertical(size: i16) Margin {
-        return Margin{
-            .top = size,
-            .bottom = size,
-        };
-    }
+        /// Bottom and right.
+        pub fn br(bottom: T, right: T) Self {
+            return .{ .bottom = bottom, .right = right };
+        }
 
-    /// `x` pixels on the left and right, `y` on the top and bottom.
-    pub fn xy(x: i16, y: i16) Margin {
-        return Margin{
-            .top = y,
-            .bottom = y,
-            .left = x,
-            .right = x,
-        };
-    }
+        // Deprecated names, removed in the next major version.
 
-    /// `size` pixels on the left and right.
-    pub fn horizontal(size: i16) Margin {
-        return Margin{
-            .left = size,
-            .right = size,
-        };
-    }
-};
+        /// Deprecated: use `tl`.
+        pub const top_left = tl;
+        /// Deprecated: use `tr`.
+        pub const top_right = tr;
+        /// Deprecated: use `bl`.
+        pub const bottom_left = bl;
+        /// Deprecated: use `br`.
+        pub const bottom_right = br;
+        /// Deprecated: 1 pixel on every side (it was `Border.solid`); use
+        /// `.all(1)`.
+        pub const solid: Self = .all(1);
+    };
+}
+
+/// Space inside the element's border, per side.
+pub const Padding = Sides(u8, .padding);
+
+/// Space outside the element's border, per side; negative pulls the element
+/// outward.
+pub const Margin = Sides(i16, .margin);
+
+/// Border thickness per side, in pixels. `Border.thickness` takes one.
+pub const BorderThickness = Sides(u8, .border_thickness);
 
 pub const Overflow = enum(u8) {
     default,
@@ -236,28 +139,40 @@ pub const Scroll = packed struct {
     }
 
     /// Clips horizontal overflow.
-    pub fn none_x() Scroll {
+    pub fn noneX() Scroll {
         return .{ .x = .hidden };
     }
 
     /// Clips vertical overflow.
-    pub fn none_y() Scroll {
+    pub fn noneY() Scroll {
         return .{ .y = .hidden };
     }
+
     /// Scrolls on both axes.
     pub fn scroll() Scroll {
         return .{ .x = .scroll, .y = .scroll };
     }
 
     /// Scrolls horizontally.
-    pub fn scroll_x() Scroll {
+    pub fn scrollX() Scroll {
         return .{ .x = .scroll };
     }
 
     /// Scrolls vertically.
-    pub fn scroll_y() Scroll {
+    pub fn scrollY() Scroll {
         return .{ .y = .scroll };
     }
+
+    // Deprecated names, removed in the next major version.
+
+    /// Deprecated: use `noneX`.
+    pub const none_x = noneX;
+    /// Deprecated: use `noneY`.
+    pub const none_y = noneY;
+    /// Deprecated: use `scrollX`.
+    pub const scroll_x = scrollX;
+    /// Deprecated: use `scrollY`.
+    pub const scroll_y = scrollY;
 };
 
 pub const BorderRadius = packed struct {
@@ -265,181 +180,58 @@ pub const BorderRadius = packed struct {
     top_right: u16 = 0,
     bottom_left: u16 = 0,
     bottom_right: u16 = 0,
-    fn default() BorderRadius {
-        return BorderRadius{
-            .top_left = 0,
-            .top_right = 0,
-            .bottom_left = 0,
-            .bottom_right = 0,
-        };
-    }
+
     /// `radius` pixels on every corner.
     pub fn all(radius: u16) BorderRadius {
-        return BorderRadius{
-            .top_left = radius,
-            .top_right = radius,
-            .bottom_left = radius,
-            .bottom_right = radius,
-        };
+        return .{ .top_left = radius, .top_right = radius, .bottom_left = radius, .bottom_right = radius };
     }
+
     /// Each corner in pixels: top-left, top-right, bottom-left, bottom-right.
     pub fn specific(top_left: u16, top_right: u16, bottom_left: u16, bottom_right: u16) BorderRadius {
-        return BorderRadius{
-            .top_left = top_left,
-            .top_right = top_right,
-            .bottom_left = bottom_left,
-            .bottom_right = bottom_right,
-        };
+        return .{ .top_left = top_left, .top_right = top_right, .bottom_left = bottom_left, .bottom_right = bottom_right };
     }
-    /// The top-left and top-right corners; the bottom stays square.
-    pub fn toplr(left: u16, right: u16) BorderRadius {
-        return BorderRadius{
-            .top_left = left,
-            .top_right = right,
-        };
+
+    /// `radius` on both top corners; the bottom stays square.
+    pub fn top(radius: u16) BorderRadius {
+        return .{ .top_left = radius, .top_right = radius };
+    }
+
+    /// `radius` on both bottom corners; the top stays square.
+    pub fn bottom(radius: u16) BorderRadius {
+        return .{ .bottom_left = radius, .bottom_right = radius };
+    }
+
+    /// `radius` on both left corners; the right stays square.
+    pub fn left(radius: u16) BorderRadius {
+        return .{ .top_left = radius, .bottom_left = radius };
+    }
+
+    /// `radius` on both right corners; the left stays square.
+    pub fn right(radius: u16) BorderRadius {
+        return .{ .top_right = radius, .bottom_right = radius };
     }
 
     /// `top_radius` on both top corners, `bottom_radius` on both bottom corners.
-    pub fn top_bottom(top_radius: u16, bottom_radius: u16) BorderRadius {
-        return BorderRadius{
-            .top_left = top_radius,
-            .top_right = top_radius,
-            .bottom_left = bottom_radius,
-            .bottom_right = bottom_radius,
-        };
-    }
-    /// `radius` on both bottom corners; the top stays square.
-    pub fn bottom(radius: u16) BorderRadius {
-        return BorderRadius{
-            .top_left = 0,
-            .top_right = 0,
-            .bottom_left = radius,
-            .bottom_right = radius,
-        };
-    }
-    /// `radius` on both top corners; the bottom stays square.
-    pub fn top(radius: u16) BorderRadius {
-        return BorderRadius{
-            .top_left = radius,
-            .top_right = radius,
-            .bottom_left = 0,
-            .bottom_right = 0,
-        };
-    }
-    /// `left` on both left corners, `right` on both right corners.
-    pub fn left_right(left: u16, right: u16) BorderRadius {
-        return BorderRadius{
-            .top_left = left,
-            .top_right = right,
-            .bottom_left = left,
-            .bottom_right = right,
-        };
-    }
-};
-
-pub const Border = packed struct {
-    _top: u8 = 0,
-    _bottom: u8 = 0,
-    _left: u8 = 0,
-    _right: u8 = 0,
-    pub const solid = Border{ ._top = 1, ._bottom = 1, ._left = 1, ._right = 1 };
-    pub const none = Border{ ._top = 0, ._bottom = 0, ._left = 0, ._right = 0 };
-    /// No border on any side. Same as `.none`.
-    pub fn default() Border {
-        return Border{
-            ._top = 0,
-            ._bottom = 0,
-            ._left = 0,
-            ._right = 0,
-        };
-    }
-    /// `thickness` pixels on every side.
-    pub fn all(thickness: u8) Border {
-        return Border{
-            ._top = thickness,
-            ._bottom = thickness,
-            ._left = thickness,
-            ._right = thickness,
-        };
-    }
-    /// Each side in pixels: top, bottom, left, right.
-    pub fn tblr(top_thickness: u8, bottom_thickness: u8, left_thickness: u8, right_thickness: u8) Border {
-        return Border{
-            ._top = top_thickness,
-            ._bottom = bottom_thickness,
-            ._left = left_thickness,
-            ._right = right_thickness,
-        };
+    pub fn topBottom(top_radius: u16, bottom_radius: u16) BorderRadius {
+        return .{ .top_left = top_radius, .top_right = top_radius, .bottom_left = bottom_radius, .bottom_right = bottom_radius };
     }
 
-    /// `thickness` pixels on the top and bottom.
-    pub fn tb(thickness: u8) Border {
-        return Border{
-            ._top = thickness,
-            ._bottom = thickness,
-            ._left = 0,
-            ._right = 0,
-        };
-    }
-    /// `thickness` pixels on the left and right.
-    pub fn lr(thickness: u8) Border {
-        return Border{
-            ._top = 0,
-            ._bottom = 0,
-            ._left = thickness,
-            ._right = thickness,
-        };
+    /// `left_radius` on both left corners, `right_radius` on both right corners.
+    pub fn leftRight(left_radius: u16, right_radius: u16) BorderRadius {
+        return .{ .top_left = left_radius, .bottom_left = left_radius, .top_right = right_radius, .bottom_right = right_radius };
     }
 
-    /// Bottom only, in pixels.
-    pub fn bottom(thickness: u8) Border {
-        return Border{
-            ._top = 0,
-            ._bottom = thickness,
-            ._left = 0,
-            ._right = 0,
-        };
-    }
+    // Deprecated names, removed in the next major version.
 
-    /// Top only, in pixels.
-    pub fn top(thickness: u8) Border {
-        return Border{
-            ._top = thickness,
-            ._bottom = 0,
-            ._left = 0,
-            ._right = 0,
-        };
+    /// Deprecated: use `topBottom`.
+    pub const top_bottom = topBottom;
+    /// Deprecated: the top-left and top-right corners; use `specific` or a
+    /// literal.
+    pub fn toplr(top_left: u16, top_right: u16) BorderRadius {
+        return .{ .top_left = top_left, .top_right = top_right };
     }
-
-    /// Left only, in pixels.
-    pub fn left(thickness: u8) Border {
-        return Border{
-            ._top = 0,
-            ._bottom = 0,
-            ._left = thickness,
-            ._right = 0,
-        };
-    }
-
-    /// Right only, in pixels.
-    pub fn right(thickness: u8) Border {
-        return Border{
-            ._top = 0,
-            ._bottom = 0,
-            ._left = 0,
-            ._right = thickness,
-        };
-    }
-
-    /// Same as `right`.
-    pub fn r(thickness: u8) Border {
-        return Border{
-            ._top = 0,
-            ._bottom = 0,
-            ._left = 0,
-            ._right = thickness,
-        };
-    }
+    /// Deprecated: use `leftRight`.
+    pub const left_right = leftRight;
 };
 
 pub const Outline = enum(u8) {
@@ -466,112 +258,104 @@ pub const BorderStyle = enum(u8) {
     dashed,
 };
 
-pub const BorderGrouped = struct {
-    thickness: Border = .none,
+/// An element's border: thickness per side, colour, corner radius and line
+/// style. `.border(.thin(.palette(.border)))`, or a literal:
+/// `.{ .thickness = .b(1), .color = .hex("#E4E4E4") }`.
+pub const Border = struct {
+    thickness: BorderThickness = .none,
     color: ?types.Color = null,
     radius: ?BorderRadius = null,
     style: BorderStyle = .solid,
 
-    pub const none = BorderGrouped{ .thickness = .all(0) };
+    /// No border.
+    pub const none = Border{};
 
     /// Thickness, colour and corner radius.
-    pub fn solid(thickness: Border, color: types.Color, radius: BorderRadius) BorderGrouped {
-        return .{
-            .thickness = thickness,
-            .color = color,
-            .radius = radius,
-        };
+    pub fn solid(thickness: BorderThickness, color: types.Color, radius: BorderRadius) Border {
+        return .{ .thickness = thickness, .color = color, .radius = radius };
     }
 
     /// Thickness and colour, with square corners.
-    pub fn sharp(thickness: Border, color: types.Color) BorderGrouped {
-        return .{
-            .thickness = thickness,
-            .color = color,
-            .radius = .all(0),
-        };
+    pub fn sharp(thickness: BorderThickness, color: types.Color) Border {
+        return .{ .thickness = thickness, .color = color, .radius = .all(0) };
     }
 
     /// 1 pixel on every side, in `color`.
-    pub fn simple(color: types.Color) BorderGrouped {
-        return .{ .color = color, .thickness = .all(1) };
-    }
-
-    /// 1 pixel on every side, in `color`. Same as `simple`.
-    pub fn thin(color: types.Color) BorderGrouped {
+    pub fn thin(color: types.Color) Border {
         return .{ .thickness = .all(1), .color = color };
     }
 
     /// 2 pixels on every side, in `color`.
-    pub fn thick(color: types.Color) BorderGrouped {
+    pub fn thick(color: types.Color) Border {
         return .{ .thickness = .all(2), .color = color };
     }
 
-    // Just thickness, use default color
     /// Only the thickness, in the default colour.
-    pub fn width(thickness: Border) BorderGrouped {
+    pub fn width(thickness: BorderThickness) Border {
         return .{ .thickness = thickness };
     }
 
-    // Rounded variants (common radius values)
     /// 1 pixel in `color`, with corners of `radius`.
-    pub fn round(color: types.Color, radius: BorderRadius) BorderGrouped {
+    pub fn round(color: types.Color, radius: BorderRadius) Border {
         return .{ .color = color, .radius = radius, .thickness = .all(1) };
     }
 
     /// 1 pixel in `color`, with fully rounded ends.
-    pub fn pill(color: types.Color) BorderGrouped {
-        return .{ .color = color, .radius = .all(99), .thickness = .all(1) }; // Large radius for pill shape
-    }
-
-    // Side-specific shortcuts
-    /// `thickness` pixels at the bottom, in `color`.
-    pub fn bottom(thickness: u8, color: types.Color) BorderGrouped {
-        return .{ .thickness = .bottom(thickness), .color = color };
+    pub fn pill(color: types.Color) Border {
+        return .{ .color = color, .radius = .all(99), .thickness = .all(1) };
     }
 
     /// `thickness` pixels on top, in `color`.
-    pub fn top(thickness: u8, color: types.Color) BorderGrouped {
-        return .{ .thickness = .top(thickness), .color = color };
+    pub fn top(thickness: u8, color: types.Color) Border {
+        return .{ .thickness = .t(thickness), .color = color };
+    }
+
+    /// `thickness` pixels at the bottom, in `color`.
+    pub fn bottom(thickness: u8, color: types.Color) Border {
+        return .{ .thickness = .b(thickness), .color = color };
     }
 
     /// `thickness` pixels on the left, in `color`.
-    pub fn left(thickness: u8, color: types.Color) BorderGrouped {
-        return .{ .thickness = .left(thickness), .color = color };
+    pub fn left(thickness: u8, color: types.Color) Border {
+        return .{ .thickness = .l(thickness), .color = color };
     }
 
     /// `thickness` pixels on the right, in `color`.
-    pub fn right(thickness: u8, color: types.Color) BorderGrouped {
-        return .{ .thickness = .right(thickness), .color = color };
+    pub fn right(thickness: u8, color: types.Color) Border {
+        return .{ .thickness = .r(thickness), .color = color };
     }
 
-    /// Same as `left`.
-    pub fn l(thickness: u8, color: types.Color) BorderGrouped {
-        return .{ .thickness = .left(thickness), .color = color };
+    /// `thickness` pixels on the top and bottom, in `color`.
+    pub fn vertical(thickness: u8, color: types.Color) Border {
+        return .{ .thickness = .vertical(thickness), .color = color };
     }
 
-    /// Same as `right`.
-    pub fn r(thickness: u8, color: types.Color) BorderGrouped {
-        return .{ .thickness = .right(thickness), .color = color };
+    /// `thickness` pixels on the left and right, in `color`.
+    pub fn horizontal(thickness: u8, color: types.Color) Border {
+        return .{ .thickness = .horizontal(thickness), .color = color };
     }
 
-    /// Same as `bottom`.
-    pub fn b(thickness: u8, color: types.Color) BorderGrouped {
-        return .{ .thickness = .bottom(thickness), .color = color };
-    }
+    // Deprecated names, removed in the next major version.
 
-    /// Same as `top`.
-    pub fn t(thickness: u8, color: types.Color) BorderGrouped {
-        return .{ .thickness = .top(thickness), .color = color };
+    /// Deprecated: use `thin`.
+    pub const simple = thin;
+    /// Deprecated: use `left`.
+    pub const l = left;
+    /// Deprecated: use `right`.
+    pub const r = right;
+    /// Deprecated: use `bottom`.
+    pub const b = bottom;
+    /// Deprecated: use `top`.
+    pub const t = top;
+    /// Deprecated: 1 pixel on the top and bottom; use `vertical(1, color)`.
+    pub fn tb(color: types.Color) Border {
+        return vertical(1, color);
     }
-
-    /// 1 pixel on the top and bottom, in `color`.
-    pub fn tb(color: types.Color) BorderGrouped {
-        return .{ .thickness = .tb(1), .color = color };
-    }
-
-    /// 1 pixel on the left and right, in `color`.
-    pub fn lr(color: types.Color) BorderGrouped {
-        return .{ .thickness = .lr(1), .color = color };
+    /// Deprecated: 1 pixel on the left and right; use `horizontal(1, color)`.
+    pub fn lr(color: types.Color) Border {
+        return horizontal(1, color);
     }
 };
+
+/// Deprecated: renamed `Border`.
+pub const BorderGrouped = Border;

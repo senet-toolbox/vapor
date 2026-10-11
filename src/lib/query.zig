@@ -70,7 +70,7 @@ pub fn printUIRouteTree(route: []const u8) void {
     // We reconcile the new dom
     // the reason the vapor-debugger gets remvoed is the new ui tree does not include it;
 
-    // const valid_route = replace_dash(current_route) catch unreachable;
+    // const valid_route = replaceDash(current_route) catch unreachable;
     // defer allocator_global.free(valid_route);
 
     // writer.print("\"{s}\":", .{current_route}) catch unreachable;
@@ -120,7 +120,7 @@ pub fn escapeForJson(input: []const u8) ![]u8 {
 }
 
 /// `input` with dashes replaced.
-pub fn replace_dash(input: []const u8) ![]u8 {
+pub fn replaceDash(input: []const u8) ![]u8 {
     var list = std.array_list.Managed(u8).init(Vapor.allocator_global);
 
     for (input) |c| {

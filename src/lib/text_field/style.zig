@@ -351,7 +351,7 @@ pub fn pl(self: *const Self, value: u8) Self {
     if (new_self._padding == null) {
         new_self._padding = .{};
     }
-    new_self._padding.?._left = value;
+    new_self._padding.?.left = value;
     return new_self;
 }
 
@@ -361,7 +361,7 @@ pub fn pr(self: *const Self, value: u8) Self {
     if (new_self._padding == null) {
         new_self._padding = .{};
     }
-    new_self._padding.?._right = value;
+    new_self._padding.?.right = value;
     return new_self;
 }
 
@@ -371,7 +371,7 @@ pub fn pt(self: *const Self, value: u8) Self {
     if (new_self._padding == null) {
         new_self._padding = .{};
     }
-    new_self._padding.?._top = value;
+    new_self._padding.?.top = value;
     return new_self;
 }
 
@@ -381,7 +381,7 @@ pub fn pb(self: *const Self, value: u8) Self {
     if (new_self._padding == null) {
         new_self._padding = .{};
     }
-    new_self._padding.?._bottom = value;
+    new_self._padding.?.bottom = value;
     return new_self;
 }
 
@@ -401,7 +401,7 @@ pub fn margin(self: *const Self, value: types.Margin) Self {
     return new_self;
 }
 
-/// Width and height together: `.size(.full)`, `.size(.square_px(48))`.
+/// Width and height together: `.size(.full)`, `.size(.squarePx(48))`.
 pub fn size(self: *const Self, dim: types.Size) Self {
     var new_self: Self = self.*;
     new_self._size = dim;
@@ -444,7 +444,7 @@ pub fn height(self: *const Self, length: types.Sizing) Self {
 }
 
 /// Border thickness, colour, radius and style together.
-pub fn border(self: *const Self, value: types.BorderGrouped) Self {
+pub fn border(self: *const Self, value: types.Border) Self {
     var new_self: Self = self.*;
     var visual = new_self._visual orelse types.Visual{};
     visual.border = value;

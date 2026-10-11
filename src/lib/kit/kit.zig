@@ -142,12 +142,12 @@ pub const String = struct {
     /// A string builder holding `initial`.
     pub fn init(initial: []const u8) String {
         var new_string = String.new();
-        new_string.append_str(initial);
+        new_string.appendStr(initial);
         return new_string;
     }
 
     /// Appends `input`.
-    pub fn append_str(self: *String, input: []const u8) void {
+    pub fn appendStr(self: *String, input: []const u8) void {
         const required_len = self.len + input.len;
         const required_capacity = required_len + (10 - required_len % 10);
 
@@ -157,61 +157,66 @@ pub const String = struct {
             self.len = required_len;
         }
     }
+
+    // Deprecated names, removed in the next major version.
+
+    /// Deprecated: use `appendStr`.
+    pub const append_str = appendStr;
 };
 
 /// Writes `data` (a struct) as JSON into `writer`.
 pub fn fastJson(comptime T: type, data: T, writer: *String) !void {
     const fields = @typeInfo(T).@"struct".fields;
-    writer.append_str("{");
+    writer.appendStr("{");
     inline for (fields, 0..) |f, j| {
         const field_value_optional = @field(data, f.name);
         const is_optional = @typeInfo(f.type) == .optional;
         const field_type: type = getUnderlyingType(@TypeOf(field_value_optional));
         if (!is_optional or (is_optional and field_value_optional != null)) {
             const field_value = getUnderlyingValue(field_type, @TypeOf(field_value_optional), field_value_optional);
-            writer.append_str("\"");
-            writer.append_str(f.name);
-            writer.append_str("\"");
-            writer.append_str(": ");
+            writer.appendStr("\"");
+            writer.appendStr(f.name);
+            writer.appendStr("\"");
+            writer.appendStr(": ");
             switch (field_type) {
                 i8, i16, i32, i64, i128, f16, f32, f64, f128 => {
                     const max_len = 20;
                     var buf: [max_len]u8 = undefined;
                     const value = try std.fmt.bufPrint(&buf, "{any}", .{field_value});
-                    writer.append_str(value);
+                    writer.appendStr(value);
                 },
                 bool => {
                     if (field_value) {
-                        writer.append_str("true");
+                        writer.appendStr("true");
                     } else {
-                        writer.append_str("false");
+                        writer.appendStr("false");
                     }
                 },
                 [][]const u8, []const []const u8 => {
-                    writer.append_str("[");
+                    writer.appendStr("[");
                     for (field_value, 0..) |e, i| {
-                        writer.append_str("\"");
-                        writer.append_str(e);
-                        writer.append_str("\"");
-                        if (i < field_value.len - 1) writer.append_str(",");
+                        writer.appendStr("\"");
+                        writer.appendStr(e);
+                        writer.appendStr("\"");
+                        if (i < field_value.len - 1) writer.appendStr(",");
                     }
-                    writer.append_str("]");
+                    writer.appendStr("]");
                 },
                 []i8, []i16, []i32, []i64, []i128, []f16, []f32, []f64, []f128 => {
-                    writer.append_str("[");
+                    writer.appendStr("[");
                     for (field_value, 0..) |e, i| {
                         const max_len = 4;
                         var buf: [max_len]u8 = undefined;
                         const value = try std.fmt.bufPrint(&buf, "{any}", .{e});
-                        writer.append_str(value);
-                        if (i > 0) writer.append_str(",");
+                        writer.appendStr(value);
+                        if (i > 0) writer.appendStr(",");
                     }
-                    writer.append_str("]");
+                    writer.appendStr("]");
                 },
                 []const u8 => {
-                    writer.append_str("\"");
-                    writer.append_str(field_value);
-                    writer.append_str("\"");
+                    writer.appendStr("\"");
+                    writer.appendStr(field_value);
+                    writer.appendStr("\"");
                 },
                 else => {
                     switch (@typeInfo(field_type)) {
@@ -219,16 +224,16 @@ pub fn fastJson(comptime T: type, data: T, writer: *String) !void {
                             var inner_writer = String.new();
                             try fastJson(field_type, field_value, &inner_writer);
                             const payload = inner_writer.contents[0..inner_writer.len];
-                            writer.append_str(payload);
+                            writer.appendStr(payload);
                         },
                         else => {},
                     }
                 },
             }
-            if (j < fields.len - 1) writer.append_str(", ");
+            if (j < fields.len - 1) writer.appendStr(", ");
         }
     }
-    writer.append_str("}");
+    writer.appendStr("}");
 }
 
 var last_time: i64 = 0;

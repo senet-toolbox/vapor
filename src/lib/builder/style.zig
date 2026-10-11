@@ -433,7 +433,7 @@ pub fn cursor(self: *const Self, value: types.Cursor) Self {
 }
 
 /// Border thickness, colour, radius and style together.
-pub fn border(self: *const Self, value: types.BorderGrouped) Self {
+pub fn border(self: *const Self, value: types.Border) Self {
     var n = self.*;
     var v = n._visual orelse types.Visual{};
     v.border = value;
@@ -445,7 +445,7 @@ pub fn border(self: *const Self, value: types.BorderGrouped) Self {
 pub fn borderStyle(self: *const Self, value: types.BorderStyle) Self {
     var n = self.*;
     var v = n._visual orelse types.Visual{};
-    var b = v.border orelse types.BorderGrouped{ .color = null, .thickness = .all(0) };
+    var b = v.border orelse types.Border{ .color = null, .thickness = .all(0) };
     b.style = value;
     v.border = b;
     n._visual = v;
@@ -456,7 +456,7 @@ pub fn borderStyle(self: *const Self, value: types.BorderStyle) Self {
 pub fn radius(self: *const Self, value: types.BorderRadius) Self {
     var n = self.*;
     var v = n._visual orelse types.Visual{};
-    var b = v.border orelse types.BorderGrouped{ .color = null, .thickness = .all(0) };
+    var b = v.border orelse types.Border{ .color = null, .thickness = .all(0) };
     b.radius = value;
     v.border = b;
     n._visual = v;

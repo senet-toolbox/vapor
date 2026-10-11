@@ -1103,7 +1103,7 @@ test "README examples type-check against the real API" {
         _ = @TypeOf(Vapor.Box().layout(.center));
         _ = @TypeOf(Vapor.Box().padding(.all(16)).padding(.tb(8, 4)));
         _ = @TypeOf(Vapor.Box().margin(.all(8)));
-        _ = @TypeOf(Vapor.Box().size(.full).size(.square_px(48)));
+        _ = @TypeOf(Vapor.Box().size(.full).size(.squarePx(48)));
         _ = @TypeOf(Vapor.Box().width(.px(320)).width(.percent(50)).width(.expand));
         _ = @TypeOf(Vapor.Heading(2, "Settings"));
         _ = @TypeOf(Vapor.TextFmt("{d} items", .{3}));
@@ -1316,7 +1316,7 @@ test "style compiler keeps min and max apart for vp and elastic widths" {
     var writer: Vapor.Writer = undefined;
 
     writer.init(&buf);
-    const vp = Vapor.Types.PackedLayout{ .size = .{ .width = .min_max_vp(10, 90) } };
+    const vp = Vapor.Types.PackedLayout{ .size = .{ .width = .minMaxVp(10, 90) } };
     StyleCompiler.generateLayout(&vp, &writer);
     try std.testing.expect(std.mem.indexOf(u8, writer.getAll(), "min-width:10.00vw;") != null);
     try std.testing.expect(std.mem.indexOf(u8, writer.getAll(), "max-width:90.00vw;") != null);
@@ -1479,4 +1479,35 @@ test "both builders refund identically, so keying is consistent across them" {
 
     try std.testing.expectEqual(parent_a.unkeyed_child_count, parent_b.unkeyed_child_count);
     try std.testing.expectEqualStrings(node_a.uuid, node_b.uuid);
+}
+
+test "Padding, Margin and BorderThickness build the same way" {
+    const T = Vapor.Types;
+    const p: T.Padding = .tl(4, 8);
+    try std.testing.expectEqual(T.Padding{ .top = 4, .left = 8 }, p);
+    try std.testing.expectEqual(T.Margin{ .top = -2, .bottom = -2 }, T.Margin.vertical(-2));
+    try std.testing.expectEqual(T.BorderThickness{ .left = 1, .right = 1 }, T.BorderThickness.horizontal(1));
+    try std.testing.expectEqual(T.BorderThickness{ .top = 3, .bottom = 1 }, T.BorderThickness.tb(3, 1));
+    try std.testing.expectEqual(T.Padding{ .bottom = 5 }, T.Padding.b(5));
+
+    const border: T.Border = .bottom(2, .white);
+    try std.testing.expectEqual(T.BorderThickness{ .bottom = 2 }, border.thickness);
+    try std.testing.expectEqual(T.BorderThickness{ .top = 1, .bottom = 1 }, T.Border.vertical(1, .white).thickness);
+    try std.testing.expectEqual(T.BorderRadius{ .top_left = 4, .bottom_left = 4 }, T.BorderRadius.left(4));
+}
+
+// Old names stay as aliases until the next major version.
+test "deprecated names still resolve" {
+    const T = Vapor.Types;
+    const border: T.BorderGrouped = .simple(.white);
+    try std.testing.expectEqual(T.Border.thin(.white).thickness, border.thickness);
+    try std.testing.expectEqual(T.Border.vertical(1, .white).thickness, T.Border.tb(.white).thickness);
+    try std.testing.expectEqual(T.BorderThickness.all(1), T.BorderThickness.solid);
+    try std.testing.expectEqual(T.Padding.tl(1, 2), T.Padding.top_left(1, 2));
+    try std.testing.expectEqual(T.BorderRadius.leftRight(1, 2), T.BorderRadius.left_right(1, 2));
+    try std.testing.expectEqual(T.Scroll.scrollY(), T.Scroll.scroll_y());
+    try std.testing.expectEqual(T.Size.squarePx(4), T.Size.square_px(4));
+    try std.testing.expectEqual(T.Sizing.minMaxVp(1, 2), T.Sizing.min_max_vp(1, 2));
+    try std.testing.expectEqual(T.Pos.mobileDesktop(.px(1), .px(2)), T.Pos.mobile_desktop(.px(1), .px(2)));
+    try std.testing.expectEqual(T.Transform.leftPercent(5), T.Transform.left_percent(5));
 }

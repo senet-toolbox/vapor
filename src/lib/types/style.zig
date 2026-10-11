@@ -39,12 +39,12 @@ pub const Visual = struct {
     border_radius: ?types.BorderRadius = null,
 
     /// Border thickness specification
-    border_thickness: ?types.Border = null,
+    border_thickness: ?types.BorderThickness = null,
 
     /// Border color as RGBA array [red, green, blue, alpha]
     border_color: ?types.Color = null,
 
-    border: ?types.BorderGrouped = null,
+    border: ?types.Border = null,
 
     /// Text color as RGBA array [red, green, blue, alpha]
     /// Default: solid black
@@ -109,9 +109,9 @@ pub const Visual = struct {
     }
 
     /// A solid border of `thickness` in `color`.
-    pub fn borderSolid(thickness: types.Border, color: types.Color) Visual {
+    pub fn borderSolid(thickness: types.BorderThickness, color: types.Color) Visual {
         return .{
-            .border = types.BorderGrouped{
+            .border = types.Border{
                 .thickness = thickness,
                 .color = color,
             },

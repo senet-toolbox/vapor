@@ -119,7 +119,7 @@ pub fn padding(self: *const Self, value: types.Padding) Self {
 pub fn pl(self: *const Self, value: u8) Self {
     var n = self.*;
     if (n._padding == null) n._padding = .{};
-    n._padding.?._left = value;
+    n._padding.?.left = value;
     return n;
 }
 
@@ -127,7 +127,7 @@ pub fn pl(self: *const Self, value: u8) Self {
 pub fn pr(self: *const Self, value: u8) Self {
     var n = self.*;
     if (n._padding == null) n._padding = .{};
-    n._padding.?._right = value;
+    n._padding.?.right = value;
     return n;
 }
 
@@ -135,7 +135,7 @@ pub fn pr(self: *const Self, value: u8) Self {
 pub fn pt(self: *const Self, value: u8) Self {
     var n = self.*;
     if (n._padding == null) n._padding = .{};
-    n._padding.?._top = value;
+    n._padding.?.top = value;
     return n;
 }
 
@@ -143,7 +143,7 @@ pub fn pt(self: *const Self, value: u8) Self {
 pub fn pb(self: *const Self, value: u8) Self {
     var n = self.*;
     if (n._padding == null) n._padding = .{};
-    n._padding.?._bottom = value;
+    n._padding.?.bottom = value;
     return n;
 }
 
@@ -248,7 +248,7 @@ pub fn responsive(self: *const Self, platform: types.Platform, responsive_style:
     return new_self;
 }
 
-/// Width and height together: `.size(.full)`, `.size(.square_px(48))`.
+/// Width and height together: `.size(.full)`, `.size(.squarePx(48))`.
 pub fn size(self: *const Self, dim: types.Size) Self {
     var n = self.*;
     n._size = dim;
