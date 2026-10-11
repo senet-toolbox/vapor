@@ -199,12 +199,12 @@ pub const Kit = @import("lib/kit/kit.zig");
 
 // ── Memory ──────────────────────────────────────────────────────────────────
 // `frame`: until two renders later, for values used while rendering.
-// `persist`: until you free it. `view` is meant to last until the route
-// changes, but is currently never reset (see `arena`).
+// `view`: until the app leaves the page on screen. `persist`: until you free
+// it. See `arena`.
 
 /// Allocate for the current render.
 pub const frame = lib.frame;
-/// Allocate for the current route. Not reset on route changes yet; see `arena`.
+/// Allocate for the page on screen; freed when the app leaves it. See `arena`.
 pub const view = lib.view;
 /// Allocate for the life of the app.
 pub const persist = lib.persist;

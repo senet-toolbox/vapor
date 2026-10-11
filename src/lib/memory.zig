@@ -21,9 +21,10 @@ pub const ArenaType = enum {
 pub const Arena = ArenaType;
 
 /// The allocator for a lifetime. `.frame`: freed two renders later.
-/// `.persist`: freed only when you free it. `.view` is meant to be freed when
-/// the route changes, but at present it is never reset, so it accumulates for
-/// the life of the app. `.request` is never reset either.
+/// `.view`: freed when the app leaves the page on screen (after the page's
+/// deinit runs), so allocate it from the page and drop pointers to it in the
+/// deinit; state that must outlive a visit belongs in `.persist`.
+/// `.persist`: freed only when you free it. `.request`: never reset.
 pub fn arena(arena_type: ArenaType) std.mem.Allocator {
     if (Vapor.generating) return Vapor.frame_arena.persistentAllocator();
     return switch (arena_type) {

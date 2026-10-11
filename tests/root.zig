@@ -619,6 +619,49 @@ test "a page's deinit runs when the app navigates away from it" {
     try std.testing.expectEqual(@as(u32, 1), deinit_calls);
 }
 
+var view_ptrs: [3]usize = undefined;
+var view_ptr_count: usize = 0;
+var view_bytes_at_deinit: u8 = 0;
+var view_bytes: []u8 = &.{};
+fn viewAlloc() void {
+    view_bytes = Vapor.arena(.view).alloc(u8, 64) catch unreachable;
+    @memset(view_bytes, 7);
+    view_ptrs[view_ptr_count] = @intFromPtr(view_bytes.ptr);
+    view_ptr_count += 1;
+}
+fn ViewPageA() void {
+    viewAlloc();
+    textElement("a", "view-a");
+}
+fn deinitViewPageA() void {
+    view_bytes_at_deinit = view_bytes[0];
+    view_bytes = &.{};
+}
+fn ViewPageB() void {
+    viewAlloc();
+    textElement("b", "view-b");
+}
+
+// `.view` memory was never freed: arena(.view) used an arena nothing reset.
+test "view memory lasts while the page is shown and is freed on leaving it" {
+    Vapor.init(.{});
+    Vapor.Animation.new();
+    Vapor.lib.resetRerender();
+    Vapor.Animation.removal_queue.clearRetainingCapacity();
+    Vapor.Page(.{ .route = "/view-a" }, ViewPageA, deinitViewPageA);
+    Vapor.Page(.{ .route = "/view-b" }, ViewPageB, null);
+    view_ptr_count = 0;
+
+    _ = try renderRoute("/root/view-a");
+    _ = try renderRoute("/root/view-a");
+    // A rerender of the same page keeps its view memory.
+    try std.testing.expect(view_ptrs[1] != view_ptrs[0]);
+    _ = try renderRoute("/root/view-b");
+    // The deinit saw the memory intact; the next page reuses it.
+    try std.testing.expectEqual(@as(u8, 7), view_bytes_at_deinit);
+    try std.testing.expectEqual(view_ptrs[0], view_ptrs[2]);
+}
+
 test "renderCycle leaves stable same-route rerenders clean" {
     initRenderCycleRuntime("/cycle-stable");
 

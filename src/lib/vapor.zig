@@ -564,13 +564,14 @@ pub fn renderCycle(route_ptr: [*:0]u8) !void {
 
     if (!std.mem.eql(u8, current_route, route)) {
         changed_route = true;
-        // Leaving the page: its deinit runs while its view memory is intact.
+        // Leaving the page: its deinit runs while its `.view` memory is
+        // intact, then that memory is freed. Before the first page there is
+        // nothing to leave, so `.view` memory allocated during app init
+        // belongs to the first page shown.
         if (shown_page) |page| {
             if (page_deinit_map.get(@intFromPtr(page))) |deinit| deinit();
+            frame_arena.beginView();
         }
-        // We need to start a new route allocator
-        // otherwise we are on the same route
-        frame_arena.beginView();
     }
     shown_page = render_page;
 

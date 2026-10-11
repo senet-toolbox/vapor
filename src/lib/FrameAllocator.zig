@@ -1,5 +1,6 @@
 //! The arenas behind `Vapor.arena`: a double-buffered frame arena per route,
-//! a view arena reset on route change, and persistent and request arenas.
+//! a view arena freed when the app leaves the page on screen, and persistent
+//! and request arenas.
 
 const std = @import("std");
 const mem = std.mem;
@@ -20,40 +21,27 @@ const Vapor = @import("vapor.zig");
 // This gets attached to each route in your radix tree
 pub const RouteFrameArena = struct {
     frames: [NUMBER_OF_FRAMES]FrameData,
-    view: FrameData,
     current_frame: usize = 0,
 
-    /// Two frame arenas and a view arena over `backing_allocator`.
+    /// Two frame arenas over `backing_allocator`.
     pub fn init(backing_allocator: Allocator) RouteFrameArena {
         return .{
             .frames = .{
                 .{ .arena = Arena.init(backing_allocator) },
                 .{ .arena = Arena.init(backing_allocator) },
             },
-            .view = .{ .arena = Arena.init(backing_allocator) },
         };
     }
 
-    /// Frees all three arenas.
+    /// Frees both frame arenas.
     pub fn deinit(self: *RouteFrameArena) void {
         self.frames[0].arena.deinit();
         self.frames[1].arena.deinit();
-        self.view.arena.deinit();
     }
 
     /// The current frame's arena.
     pub fn allocator(self: *RouteFrameArena) Allocator {
         return self.frames[self.current_frame].arena.allocator();
-    }
-
-    /// This route's view arena. `Vapor.arena(.view)` does not use it at present.
-    pub fn viewAllocator(self: *RouteFrameArena) Allocator {
-        return self.view.arena.allocator();
-    }
-
-    /// Resets this route's view arena.
-    pub fn beginView(self: *RouteFrameArena) void {
-        _ = self.view.arena.reset(.retain_capacity);
     }
 
     /// Switches to the other frame arena and resets it, so the previous frame's
@@ -127,8 +115,9 @@ pub const Stats = struct {
 
 const FrameAllocator = @This();
 persistent_arena: Arena,
-view: [NUMBER_OF_FRAMES]FrameData,
-current_route: usize = 0,
+/// `.view` memory: the page on screen's. Reset by `beginView` when the app
+/// leaves that page.
+view_arena: Arena,
 request_arena: Arena,
 scratch_arena: Arena,
 // Pointer to current route's frame arena
@@ -137,23 +126,19 @@ backing_allocator: Allocator,
 
 /// The arenas over `backing_allocator`.
 pub fn init(backing_allocator: Allocator) FrameAllocator {
-    var views: [NUMBER_OF_FRAMES]FrameData = undefined;
-    for (0..NUMBER_OF_FRAMES) |i| {
-        views[i] = .{ .arena = Arena.init(backing_allocator) };
-    }
-
     return .{
         .persistent_arena = Arena.init(backing_allocator),
+        .view_arena = Arena.init(backing_allocator),
         .request_arena = Arena.init(backing_allocator),
         .scratch_arena = Arena.init(backing_allocator),
         .backing_allocator = backing_allocator,
-        .view = views,
     };
 }
 
 /// Frees the shared arenas; route arenas belong to the router.
 pub fn deinit(self: *FrameAllocator) void {
     self.persistent_arena.deinit();
+    self.view_arena.deinit();
     self.request_arena.deinit();
     self.scratch_arena.deinit();
     // Note: route arenas are owned by the radix tree, not us
@@ -197,11 +182,10 @@ pub fn beginFrame(self: *FrameAllocator) void {
     }
 }
 
-/// Resets the current route's view arena (not the one `viewAllocator` returns).
+/// Frees all `.view` memory. The render loop calls it when the app leaves a
+/// page, after that page's deinit has run.
 pub fn beginView(self: *FrameAllocator) void {
-    if (self.current_route_arena) |route| {
-        route.beginView();
-    }
+    _ = self.view_arena.reset(.retain_capacity);
 }
 
 /// The backing allocator: `.persist` memory, freed individually.
@@ -219,9 +203,9 @@ pub fn resetScratchArena(self: *FrameAllocator) void {
     _ = self.scratch_arena.reset(.free_all);
 }
 
-/// The view arena `Vapor.arena(.view)` uses. It is never reset at present.
+/// The arena `Vapor.arena(.view)` uses.
 pub fn viewAllocator(self: *FrameAllocator) Allocator {
-    return self.view[self.current_route].arena.allocator();
+    return self.view_arena.allocator();
 }
 
 /// Counts a node allocation on the current route.

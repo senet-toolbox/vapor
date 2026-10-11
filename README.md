@@ -231,8 +231,8 @@ lifetimes, and you choose which one a value belongs to:
 | Arena      | Lives for                                     |
 | ---------- | --------------------------------------------- |
 | `.frame`   | one render pass — the default for UI strings   |
-| `.view`    | the current route                              |
-| `.request` | one in-flight request                          |
+| `.view`    | the page on screen; freed when you leave it    |
+| `.request` | never freed at present (reserved)              |
 | `.persist` | the life of the application                    |
 
 ```zig
