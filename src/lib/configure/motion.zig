@@ -43,7 +43,7 @@ pub fn configureTransforms(ui_node: *UINode, style: *const Vapor.Style) u32 {
     }
 
     if (Configuration.hash_id) {
-        if (Packer.transforms_pool.create()) |packed_transforms_ptr| {
+        if (Vapor.arena(.frame).create(types.PackedTransforms)) |packed_transforms_ptr| {
             packed_transforms_ptr.* = Configuration.packed_transforms;
             ui_node.packed_field_ptrs.?.transforms_ptr = packed_transforms_ptr;
         } else |err| {
@@ -109,7 +109,7 @@ pub fn configureAnimations(ui_node: *UINode, elem_decl: ElemDecl) u32 {
     hash_a = std.hash.XxHash32.hash(0, std.mem.asBytes(&Configuration.packed_animations));
 
     if (Configuration.hash_id) {
-        if (Packer.animations_pool.create()) |packed_animations_ptr| {
+        if (Vapor.arena(.frame).create(types.PackedAnimations)) |packed_animations_ptr| {
             packed_animations_ptr.* = Configuration.packed_animations;
             ui_node.packed_field_ptrs.?.animations_ptr = packed_animations_ptr;
         } else |err| {
@@ -190,7 +190,7 @@ pub fn configureInteractive(ui_node: *UINode, style: *const Vapor.Style) u32 {
     }
 
     if (Configuration.hash_id) {
-        if (Packer.interactives_pool.create()) |packed_interactive_ptr| {
+        if (Vapor.arena(.frame).create(types.PackedInteractive)) |packed_interactive_ptr| {
             packed_interactive_ptr.* = Configuration.packed_interactive;
             ui_node.packed_field_ptrs.?.interactive_ptr = packed_interactive_ptr;
         } else |err| {

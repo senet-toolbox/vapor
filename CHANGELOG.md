@@ -143,6 +143,20 @@ noted.
   frame). The class reference counts this relied on never worked; classes
   are now marked by each render and a rule unused for 3 seconds is
   deleted.
+- Style data grew for the life of the app. Every unique style group kept a
+  packed copy in a pool and every class combination a string, never freed;
+  each navigation cleared the lookup tables without returning their pool
+  slots; and an element with its own class (`style_id`) took new slots on
+  every render. The class sweep now frees a group's data and cached strings
+  together with its CSS rule, an element with its own class keeps its data
+  in frame memory, and navigation no longer clears the tables. Removed
+  `prev_style_hashes` and `element_style_hash_map`, which stored an entry
+  per element and were never read.
+- Two elements with the same styles but different `.class(...)` (or edge
+  classes) shared one cached class attribute, so one got the other's
+  classes.
+- The whole stylesheet was regenerated on every route change; only the
+  first render's is used.
 - `TextField(...).radius(...)` did nothing.
 - A border's line style was left out of its class hash, so changing only
   the style kept the old rule.

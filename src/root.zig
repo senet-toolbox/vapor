@@ -287,6 +287,7 @@ pub const Testing = if (builtin.is_test) struct {
     pub const HtmlGenerator = @import("lib/html_generator.zig");
     pub const StyleCompiler = @import("lib/style_compiler.zig");
     pub const ConfigureVisual = @import("lib/configure/visual.zig");
+    pub const Packer = @import("lib/packer.zig");
 } else struct {};
 
 // ── Deprecated names, removed in the next major version ────────────────────

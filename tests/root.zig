@@ -1566,3 +1566,45 @@ test "padding and margin shorthands keep the sides they do not set" {
     try std.testing.expectEqual(T.Padding{ .top = 6, .bottom = 6, .left = 1 }, field_mp.padding);
     try std.testing.expectEqual(T.Margin{ .bottom = 9, .left = 2, .right = 2 }, field_mp.margin);
 }
+
+var cache_width: f32 = 100;
+fn CachePage() void {
+    Vapor.Box().id("cached").width(.px(cache_width)).height(.px(10)).children({});
+}
+
+// The packed style data and class strings behind a class used to live for
+// the life of the app; the class sweep now frees them, and an element that
+// uses the style again gets fresh copies.
+test "style data unused past the grace period is freed and rebuilt on use" {
+    Vapor.init(.{});
+    Vapor.Animation.new();
+    Vapor.lib.resetRerender();
+    Vapor.Animation.removal_queue.clearRetainingCapacity();
+    Vapor.Page(.{ .route = "/cache" }, CachePage, null);
+    const Packer = Vapor.Testing.Packer;
+    const cache = &Vapor.lib.class_cache;
+
+    cache_width = 100;
+    var root = try renderRoute("/root/cache");
+    const first_layout = (Vapor.lib.getUINodeChild(root, 0) orelse return error.MissingBox).style_hashes[1];
+    cache_width = 101;
+    root = try renderRoute("/root/cache");
+    const second_layout = (Vapor.lib.getUINodeChild(root, 0) orelse return error.MissingBox).style_hashes[1];
+    try std.testing.expect(first_layout != second_layout);
+    try std.testing.expect(Packer.layouts.contains(first_layout));
+
+    // Native renders do not advance the clock; move it past the grace period
+    // with no element marking anything, then sweep.
+    cache.beginRender(cache.now_ms + 10_000);
+    cache.last_sweep_ms = -10_000;
+    try cache.sweep();
+    cache.flushTombstones();
+    try std.testing.expect(!Packer.layouts.contains(first_layout));
+    try std.testing.expect(!Packer.layouts.contains(second_layout));
+
+    root = try renderRoute("/root/cache");
+    const box = Vapor.lib.getUINodeChild(root, 0) orelse return error.MissingBox;
+    try std.testing.expect(Packer.layouts.contains(second_layout));
+    try std.testing.expectEqual(Packer.layouts.get(second_layout).?, box.packed_field_ptrs.?.layout_ptr.?);
+    try std.testing.expect(std.mem.indexOf(u8, box.class.?, "lay_") != null);
+}

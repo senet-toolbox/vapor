@@ -75,6 +75,11 @@ pub fn ManagedAutoHashMap(comptime K: type, comptime V: type) type {
             return self.map.remove(key);
         }
 
+        /// Removes `key` and returns its entry, if present.
+        pub fn fetchRemove(self: *Self, key: K) ?std.AutoHashMapUnmanaged(K, V).KV {
+            return self.map.fetchRemove(key);
+        }
+
         /// Whether `key` is present.
         pub fn contains(self: *Self, key: K) bool {
             return self.map.contains(key);

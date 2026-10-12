@@ -90,7 +90,6 @@ pub fn copyFields(dst: *UINode, node_src: *const UINode) void {
     dst.inlineStyle = node_src.inlineStyle;
     dst.video = node_src.video;
     dst.text_field_params = node_src.text_field_params;
-    dst.prev_style_hash_computed = node_src.prev_style_hash_computed;
     dst.name = node_src.name;
     dst.hover_style_fields = node_src.hover_style_fields;
 }

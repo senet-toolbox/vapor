@@ -3,6 +3,9 @@
 //! queued as a tombstone, and the runtime deletes its rules from the
 //! stylesheet. The grace period keeps the rules of elements that are still
 //! playing an exit animation after leaving the tree.
+//!
+//! The same sweep frees what vapor keeps per class on the Zig side: the
+//! packed style data (through `on_evict`) and the cached class strings.
 
 const std = @import("std");
 const Vapor = @import("vapor.zig");
@@ -42,6 +45,13 @@ pub const ClassCache = struct {
         last_seen_ms: f64,
     };
 
+    /// A node's whole class attribute, shared by nodes with the same styles.
+    const ClassString = struct {
+        text: []const u8,
+        last_render: u32,
+        last_seen_ms: f64,
+    };
+
     allocator: std.mem.Allocator,
     /// Generated classes used by a recent render.
     map: std.AutoHashMap(Hash, Class),
@@ -50,6 +60,12 @@ pub const ClassCache = struct {
     defined: std.AutoHashMap(Hash, void),
     /// Names of classes queued for removal, owned by `allocator`.
     tombstones: std.array_list.Managed([]const u8),
+    /// Class attributes by everything that goes into them; texts owned by
+    /// `allocator`.
+    strings: std.AutoHashMap(Hash, ClassString),
+    /// Called for each generated class the sweep drops, so the style data
+    /// behind it can go too. `Vapor.init` sets it to `Packer.evict`.
+    on_evict: ?*const fn (ClassType, Hash) void = null,
     render: u32 = 0,
     now_ms: f64 = 0,
     last_sweep_ms: f64 = 0,
@@ -61,12 +77,16 @@ pub const ClassCache = struct {
             .map = std.AutoHashMap(Hash, Class).init(allocator),
             .defined = std.AutoHashMap(Hash, void).init(allocator),
             .tombstones = std.array_list.Managed([]const u8).init(allocator),
+            .strings = std.AutoHashMap(Hash, ClassString).init(allocator),
         };
     }
 
     /// Frees the cache.
     pub fn deinit(self: *Self) void {
         self.flushTombstones();
+        var it = self.strings.valueIterator();
+        while (it.next()) |entry| self.allocator.free(entry.text);
+        self.strings.deinit();
         self.map.deinit();
         self.defined.deinit();
         self.tombstones.deinit();
@@ -104,6 +124,28 @@ pub const ClassCache = struct {
         });
     }
 
+    /// The cached class attribute for `key`, marking it used by this render.
+    pub fn getClassString(self: *Self, key: Hash) ?[]const u8 {
+        const entry = self.strings.getPtr(key) orelse return null;
+        entry.last_render = self.render;
+        entry.last_seen_ms = self.now_ms;
+        return entry.text;
+    }
+
+    /// Caches a copy of `text` as the class attribute for `key` and returns it.
+    pub fn putClassString(self: *Self, key: Hash, text: []const u8) ![]const u8 {
+        const owned = try self.allocator.dupe(u8, text);
+        errdefer self.allocator.free(owned);
+        const entry = try self.strings.getOrPut(key);
+        if (entry.found_existing) self.allocator.free(entry.value_ptr.text);
+        entry.value_ptr.* = .{ .text = owned, .last_render = self.render, .last_seen_ms = self.now_ms };
+        return owned;
+    }
+
+    fn stale(self: *const Self, last_render: u32, last_seen_ms: f64) bool {
+        return last_render != self.render and self.now_ms - last_seen_ms >= grace_ms;
+    }
+
     /// Whether the generated class `hash` is tracked.
     pub fn contains(self: *Self, hash: Hash) bool {
         return self.map.contains(hash);
@@ -122,16 +164,24 @@ pub const ClassCache = struct {
         if (self.now_ms - self.last_sweep_ms < sweep_interval_ms) return;
         self.last_sweep_ms = self.now_ms;
 
-        var stale: std.array_list.Managed(Hash) = .init(self.allocator);
-        defer stale.deinit();
+        var dropped: std.array_list.Managed(Hash) = .init(self.allocator);
+        defer dropped.deinit();
+
+        var strings = self.strings.iterator();
+        while (strings.next()) |entry| {
+            if (self.stale(entry.value_ptr.last_render, entry.value_ptr.last_seen_ms)) try dropped.append(entry.key_ptr.*);
+        }
+        for (dropped.items) |key| {
+            const kv = self.strings.fetchRemove(key).?;
+            self.allocator.free(kv.value.text);
+        }
+
+        dropped.clearRetainingCapacity();
         var it = self.map.iterator();
         while (it.next()) |entry| {
-            const class = entry.value_ptr;
-            if (class.last_render == self.render) continue;
-            if (self.now_ms - class.last_seen_ms < grace_ms) continue;
-            try stale.append(entry.key_ptr.*);
+            if (self.stale(entry.value_ptr.last_render, entry.value_ptr.last_seen_ms)) try dropped.append(entry.key_ptr.*);
         }
-        for (stale.items) |hash| {
+        for (dropped.items) |hash| {
             const class = self.map.get(hash).?;
             var buf: [6]u8 = undefined;
             const name = try std.fmt.allocPrint(self.allocator, "{s}_{s}", .{
@@ -141,6 +191,7 @@ pub const ClassCache = struct {
             errdefer self.allocator.free(name);
             try self.tombstones.append(name);
             _ = self.map.remove(hash);
+            if (self.on_evict) |evict| evict(class.type, hash);
         }
     }
 
@@ -248,4 +299,38 @@ test "defineOnce is true only the first time" {
     defer cache.deinit();
     try std.testing.expect(cache.defineOnce(5));
     try std.testing.expect(!cache.defineOnce(5));
+}
+
+var evicted: [4]struct { ClassType, u32 } = undefined;
+var evicted_count: usize = 0;
+fn recordEvict(class_type: ClassType, hash: u32) void {
+    evicted[evicted_count] = .{ class_type, hash };
+    evicted_count += 1;
+}
+
+test "the sweep frees stale class strings and reports evicted classes" {
+    var cache: ClassCache = undefined;
+    try cache.init(std.testing.allocator);
+    defer cache.deinit();
+    cache.on_evict = recordEvict;
+    evicted_count = 0;
+
+    cache.beginRender(0);
+    try cache.markUsed(9, .visual);
+    _ = try cache.putClassString(100, "vis_x lay_y");
+    _ = try cache.putClassString(200, "lay_y");
+
+    // Render 2 uses only string 200; render 3 is past the grace period.
+    cache.beginRender(1000);
+    try std.testing.expectEqualStrings("lay_y", cache.getClassString(200).?);
+    try cache.sweep();
+    cache.beginRender(5000);
+    try std.testing.expectEqualStrings("lay_y", cache.getClassString(200).?);
+    try cache.sweep();
+
+    try std.testing.expect(cache.getClassString(100) == null);
+    try std.testing.expect(cache.getClassString(200) != null);
+    try std.testing.expectEqual(@as(usize, 1), evicted_count);
+    try std.testing.expectEqual(ClassType.visual, evicted[0][0]);
+    try std.testing.expectEqual(@as(u32, 9), evicted[0][1]);
 }

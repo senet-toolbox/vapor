@@ -187,7 +187,7 @@ pub fn configureVisual(ui_node: *UINode, style: *const Vapor.Style) u32 {
     }
 
     if (Configuration.hash_id) {
-        if (Packer.visuals_pool.create()) |packed_visual_ptr| {
+        if (Vapor.arena(.frame).create(types.PackedVisual)) |packed_visual_ptr| {
             packed_visual_ptr.* = Configuration.packed_visual;
             ui_node.packed_field_ptrs.?.visual_ptr = packed_visual_ptr;
         } else |err| {

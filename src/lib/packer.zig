@@ -55,3 +55,26 @@ fn initPools(persistent_allocator: std.mem.Allocator) void {
     transforms_pool = ManagedMemoryPool(types.PackedTransforms).init(persistent_allocator);
     responsive_pool = ManagedMemoryPool(types.PackedResponsive).init(persistent_allocator);
 }
+
+const ClassType = @import("class_cache.zig").ClassType;
+
+/// Drops the shared data of the style group `hash`, once no element uses its
+/// class (see ClassCache). A later element with the same style packs it again.
+pub fn evict(class_type: ClassType, hash: u32) void {
+    switch (class_type) {
+        .layout => evictFrom(&layouts, &layouts_pool, hash),
+        .position => evictFrom(&positions, &positions_pool, hash),
+        .margin_padding => evictFrom(&margins_paddings, &margins_paddings_pool, hash),
+        .visual => evictFrom(&visuals, &visuals_pool, hash),
+        .animation => evictFrom(&animations, &animations_pool, hash),
+        .interactive => evictFrom(&interactives, &interactives_pool, hash),
+        .transform => evictFrom(&transforms, &transforms_pool, hash),
+        .responsive => evictFrom(&responsives, &responsive_pool, hash),
+        .defined, .target_visual => {},
+    }
+}
+
+fn evictFrom(map: anytype, pool: anytype, hash: u32) void {
+    const entry = map.fetchRemove(hash) orelse return;
+    pool.destroy(entry.value);
+}

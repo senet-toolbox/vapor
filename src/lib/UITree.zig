@@ -87,8 +87,6 @@ pub const UINode = struct {
     hooks_hash: u32 = 0,
     hooks_changed: bool = false,
     hash: u32 = 0,
-    prev_style_hash: u32 = 0,
-    prev_style_hash_computed: u32 = 0,
     level: ?u8 = null,
     video: ?*const types.Video = null,
     event_handlers: ?*Vapor.EventHandlers = null,
@@ -295,12 +293,6 @@ fn setUUID(parent: *UINode, child: *UINode) void {
 }
 
 pub var cache_count: u32 = 0;
-pub var prev_style_hashes: std.AutoHashMap(u32, u32) = undefined;
-/// Records the node's style hashes for comparison with the next render.
-pub fn captureHash(node: *UINode) void {
-    // The hash cache is an optimisation; a miss just means recomputing.
-    prev_style_hashes.put(node.hash, node.prev_style_hash_computed) catch return;
-}
 
 // Open takes a current stack and adds the elements depth first search
 // Open and close get called in sequence
@@ -335,11 +327,6 @@ pub fn open(ui_ctx: *UIContext, elem_decl: ElemDecl) !*UINode {
 
     node.hash = hashKey(node.uuid);
 
-    // Lookup previous hash
-    if (prev_style_hashes.get(node.hash)) |old_hash| {
-        node.prev_style_hash = old_hash;
-    }
-
     if (!node.can_have_children) {
         ui_ctx.close();
     }
@@ -366,11 +353,6 @@ pub fn openUnattached(ui_ctx: *UIContext, elem_decl: ElemDecl) !*UINode {
     setUUID(current_open, node);
 
     node.hash = hashKey(node.uuid);
-
-    // Lookup previous hash
-    if (prev_style_hashes.get(node.hash)) |old_hash| {
-        node.prev_style_hash = old_hash;
-    }
 
     uuid_depth -= 1;
 
@@ -403,11 +385,32 @@ pub var packed_transition: types.PackedTransition = .{};
 pub var packed_layer: types.PackedLayer = .{ .Grid = .{} };
 pub var packed_transforms: types.PackedTransforms = .{};
 
-pub var element_style_hash_map: std.AutoHashMap(u32, [10]u32) = undefined;
-pub var class_string_cache: std.AutoHashMap(u32, []const u8) = undefined;
 var buf: [128]u8 = undefined;
 
 const class_types = [10]ClassType{ .defined, .layout, .position, .margin_padding, .visual, .animation, .interactive, .transform, .responsive, .target_visual };
+
+/// The style groups a node was configured with, by class index (see
+/// `class_types`); unconfigured groups are 0.
+fn usedGroups(field_ptrs: *const PackedFieldPtrs, hashes: [10]u32) [10]u32 {
+    var used = [_]u32{0} ** 10;
+    if (field_ptrs.layout_ptr != null) used[1] = hashes[1];
+    if (field_ptrs.position_ptr != null) used[2] = hashes[2];
+    if (field_ptrs.margins_paddings_ptr != null) used[3] = hashes[3];
+    if (field_ptrs.visual_ptr != null) used[4] = hashes[4];
+    if (field_ptrs.animations_ptr != null) used[5] = hashes[5];
+    if (field_ptrs.interactive_ptr != null) used[6] = hashes[6];
+    if (field_ptrs.transforms_ptr != null) used[7] = hashes[7];
+    if (field_ptrs.responsive_ptr != null) used[8] = hashes[8];
+    used[9] = hashes[9];
+    return used;
+}
+
+/// Marks a node's style groups as used by this render even though it gets no
+/// class (its style is the empty one), so their shared data is not evicted
+/// while the node points at it.
+pub fn markStyleGroups(field_ptrs: *const PackedFieldPtrs, hashes: [10]u32) void {
+    markClasses(usedGroups(field_ptrs, hashes));
+}
 
 /// Marks the node's generated classes as used by this render (see ClassCache).
 fn markClasses(hashes: [10]u32) void {
@@ -436,28 +439,20 @@ pub fn buildClassString(
 ) !void {
     const hashes = [10]u32{ 0, hash_l, hash_p, hash_m, hash_v, hash_a, hash_i, hash_t, hash_r, hash_tv };
 
-    // Compute combined hash for class string cache
+    // The class string is cached by everything that goes into it: the group
+    // hashes, the node's own classes and the edge classes.
     var combined: u32 = 0;
     inline for (hashes) |h| combined = combined *% 31 +% h;
+    if (current_open.class) |class| combined = combined *% 31 +% std.hash.XxHash32.hash(1, class);
+    if (additional_classes) |extra| combined = combined *% 31 +% std.hash.XxHash32.hash(2, extra);
 
-    // The groups whose class this node carries.
-    var used = [_]u32{0} ** 10;
-    if (field_ptrs.responsive_ptr != null) used[8] = hash_r;
-    if (field_ptrs.layout_ptr != null) used[1] = hash_l;
-    if (field_ptrs.position_ptr != null) used[2] = hash_p;
-    if (field_ptrs.margins_paddings_ptr != null) used[3] = hash_m;
-    if (field_ptrs.visual_ptr != null) used[4] = hash_v;
-    if (field_ptrs.animations_ptr != null) used[5] = hash_a;
-    if (field_ptrs.interactive_ptr != null) used[6] = hash_i;
-    if (field_ptrs.transforms_ptr != null) used[7] = hash_t;
-    used[9] = hash_tv;
+    const used = usedGroups(field_ptrs, hashes);
     markClasses(used);
     // Configured again with the same style: the class string is already set.
     if (std.mem.eql(u32, &current_open.style_hashes, &used)) return;
     current_open.style_hashes = used;
 
-    // Check class string cache
-    if (class_string_cache.get(combined)) |cached| {
+    if (Vapor.class_cache.getClassString(combined)) |cached| {
         current_open.class = cached;
         return;
     }
@@ -527,15 +522,12 @@ pub fn buildClassString(
 
     if (writer.buffer[0..writer.pos].len == 0) return;
 
-    const full_class = std.fmt.allocPrint(Vapor.arena(.persist), "{s}{s}", .{ writer.buffer[0..writer.pos], additional_classes orelse "" }) catch |err| {
+    const full_class = std.fmt.allocPrint(Vapor.arena(.frame), "{s}{s}", .{ writer.buffer[0..writer.pos], additional_classes orelse "" }) catch |err| {
         Vapor.printlnErr("Could not create string {any} To many classes have been created\n", .{err});
         return err;
     };
-    class_string_cache.put(combined, full_class) catch |err| {
-        Vapor.printlnErr("Could not put class string {any}\n", .{err});
-        @panic("vapor: Could not put class string");
-    };
-    current_open.class = full_class;
+    // Cached for later renders; without the cache this render still works.
+    current_open.class = Vapor.class_cache.putClassString(combined, full_class) catch full_class;
 }
 
 // TODO: Hashing the value is slow, we need to create a better hashmap system
@@ -547,21 +539,18 @@ pub fn buildClassString(
 /// they will appear different during runtime, for  hashing it should always be a static pointer
 pub fn configureByNode(_: *UIContext, node: ?*UINode, elem_decl: ElemDecl) *UINode {
     const ui_node = Configuration.configureByNode(node, elem_decl);
-    captureHash(ui_node);
     return ui_node;
 }
 
 /// Configures `node` without style; see Configuration.configurePlainByNode.
 pub fn configurePlainByNode(_: *UIContext, node: ?*UINode, elem_decl: ElemDecl) *UINode {
     const ui_node = Configuration.configurePlainByNode(node, elem_decl);
-    captureHash(ui_node);
     return ui_node;
 }
 
-/// Configures the open node and records its style hashes.
+/// Configures the open node.
 pub fn configure(ui_ctx: *UIContext, elem_decl: ElemDecl) *UINode {
     const ui_node = Configuration.configure(ui_ctx, elem_decl);
-    captureHash(ui_node);
     return ui_node;
 }
 

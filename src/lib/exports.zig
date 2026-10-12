@@ -3,7 +3,6 @@
 
 const Vapor = @import("vapor.zig");
 const DynamicObject = @import("dynamic.zig").DynamicObject;
-const Packer = @import("packer.zig");
 const UIContext = @import("UITree.zig");
 const UINode = @import("UITree.zig").UINode;
 const Wasm = @import("wasm.zig");
@@ -209,18 +208,6 @@ pub export fn resetRerender() callconv(.c) void {
     Vapor.rerender_everything = false;
     Vapor.has_dirty = false;
     Vapor.status = .{};
-}
-
-pub export fn resetPacker() callconv(.c) void {
-    Packer.animations.clearRetainingCapacity();
-    Packer.layouts.clearRetainingCapacity();
-    Packer.positions.clearRetainingCapacity();
-    Packer.margins_paddings.clearRetainingCapacity();
-    Packer.visuals.clearRetainingCapacity();
-    Packer.interactives.clearRetainingCapacity();
-    Packer.transforms.clearRetainingCapacity();
-    Packer.responsives.clearRetainingCapacity();
-    UIContext.element_style_hash_map.clearRetainingCapacity();
 }
 
 pub export fn setRouteRenderTree(ptr: [*:0]u8) callconv(.c) u32 {

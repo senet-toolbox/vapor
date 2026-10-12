@@ -47,13 +47,11 @@ mq.addEventListener("change", (e) => {
   if (e.matches) {
     const path = window.location.pathname;
     wasmInstance.rerenderEverything();
-    wasmInstance.resetPacker();
 
     rerenderRoute(path);
   } else {
     const path = window.location.pathname;
     wasmInstance.rerenderEverything();
-    wasmInstance.resetPacker();
 
     rerenderRoute(path);
   }
@@ -168,7 +166,6 @@ export const rerenderRoute = (navigatedPath) => {
   window.history.pushState({}, "", navigatedPath);
 
   wasmInstance.forceRerender();
-  wasmInstance.resetPacker();
   render();
 };
 

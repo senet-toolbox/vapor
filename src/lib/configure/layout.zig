@@ -56,7 +56,7 @@ pub fn configureLayouts(ui_node: *UINode, style: *const Vapor.Style) u32 {
     hash_l = std.hash.XxHash32.hash(0, std.mem.asBytes(&Configuration.packed_layout));
 
     if (Configuration.hash_id) {
-        if (Packer.layouts_pool.create()) |packed_layout_ptr| {
+        if (Vapor.arena(.frame).create(types.PackedLayout)) |packed_layout_ptr| {
             packed_layout_ptr.* = Configuration.packed_layout;
             ui_node.packed_field_ptrs.?.layout_ptr = packed_layout_ptr;
         } else |err| {
@@ -195,7 +195,7 @@ pub fn configureResponsive(ui_node: *UINode, style: *const Vapor.Style) u32 {
     hash_r = std.hash.XxHash32.hash(0, std.mem.asBytes(&Configuration.packed_responsive));
 
     if (Configuration.hash_id) {
-        if (Packer.responsive_pool.create()) |packed_responsive_ptr| {
+        if (Vapor.arena(.frame).create(types.PackedResponsive)) |packed_responsive_ptr| {
             packed_responsive_ptr.* = Configuration.packed_responsive;
             ui_node.packed_field_ptrs.?.responsive_ptr = packed_responsive_ptr;
         } else |err| {
@@ -245,7 +245,7 @@ pub fn configurePositions(ui_node: *UINode, style: *const Vapor.Style) u32 {
     hash_p = std.hash.XxHash32.hash(0, std.mem.asBytes(&Configuration.packed_position));
 
     if (Configuration.hash_id) {
-        if (Packer.positions_pool.create()) |packed_position_ptr| {
+        if (Vapor.arena(.frame).create(types.PackedPosition)) |packed_position_ptr| {
             packed_position_ptr.* = Configuration.packed_position;
             ui_node.packed_field_ptrs.?.position_ptr = packed_position_ptr;
         } else |err| {
@@ -277,7 +277,7 @@ pub fn configureMarginsPaddings(ui_node: *UINode, style: *const Vapor.Style) u32
     // This is an expensive operation, since the the visual hash is quite large
     hash_mp = std.hash.XxHash32.hash(0, std.mem.asBytes(&Configuration.packed_margins_paddings));
     if (Configuration.hash_id) {
-        if (Packer.margins_paddings_pool.create()) |packed_margin_paddings_ptr| {
+        if (Vapor.arena(.frame).create(types.PackedMarginsPaddings)) |packed_margin_paddings_ptr| {
             packed_margin_paddings_ptr.* = Configuration.packed_margins_paddings;
             ui_node.packed_field_ptrs.?.margins_paddings_ptr = packed_margin_paddings_ptr;
         } else |err| {

@@ -28,6 +28,7 @@ const StringTable = @import("string_table.zig").StringTable;
 const PackedFieldPtrs = @import("UITree.zig").PackedFieldPtrs;
 const Packer = @import("packer.zig");
 const buildClassString = @import("UITree.zig").buildClassString;
+const markStyleGroups = @import("UITree.zig").markStyleGroups;
 
 const Accessibility = @import("accessibility.zig");
 
@@ -277,6 +278,7 @@ pub fn configure(ui_ctx: *UIContext, elem_decl: ElemDecl) *UINode {
             }
         } else {
             if (2316552965 == current_open.style_hash) {
+                markStyleGroups(&current_open.packed_field_ptrs.?, .{ 0, hash_l, hash_p, hash_mp, hash_v, hash_a, hash_i, hash_t, hash_r, hash_tv });
                 current_open.class = "";
                 current_open.style_hash = 0;
                 break :outer_style;

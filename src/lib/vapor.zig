@@ -287,9 +287,7 @@ pub fn init(config: VaporConfig) void {
         printlnErr("Could not init ClassCache {any}\n", .{err});
         @panic("vapor: ClassCache init failed");
     };
-    UIContext.element_style_hash_map = std.AutoHashMap(u32, [10]u32).init(allocator);
-    UIContext.class_string_cache = std.AutoHashMap(u32, []const u8).init(allocator);
-    UIContext.prev_style_hashes = std.AutoHashMap(u32, u32).init(allocator);
+    class_cache.on_evict = Packer.evict;
 
     Components.text_string_table = std.AutoHashMap(u32, Components.StringEntry).init(allocator);
     Accessibility.a11y_map = std.AutoHashMap(u32, Accessibility.Accessibility).init(allocator);
@@ -357,6 +355,7 @@ fn initContextData(persistent_allocator: std.mem.Allocator) void {
     layout_map = std.AutoHashMap(u32, LayoutItem).init(persistent_allocator);
     page_deinit_map = std.AutoHashMap(usize, *const fn () void).init(persistent_allocator);
     shown_page = null;
+    wrote_initial_css = false;
 }
 
 /// Internal: the node the builders are currently filling in.
@@ -695,13 +694,15 @@ pub const runOnAnimationFrame = TimersModule.runOnAnimationFrame;
 pub const nowMs = TimersModule.nowMs;
 pub const startViewTransition = TimersModule.startViewTransition;
 
-/// Internal: writes the stylesheet after a route change.
+var wrote_initial_css = false;
+
+/// Internal: writes the whole stylesheet after the first render, which the
+/// runtime installs at startup (`getCSS`). Later renders add their rules one
+/// class at a time as the runtime meets them.
 pub fn endPage(_: *UIContext) void {
-    if (changed_route) {
-        ////// BE CAREFUL WITH THIS the configuration system does not run if the value has been created already i think?
-        ///// uncommenting the above and then usign the search fucntion casues errors on the layers style fucntionality
-        generator.writeAllStyles();
-    }
+    if (wrote_initial_css) return;
+    generator.writeAllStyles();
+    wrote_initial_css = true;
 }
 
 // Okay so we need to change the node in the tree depending on the page route
@@ -1122,7 +1123,6 @@ comptime {
 pub const recordState = ExportsModule.recordState;
 pub const getDirtyValue = ExportsModule.getDirtyValue;
 pub const setRouteRenderTree = ExportsModule.setRouteRenderTree;
-pub const resetPacker = ExportsModule.resetPacker;
 pub const resetRerender = ExportsModule.resetRerender;
 pub const hasDirty = ExportsModule.hasDirty;
 pub const rerenderEverything = ExportsModule.rerenderEverything;

@@ -278,7 +278,6 @@ pub fn assignUserId(node: *UINode, new_id: []const u8) void {
     node.refundUnkeyedSlot();
     node.uuid = new_id;
     node.hash = Vapor.hashKey(new_id);
-    node.prev_style_hash = UIContext.prev_style_hashes.get(node.hash) orelse 0;
     if (old_hash == node.hash) return;
     moveEntry(&Vapor.erased_registry, old_hash, node.hash);
     moveEntry(&Vapor.element_registry, old_hash, node.hash);
