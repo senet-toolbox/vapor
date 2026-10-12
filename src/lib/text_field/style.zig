@@ -315,7 +315,9 @@ pub fn spacing(self: *const Self, value: u8) Self {
     return new_self;
 }
 
-/// Inner spacing: `.padding(.all(16))`, `.padding(.tb(8, 4))`, ...
+/// Inner spacing on every side: `.padding(.all(16))`,
+/// `.padding(.{ .left = 12, .top = 4 })`. Replaces all four sides, so set it
+/// before `.pl`, `.padX` and the other one-side shorthands.
 pub fn padding(self: *const Self, value: types.Padding) Self {
     var new_self: Self = self.*;
     new_self._padding = value;
@@ -362,6 +364,24 @@ pub fn pb(self: *const Self, value: u8) Self {
     return new_self;
 }
 
+/// Left and right padding in pixels; keeps the top and bottom.
+pub fn padX(self: *const Self, value: u8) Self {
+    var new_self: Self = self.*;
+    if (new_self._padding == null) new_self._padding = .{};
+    new_self._padding.?.left = value;
+    new_self._padding.?.right = value;
+    return new_self;
+}
+
+/// Top and bottom padding in pixels; keeps the left and right.
+pub fn padY(self: *const Self, value: u8) Self {
+    var new_self: Self = self.*;
+    if (new_self._padding == null) new_self._padding = .{};
+    new_self._padding.?.top = value;
+    new_self._padding.?.bottom = value;
+    return new_self;
+}
+
 /// Mouse cursor shown over the element.
 pub fn cursor(self: *const Self, value: types.Cursor) Self {
     var new_self: Self = self.*;
@@ -371,10 +391,62 @@ pub fn cursor(self: *const Self, value: types.Cursor) Self {
     return new_self;
 }
 
-/// Outer spacing: `.margin(.all(8))`, ...
+/// Outer spacing on every side: `.margin(.all(8))`, `.margin(.{ .top = 4 })`.
+/// Replaces all four sides, so set it before `.mt`, `.mx` and the other
+/// one-side shorthands.
 pub fn margin(self: *const Self, value: types.Margin) Self {
     var new_self: Self = self.*;
     new_self._margin = value;
+    return new_self;
+}
+
+/// Top margin in pixels (negative allowed); keeps the other sides.
+pub fn mt(self: *const Self, value: i16) Self {
+    var new_self: Self = self.*;
+    if (new_self._margin == null) new_self._margin = .{};
+    new_self._margin.?.top = value;
+    return new_self;
+}
+
+/// Bottom margin in pixels (negative allowed); keeps the other sides.
+pub fn mb(self: *const Self, value: i16) Self {
+    var new_self: Self = self.*;
+    if (new_self._margin == null) new_self._margin = .{};
+    new_self._margin.?.bottom = value;
+    return new_self;
+}
+
+/// Left margin in pixels (negative allowed); keeps the other sides.
+pub fn ml(self: *const Self, value: i16) Self {
+    var new_self: Self = self.*;
+    if (new_self._margin == null) new_self._margin = .{};
+    new_self._margin.?.left = value;
+    return new_self;
+}
+
+/// Right margin in pixels (negative allowed); keeps the other sides.
+pub fn mr(self: *const Self, value: i16) Self {
+    var new_self: Self = self.*;
+    if (new_self._margin == null) new_self._margin = .{};
+    new_self._margin.?.right = value;
+    return new_self;
+}
+
+/// Top and bottom margin in pixels; keeps the left and right.
+pub fn my(self: *const Self, value: i16) Self {
+    var new_self: Self = self.*;
+    if (new_self._margin == null) new_self._margin = .{};
+    new_self._margin.?.top = value;
+    new_self._margin.?.bottom = value;
+    return new_self;
+}
+
+/// Left and right margin in pixels; keeps the top and bottom.
+pub fn mx(self: *const Self, value: i16) Self {
+    var new_self: Self = self.*;
+    if (new_self._margin == null) new_self._margin = .{};
+    new_self._margin.?.left = value;
+    new_self._margin.?.right = value;
     return new_self;
 }
 

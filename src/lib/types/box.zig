@@ -2,9 +2,10 @@
 //! `Border`, `Scroll`.
 //!
 //! `Padding`, `Margin` and `BorderThickness` share one shape: a value per
-//! side in pixels, built the same way. Set single sides with a struct
-//! literal (`.{ .top = 8 }`) or the one-letter constructors (`.t(8)`); the
-//! letters combine (`.tb`, `.lr`, `.tblr`, and corners `.tl`, `.br`, ...).
+//! side in pixels. Name the sides you set with a literal
+//! (`.{ .left = 12, .top = 4 }`); `all`, `xy`, `vertical` and `horizontal`
+//! cover the same value on several sides. On a builder, `.pl(12)`, `.mt(8)`,
+//! `.padX(16)` and friends change one side and keep the rest.
 
 const types = @import("../types.zig");
 
@@ -27,19 +28,9 @@ fn Sides(comptime T: type, comptime tag: @EnumLiteral()) type {
             return .{ .top = size, .bottom = size, .left = size, .right = size };
         }
 
-        /// Each side: top, bottom, left, right.
-        pub fn tblr(top: T, bottom: T, left: T, right: T) Self {
-            return .{ .top = top, .bottom = bottom, .left = left, .right = right };
-        }
-
-        /// Top and bottom.
-        pub fn tb(top: T, bottom: T) Self {
-            return .{ .top = top, .bottom = bottom };
-        }
-
-        /// Left and right.
-        pub fn lr(left: T, right: T) Self {
-            return .{ .left = left, .right = right };
+        /// `x` on the left and right, `y` on the top and bottom.
+        pub fn xy(x: T, y: T) Self {
+            return .{ .top = y, .bottom = y, .left = x, .right = x };
         }
 
         /// `size` on the top and bottom.
@@ -52,60 +43,60 @@ fn Sides(comptime T: type, comptime tag: @EnumLiteral()) type {
             return .{ .left = size, .right = size };
         }
 
-        /// `x` on the left and right, `y` on the top and bottom.
-        pub fn xy(x: T, y: T) Self {
-            return .{ .top = y, .bottom = y, .left = x, .right = x };
-        }
+        // Deprecated names, removed in the next major version. Each one is a
+        // literal: `.tb(8, 4)` is `.{ .top = 8, .bottom = 4 }`.
 
-        /// Top only.
+        /// Deprecated: use `.{ .top = .., .bottom = .., .left = .., .right = .. }`.
+        pub fn tblr(top: T, bottom: T, left: T, right: T) Self {
+            return .{ .top = top, .bottom = bottom, .left = left, .right = right };
+        }
+        /// Deprecated: use `.{ .top = .., .bottom = .. }`.
+        pub fn tb(top: T, bottom: T) Self {
+            return .{ .top = top, .bottom = bottom };
+        }
+        /// Deprecated: use `.{ .left = .., .right = .. }`.
+        pub fn lr(left: T, right: T) Self {
+            return .{ .left = left, .right = right };
+        }
+        /// Deprecated: use `.{ .top = .. }`.
         pub fn t(top: T) Self {
             return .{ .top = top };
         }
-
-        /// Bottom only.
+        /// Deprecated: use `.{ .bottom = .. }`.
         pub fn b(bottom: T) Self {
             return .{ .bottom = bottom };
         }
-
-        /// Left only.
+        /// Deprecated: use `.{ .left = .. }`.
         pub fn l(left: T) Self {
             return .{ .left = left };
         }
-
-        /// Right only.
+        /// Deprecated: use `.{ .right = .. }`.
         pub fn r(right: T) Self {
             return .{ .right = right };
         }
-
-        /// Top and left.
+        /// Deprecated: use `.{ .top = .., .left = .. }`.
         pub fn tl(top: T, left: T) Self {
             return .{ .top = top, .left = left };
         }
-
-        /// Top and right.
+        /// Deprecated: use `.{ .top = .., .right = .. }`.
         pub fn tr(top: T, right: T) Self {
             return .{ .top = top, .right = right };
         }
-
-        /// Bottom and left.
+        /// Deprecated: use `.{ .bottom = .., .left = .. }`.
         pub fn bl(bottom: T, left: T) Self {
             return .{ .bottom = bottom, .left = left };
         }
-
-        /// Bottom and right.
+        /// Deprecated: use `.{ .bottom = .., .right = .. }`.
         pub fn br(bottom: T, right: T) Self {
             return .{ .bottom = bottom, .right = right };
         }
-
-        // Deprecated names, removed in the next major version.
-
-        /// Deprecated: use `tl`.
+        /// Deprecated: use `.{ .top = .., .left = .. }`.
         pub const top_left = tl;
-        /// Deprecated: use `tr`.
+        /// Deprecated: use `.{ .top = .., .right = .. }`.
         pub const top_right = tr;
-        /// Deprecated: use `bl`.
+        /// Deprecated: use `.{ .bottom = .., .left = .. }`.
         pub const bottom_left = bl;
-        /// Deprecated: use `br`.
+        /// Deprecated: use `.{ .bottom = .., .right = .. }`.
         pub const bottom_right = br;
         /// Deprecated: 1 pixel on every side (it was `Border.solid`); use
         /// `.all(1)`.
@@ -260,7 +251,7 @@ pub const BorderStyle = enum(u8) {
 
 /// An element's border: thickness per side, colour, corner radius and line
 /// style. `.border(.thin(.palette(.border)))`, or a literal:
-/// `.{ .thickness = .b(1), .color = .hex("#E4E4E4") }`.
+/// `.{ .thickness = .{ .bottom = 1 }, .color = .hex("#E4E4E4") }`.
 pub const Border = struct {
     thickness: ?BorderThickness = null,
     color: ?types.Color = null,
@@ -308,22 +299,22 @@ pub const Border = struct {
 
     /// `thickness` pixels on top, in `color`.
     pub fn top(thickness: u8, color: types.Color) Border {
-        return .{ .thickness = .t(thickness), .color = color };
+        return .{ .thickness = .{ .top = thickness }, .color = color };
     }
 
     /// `thickness` pixels at the bottom, in `color`.
     pub fn bottom(thickness: u8, color: types.Color) Border {
-        return .{ .thickness = .b(thickness), .color = color };
+        return .{ .thickness = .{ .bottom = thickness }, .color = color };
     }
 
     /// `thickness` pixels on the left, in `color`.
     pub fn left(thickness: u8, color: types.Color) Border {
-        return .{ .thickness = .l(thickness), .color = color };
+        return .{ .thickness = .{ .left = thickness }, .color = color };
     }
 
     /// `thickness` pixels on the right, in `color`.
     pub fn right(thickness: u8, color: types.Color) Border {
-        return .{ .thickness = .r(thickness), .color = color };
+        return .{ .thickness = .{ .right = thickness }, .color = color };
     }
 
     /// `thickness` pixels on the top and bottom, in `color`.

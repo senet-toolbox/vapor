@@ -101,7 +101,9 @@ pub fn spacing(self: *const Self, value: u8) Self {
     return n;
 }
 
-/// Inner spacing: `.padding(.all(16))`, `.padding(.tb(8, 4))`, ...
+/// Inner spacing on every side: `.padding(.all(16))`,
+/// `.padding(.{ .left = 12, .top = 4 })`. Replaces all four sides, so set it
+/// before `.pl`, `.padX` and the other one-side shorthands.
 pub fn padding(self: *const Self, value: types.Padding) Self {
     var n = self.*;
     n._padding = value;
@@ -140,6 +142,24 @@ pub fn pb(self: *const Self, value: u8) Self {
     return n;
 }
 
+/// Left and right padding in pixels; keeps the top and bottom.
+pub fn padX(self: *const Self, value: u8) Self {
+    var n = self.*;
+    if (n._padding == null) n._padding = .{};
+    n._padding.?.left = value;
+    n._padding.?.right = value;
+    return n;
+}
+
+/// Top and bottom padding in pixels; keeps the left and right.
+pub fn padY(self: *const Self, value: u8) Self {
+    var n = self.*;
+    if (n._padding == null) n._padding = .{};
+    n._padding.?.top = value;
+    n._padding.?.bottom = value;
+    return n;
+}
+
 /// Top margin in pixels (negative allowed); keeps the other sides.
 pub fn mt(self: *const Self, value: i16) Self {
     var n = self.*;
@@ -172,7 +192,7 @@ pub fn mr(self: *const Self, value: i16) Self {
     return n;
 }
 
-/// Top and bottom margin in pixels.
+/// Top and bottom margin in pixels; keeps the left and right.
 pub fn my(self: *const Self, value: i16) Self {
     var n = self.*;
     if (n._margin == null) n._margin = .{};
@@ -181,7 +201,7 @@ pub fn my(self: *const Self, value: i16) Self {
     return n;
 }
 
-/// Left and right margin in pixels.
+/// Left and right margin in pixels; keeps the top and bottom.
 pub fn mx(self: *const Self, value: i16) Self {
     var n = self.*;
     if (n._margin == null) n._margin = .{};
@@ -190,7 +210,9 @@ pub fn mx(self: *const Self, value: i16) Self {
     return n;
 }
 
-/// Outer spacing: `.margin(.all(8))`, ...
+/// Outer spacing on every side: `.margin(.all(8))`, `.margin(.{ .top = 4 })`.
+/// Replaces all four sides, so set it before `.mt`, `.mx` and the other
+/// one-side shorthands.
 pub fn margin(self: *const Self, value: types.Margin) Self {
     var n = self.*;
     n._margin = value;

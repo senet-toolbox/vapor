@@ -1100,7 +1100,7 @@ test "README examples type-check against the real API" {
         _ = @TypeOf(Vapor.Box().scroll(.{ .y = .scroll }));
         _ = @TypeOf(Vapor.Box().pos(.{ .type = .absolute, .top = .px(0), .right = .px(0) }));
         _ = @TypeOf(Vapor.Box().layout(.center));
-        _ = @TypeOf(Vapor.Box().padding(.all(16)).padding(.tb(8, 4)));
+        _ = @TypeOf(Vapor.Box().padding(.all(16)).padding(.{ .top = 8, .bottom = 4 }));
         _ = @TypeOf(Vapor.Box().margin(.all(8)));
         _ = @TypeOf(Vapor.Box().size(.full).size(.squarePx(48)));
         _ = @TypeOf(Vapor.Box().width(.px(320)).width(.percent(50)).width(.expand));
@@ -1482,12 +1482,9 @@ test "both builders refund identically, so keying is consistent across them" {
 
 test "Padding, Margin and BorderThickness build the same way" {
     const T = Vapor.Types;
-    const p: T.Padding = .tl(4, 8);
-    try std.testing.expectEqual(T.Padding{ .top = 4, .left = 8 }, p);
+    try std.testing.expectEqual(T.Padding{ .top = 8, .bottom = 8, .left = 16, .right = 16 }, T.Padding.xy(16, 8));
     try std.testing.expectEqual(T.Margin{ .top = -2, .bottom = -2 }, T.Margin.vertical(-2));
     try std.testing.expectEqual(T.BorderThickness{ .left = 1, .right = 1 }, T.BorderThickness.horizontal(1));
-    try std.testing.expectEqual(T.BorderThickness{ .top = 3, .bottom = 1 }, T.BorderThickness.tb(3, 1));
-    try std.testing.expectEqual(T.Padding{ .bottom = 5 }, T.Padding.b(5));
 
     const border: T.Border = .bottom(2, .white);
     try std.testing.expectEqual(T.BorderThickness{ .bottom = 2 }, border.thickness);
@@ -1502,7 +1499,9 @@ test "deprecated names still resolve" {
     try std.testing.expectEqual(T.Border.thin(.white).thickness, border.thickness);
     try std.testing.expectEqual(T.Border.vertical(1, .white).thickness, T.Border.tb(.white).thickness);
     try std.testing.expectEqual(T.BorderThickness.all(1), T.BorderThickness.solid);
-    try std.testing.expectEqual(T.Padding.tl(1, 2), T.Padding.top_left(1, 2));
+    try std.testing.expectEqual(T.Padding{ .top = 1, .left = 2 }, T.Padding.top_left(1, 2));
+    try std.testing.expectEqual(T.Padding{ .top = 3, .bottom = 1 }, T.Padding.tb(3, 1));
+    try std.testing.expectEqual(T.Margin{ .bottom = 5 }, T.Margin.b(5));
     try std.testing.expectEqual(T.BorderRadius.leftRight(1, 2), T.BorderRadius.left_right(1, 2));
     try std.testing.expectEqual(T.Scroll.scrollY(), T.Scroll.scroll_y());
     try std.testing.expectEqual(T.Size.squarePx(4), T.Size.square_px(4));
@@ -1541,4 +1540,30 @@ test "each part of a border is written only when given" {
 
     const dashed = try visualCss(.{ .border = .{ .thickness = .all(2), .style = .dashed } }, &buf);
     try std.testing.expect(std.mem.indexOf(u8, dashed, "border-style: dashed") != null);
+}
+
+fn SpacingPage() void {
+    Vapor.Box().id("spaced").padding(.all(8)).padX(16).pt(2).margin(.{ .top = 4 }).mx(-3).children({});
+    Vapor.TextField(.string).id("spaced-field").padY(6).pl(1).mb(9).mx(2).end();
+}
+
+// The one-side shorthands change only their sides, on top of `.padding`.
+test "padding and margin shorthands keep the sides they do not set" {
+    Vapor.init(.{});
+    Vapor.Animation.new();
+    Vapor.lib.resetRerender();
+    Vapor.Animation.removal_queue.clearRetainingCapacity();
+    Vapor.Page(.{ .route = "/spacing" }, SpacingPage, null);
+    const root = try renderRoute("/root/spacing");
+    const T = Vapor.Types;
+
+    const box = Vapor.lib.getUINodeChild(root, 0) orelse return error.MissingBox;
+    const box_mp = box.packed_field_ptrs.?.margins_paddings_ptr.?;
+    try std.testing.expectEqual(T.Padding{ .top = 2, .bottom = 8, .left = 16, .right = 16 }, box_mp.padding);
+    try std.testing.expectEqual(T.Margin{ .top = 4, .left = -3, .right = -3 }, box_mp.margin);
+
+    const field = Vapor.lib.getUINodeChild(root, 1) orelse return error.MissingField;
+    const field_mp = field.packed_field_ptrs.?.margins_paddings_ptr.?;
+    try std.testing.expectEqual(T.Padding{ .top = 6, .bottom = 6, .left = 1 }, field_mp.padding);
+    try std.testing.expectEqual(T.Margin{ .bottom = 9, .left = 2, .right = 2 }, field_mp.margin);
 }

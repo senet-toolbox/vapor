@@ -15,14 +15,16 @@ Breaking: the next release is a major version.
   Use `Vapor.print(.err, ...)`, `printErrSrc`, or `std.log` routed through
   `Vapor.lib.log`.
 - `Padding`, `Margin` and `BorderThickness` (was `Border`) share one shape:
-  `top`/`bottom`/`left`/`right` fields and `all`, `tb`, `lr`, `tblr`,
-  `vertical`, `horizontal`, `xy`, `t`/`b`/`l`/`r`, `tl`/`tr`/`bl`/`br`.
-  `BorderGrouped` is now `Border`.
+  plain `top`/`bottom`/`left`/`right` fields, set with a literal
+  (`.padding(.{ .left = 12, .top = 4 })`), plus `all`, `xy`, `vertical`
+  and `horizontal` for one value on several sides. On a builder,
+  `.pl/.pr/.pt/.pb`, `.padX/.padY` and `.mt/.mb/.ml/.mr/.mx/.my` change
+  one side (or axis) and keep the rest. `BorderGrouped` is now `Border`.
   Migration, all caught by the compiler:
-  - `Padding`/`BorderThickness` `.top(n)` / `.left(n)` / ... → `.t(n)` /
-    `.l(n)`, or a literal `.{ .top = n }`.
+  - `Padding`/`BorderThickness` `.top(n)` / `.left(n)` / ... → a literal
+    `.{ .top = n }`, or `.pt(n)` / `.pl(n)` on the builder.
   - `BorderThickness` `.tb(n)` / `.lr(n)` → `.vertical(n)` /
-    `.horizontal(n)` (`tb`/`lr` now take two values, as on `Padding`).
+    `.horizontal(n)`.
   - `Types.Border` used as a thickness → `Types.BorderThickness`.
 - `Visual.border_radius`, `border_thickness` and `border_color` are
   removed; they never reached the CSS. Use `border`, whose parts are now
@@ -41,6 +43,11 @@ Kept as aliases until the next major version:
 - `BorderGrouped` → `Border`; `Border.simple` → `thin`, `.t/.b/.l/.r` →
   `.top/.bottom/.left/.right`, `.tb(color)`/`.lr(color)` →
   `.vertical(1, color)`/`.horizontal(1, color)`.
+- The letter constructors on `Padding`, `Margin` and `BorderThickness`
+  (`t`, `b`, `l`, `r`, `tb`, `lr`, `tblr`, `tl`, `tr`, `bl`, `br`, and
+  `top_left` etc.) → a literal: `.tb(8, 4)` is `.{ .top = 8, .bottom = 4 }`.
+  `tblr` took top, bottom, left, right, not CSS's top, right, bottom,
+  left, which made it easy to get wrong.
 - `Binded` → `Element`.
 - Pairs that did the same thing keep one name: `PureComponentClose` →
   `PureComponent`, `BuilderClose` → `Builder`, `TextAreaBuilder` →
@@ -64,6 +71,13 @@ Kept as aliases until the next major version:
   `scroll_x`/`scroll_y`, `top_bottom`, `left_right`, `direction_scale`,
   `left_percent`, `top_percent`, `size_weight`, `size_color`,
   `String.append_str`, `Padding.top_left` (→ `tl`) and the other corners.
+
+### Added
+
+- `.padX(n)` / `.padY(n)` on elements and text fields: padding on one
+  axis, keeping the other.
+- Text fields get the margin shorthands elements had: `.mt`, `.mb`, `.ml`,
+  `.mr`, `.mx`, `.my`.
 
 ### Fixed
 
