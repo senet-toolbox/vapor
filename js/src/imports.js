@@ -9,7 +9,6 @@ export const importObject = {
   wasi_snapshot_preview1: {
     // === Process ===
     proc_exit: (code) => {
-      // console.error("Exiting with code:", code);
     },
     proc_raise: () => 0,
     sched_yield: () => 0,

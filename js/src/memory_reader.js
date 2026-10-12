@@ -56,7 +56,6 @@ export function readRenderCommand(offset, layout) {
       destroyId: view.getUint32(layoutInfo.hooksOffset + 12, true),
     };
 
-    // if (cssStylePtr !== 0) {
     // 1. Get the offset of the classname's POINTER from our new layout object.
     const classnamePtrOffset = layoutInfo.classnamePtrOffset;
 
@@ -188,7 +187,6 @@ export function readUINode(offset) {
   const hash = Number(
     view.getUint32(offset + uiNodeLayoutInfo.hashOffset, true),
   );
-  // const hash = id;
   // readtime += performance.now() - start;
 
   let textPtr = 0,

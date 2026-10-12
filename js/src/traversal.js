@@ -119,7 +119,6 @@ export let tStyle = 0,
  * @param {Object} renderCmd - The render command
  */
 export function setupElement(element, uinode) {
-  // let s = performance.now();
   if (state.initial_render && uinode.styleId.length > 0) {
     const inlineStylePtr = wasmInstance.getInlineStyle(uinode.offset);
     const inlineStyleLen = wasmInstance.getInlineStyleLen(uinode.offset);
@@ -149,7 +148,6 @@ export function setupElement(element, uinode) {
     element.className = iconName + " " + uinode.styleId;
   }
 
-  // s = performance.now();
   domNodeRegistry.set(uinode.id, {
     elementType: uinode.elemType,
     node_ptr: uinode.offset,
@@ -250,7 +248,6 @@ export function updateElement(element, uinode, force = false) {
 
     const isReusedNode = !force; // force=true means freshly created/attached
     if (isReusedNode) {
-      // element.style = "";
       const prevTransition = element.style.transition;
       if (!uinode.morph) {
         element.style.transition = "none";
@@ -272,7 +269,6 @@ export function updateElement(element, uinode, force = false) {
         element.className = iconName + " " + uinode.styleId;
         uinode.styleId = iconName + " " + uinode.styleId;
       } else {
-        // element.setAttribute("style", "");
       }
 
       if (!uinode.morph) {
@@ -423,7 +419,6 @@ function placeElement(element, parent, anchor, uinode) {
 export function traverseUINodes(parent, parentUINode) {
   if (!parent) return;
 
-  // const children_count = wasmInstance.getUINodeChildrenCount(parentUINode);
   const uinodes = [];
 
   // Collect children by walking the linked list - O(n)
@@ -477,14 +472,12 @@ export function traverseUINodes(parent, parentUINode) {
         invokeCallback(uinode.onCallbacks[1]);
       } else if (!element || state.initial_render) {
         // Create new element
-        // s = performance.now();
         element = createElementByType(uinode);
         // t6 += performance.now() - s;
 
         if (!element) continue; // Skip if element creation failed
 
         // Set up the element
-        // s = performance.now();
         setupElement(element, uinode);
         // t5 += performance.now() - s;
 
@@ -569,12 +562,10 @@ export function traverseRemove(parent, tree_node, layout) {
     const renderCmd = readRenderCommand(rndcmd_ptr, layout);
 
     if (renderCmd.isDirty) {
-      // console.log("flkajsdfl;kajflkjafj", renderCmd.id);
       const node = domNodeRegistry.get(renderCmd.id);
       const el = node.domNode;
       domNodeRegistry.delete(renderCmd.id);
       pureNodeRegistry.delete(renderCmd.id);
-      // el.remove();
       el.replaceWith(...Array.from(el.childNodes));
       wasmInstance.setDirtyToFalse(renderCmd.nodePtr);
     }

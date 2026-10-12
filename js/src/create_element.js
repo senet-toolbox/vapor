@@ -294,7 +294,8 @@ export function createElementByType(uinode) {
             element.innerHTML = text.replace(/^\s+|\s+$/g, "");
           })
           .catch((err) => {
-            // console.error("Fetch failed:", err);
+            // The graphic stays empty.
+            console.error(`Could not load graphic ${href}:`, err);
           });
       }
       break;
@@ -555,8 +556,6 @@ export function createElementByType(uinode) {
       break;
 
     case COMPONENT_TYPES.NOOP:
-      // element = document.createElement("div");
-      // element.style.display = "none";
       break;
 
     default:

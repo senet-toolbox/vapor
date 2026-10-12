@@ -218,10 +218,8 @@ function setupLayoutInfo() {
   // Set up listener for back/forward buttons
   // Get the memory layout information
   // So we grab the memory layout of each render command
-  // layoutInfoPtr = wasmInstance.allocateLayoutInfo();
 
   // Corrected JavaScript code to read layout info
-  // layoutInfoPtr = wasmInstance.allocateLayoutInfo();
   uiNodeLayoutInfoPtr = wasmInstance.allocateUINodeLayoutInfo();
 
   uiNodeLayoutInfo = {
@@ -351,7 +349,6 @@ export let breadcrumbs = [];
 
 export let currentPath;
 function setupWasiInstance() {
-  // checkMemoryGrowth();
   wasmInstance.init(); // Example UI function
 
   // new PerformanceMonitor();
@@ -526,8 +523,6 @@ function setupWasiInstance() {
     injectCSS(polygons_css);
   }
 
-  // render();
-  // const start = performance.now();
   activeNodeIds = new Set();
   const rootUINode = wasmInstance.getRenderUINodeRootPtr();
   traverseUINodes(root, rootUINode);
@@ -566,7 +561,6 @@ function setupWasiInstance() {
 
 function readAllRenderCommands(baseOffset, count) {
   const view = new DataView(wasmInstance.memory.buffer);
-  // const mem = new Uint8Array(wasmInstance.memory.buffer);
 
   const commands = new Array(count);
 
@@ -675,12 +669,10 @@ function readAllRenderCommands(baseOffset, count) {
 }
 
 // Create ONE global stylesheet
-// const styleSheet = new CSSStyleSheet();
 document.adoptedStyleSheets = [...document.adoptedStyleSheets, styleSheet];
 
 function clearCSS() {
   styleSheet.replaceSync("");
-  // document.adoptedStyleSheets = [];
 }
 
 export function injectCSS(cssString) {
@@ -715,15 +707,9 @@ export let U32;
 async function init() {
   root = document.getElementById("contents");
 
-  // Show a loading state or basic structure immediately
-  // root.innerHTML = '<div class="loading">Loading...</div>';
-  // document.body.appendChild(root);
-
-  // requestAnimationFrame(() => {
   setupLayoutInfo();
   setupWasiInstance();
 
-  // });
 }
 
 export function loadSection(element) {

@@ -63,7 +63,6 @@ export const fileBindings = {
     const event = eventStorage[id];
     const file = event?.target?.files?.[fileIndex];
     if (!file) {
-      // wasmInstance.resumeCallback(callbackId, allocString(""));
       return null;
     }
 
@@ -78,7 +77,7 @@ export const fileBindings = {
       wasmInstance.readObject(callback, handle);
     };
     reader.onerror = () => {
-      // wasmInstance.resumeCallback(callbackId, allocString(""));
+      console.error(`Could not read ${file.name}:`, reader.error);
     };
     reader.readAsText(file);
   },
