@@ -29,6 +29,8 @@ const HtmlGenerator = @import("html_generator.zig");
 const Fetch = @import("fetch.zig");
 const Packer = @import("packer.zig");
 const ClassCache = @import("class_cache.zig").ClassCache;
+const NodeTables = @import("node_table.zig");
+const NodeTable = NodeTables.NodeTable;
 const DynamicObject = @import("dynamic.zig").DynamicObject;
 const StringTable = @import("string_table.zig").StringTable;
 const TextFieldTable = @import("text_field_table.zig").StringTable;
@@ -176,7 +178,7 @@ pub var packed_layers: std.AutoHashMap(u32, []Vapor.Types.PackedLayer) = undefin
 pub var packed_colors: std.AutoHashMap(u32, []Vapor.Types.PackedColor) = undefined;
 pub var packed_transitions: std.AutoHashMap(u32, []Vapor.Types.TransitionProperty) = undefined;
 pub var packed_transforms: std.AutoHashMap(u32, []Vapor.Types.TransformType) = undefined;
-pub var element_registry: std.AutoHashMap(u32, *Element) = undefined;
+pub var element_registry: NodeTable(*Element) = undefined;
 
 pub const ObserverNode = union(enum) {
     type: ElementType,
@@ -289,8 +291,8 @@ pub fn init(config: VaporConfig) void {
     };
     class_cache.on_evict = Packer.evict;
 
-    Components.text_string_table = std.AutoHashMap(u32, Components.StringEntry).init(allocator);
-    Accessibility.a11y_map = std.AutoHashMap(u32, Accessibility.Accessibility).init(allocator);
+    Components.text_string_table = .init(allocator);
+    Accessibility.a11y_map = .init(allocator);
 
     string_table = StringTable.init(allocator);
     storage_table = StorageTable.init(allocator);
@@ -317,7 +319,7 @@ pub fn init(config: VaporConfig) void {
     observer_nodes = std.StringHashMap(std.array_list.Managed(ObserverNode)).init(allocator);
     added_nodes = std.array_list.Managed(*UINode).init(allocator);
     dirty_nodes = std.array_list.Managed(*UINode).init(allocator);
-    element_registry = std.AutoHashMap(u32, *Element).init(allocator);
+    element_registry = .init(allocator);
 }
 
 fn initRegistries(persistent_allocator: std.mem.Allocator) void {
@@ -486,6 +488,8 @@ pub fn callNestedLayouts() void {
 
 pub var clean_up_ctx: *UIContext = undefined;
 pub var current_route: []const u8 = "";
+/// The runtime's buffer for the last rendered route, owned by vapor.
+var route_buffer: ?[:0]u8 = null;
 var previous_route: []const u8 = "";
 pub var render_page: *const fn () void = undefined;
 pub var generator: CSSGenerator = undefined;
@@ -524,8 +528,15 @@ pub fn renderCycle(route_ptr: [*:0]u8) !void {
     UIContext.cache_count = 0;
     status = .{};
     class_cache.beginRender(if (isWasi) performance_now() else 0);
+    NodeTables.beginRender();
 
     const route = std.mem.span(route_ptr);
+    // `current_route` points into this buffer until the next render is done
+    // comparing against it.
+    defer {
+        if (route_buffer) |previous| allocator_global.free(previous);
+        route_buffer = route;
+    }
 
     const old_route_op = router.searchRoute(route) orelse blk: {
         printlnSrcErr("No Route found", .{}, @src());
@@ -598,7 +609,7 @@ pub fn renderCycle(route_ptr: [*:0]u8) !void {
     while (route_itr.next()) |_| {
         count += 1;
     }
-    route_segments = allocator_global.alloc([]const u8, count) catch return;
+    route_segments = arena(.frame).alloc([]const u8, count) catch return;
     count = 0;
     route_itr.reset();
     while (route_itr.next()) |route_token| {
@@ -638,12 +649,10 @@ pub fn renderCycle(route_ptr: [*:0]u8) !void {
     clean_up_ctx = old_ctx;
     changed_route = false;
     class_cache.batchRemove();
-    if (old_route_op != null and router.updateRouteTree(old_route_op.?.path, new_ctx)) {
-        previous_route = current_route;
-        return;
-    }
-
-    allocator_global.free(route); // return host‑allocated buffer
+    Accessibility.a11y_map.prune(null);
+    Components.text_string_table.prune(Components.dropText);
+    element_registry.prune(null);
+    if (old_route_op) |old_route| _ = router.updateRouteTree(old_route.path, new_ctx);
     previous_route = current_route;
 }
 

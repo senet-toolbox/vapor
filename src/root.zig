@@ -288,6 +288,8 @@ pub const Testing = if (builtin.is_test) struct {
     pub const StyleCompiler = @import("lib/style_compiler.zig");
     pub const ConfigureVisual = @import("lib/configure/visual.zig");
     pub const Packer = @import("lib/packer.zig");
+    pub const Accessibility = @import("lib/accessibility.zig");
+    pub const Components = @import("lib/components.zig");
 } else struct {};
 
 // ── Deprecated names, removed in the next major version ────────────────────
@@ -315,6 +317,7 @@ test {
     _ = @import("lib/keystone/jwt.zig");
     _ = @import("lib/Router.zig");
     _ = @import("lib/class_cache.zig");
+    _ = @import("lib/node_table.zig");
     _ = Fetch;
     _ = @import("lib/storage.zig");
     _ = @import("lib/element.zig");

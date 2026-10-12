@@ -19,6 +19,7 @@ const hashKey = utils.hashKey;
 const Draggable = @import("draggable.zig").Draggable;
 const Shadow = @import("Shadow.zig");
 const Accessibility = @import("accessibility.zig").Accessibility;
+const NodeTable = @import("node_table.zig").NodeTable;
 
 /// Compile error unless `f` takes a `Vapor.Kit.ResizeEntry`.
 pub fn assertTakesResizeEntry(comptime f: anytype) void {
@@ -42,7 +43,12 @@ pub const StringEntry = struct {
     persisted: []const u8,
 };
 
-pub var text_string_table: std.AutoHashMap(u32, StringEntry) = undefined;
+pub var text_string_table: NodeTable(StringEntry) = undefined;
+
+/// Frees a pruned text's persisted copy.
+pub fn dropText(entry: StringEntry) void {
+    Vapor.arena(.persist).free(entry.persisted);
+}
 
 const HeaderSize = enum(u32) {
     XXLarge = 12,
@@ -273,7 +279,11 @@ pub fn persistText(ui_node: ?*UINode, text_value: ?[]const u8) ?[]const u8 {
     const slice: []const u8 = value;
     if (text_string_table.get(uuid)) |entry| {
         const old_string = entry.persisted;
-        if (entry.len == slice.len and entry.ptr == slice.ptr and std.mem.eql(u8, entry.persisted, slice)) return entry.persisted;
+        if (entry.len == slice.len and entry.ptr == slice.ptr and std.mem.eql(u8, entry.persisted, slice)) {
+            // Rewritten so the entry counts as used by this render.
+            text_string_table.put(uuid, entry) catch {};
+            return entry.persisted;
+        }
         const new_copy = Vapor.arena(.persist).dupe(u8, slice) catch return null;
         text_string_table.put(uuid, .{ .ptr = slice.ptr, .len = slice.len, .persisted = new_copy }) catch return null;
         defer Vapor.arena(.persist).free(old_string);

@@ -158,6 +158,13 @@ noted.
 - The whole stylesheet was regenerated on every route change; only the
   first render's is used.
 - `TextField(...).radius(...)` did nothing.
+- The tables vapor keeps per element (ARIA attributes, the persisted copy
+  of each text, `.ref()` handles) kept an entry for every element id ever
+  rendered, so a page whose rows changed grew them for the life of the app.
+  An element's entries are now dropped one render after it leaves the page.
+- Every render leaked the route string and its split segments. When a route
+  had no page, its string was instead freed while vapor still compared the
+  next route against it.
 - A border's line style was left out of its class hash, so changing only
   the style kept the old rule.
 - A responsive style with two breakpoints wrote its first `@media` rule

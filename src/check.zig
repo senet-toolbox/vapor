@@ -36,6 +36,7 @@ const modules = .{
     @import("lib/bridge.zig"),
     @import("lib/CSSGenerator.zig"),
     @import("lib/class_cache.zig"),
+    @import("lib/node_table.zig"),
     @import("lib/components.zig"),
     @import("lib/configuration.zig"),
     @import("lib/DateTime.zig"),

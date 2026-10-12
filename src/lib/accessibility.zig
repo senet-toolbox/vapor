@@ -5,8 +5,9 @@ const std = @import("std");
 const Writer = @import("Writer.zig");
 const UINode = @import("UITree.zig").UINode;
 const utils = @import("utils.zig");
+const NodeTable = @import("node_table.zig").NodeTable;
 
-pub var a11y_map: std.AutoHashMap(u32, Accessibility) = undefined;
+pub var a11y_map: NodeTable(Accessibility) = undefined;
 
 // In your exports or wherever you expose to JS
 

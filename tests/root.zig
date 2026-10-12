@@ -1608,3 +1608,54 @@ test "style data unused past the grace period is freed and rebuilt on use" {
     try std.testing.expectEqual(Packer.layouts.get(second_layout).?, box.packed_field_ptrs.?.layout_ptr.?);
     try std.testing.expect(std.mem.indexOf(u8, box.class.?, "lay_") != null);
 }
+
+var list_len: usize = 0;
+var list_refs: [40]Vapor.Element = undefined;
+fn ListPage() void {
+    Vapor.Stack().id("list").children({
+        for (0..list_len) |i| {
+            var buf: [16]u8 = undefined;
+            const id = std.fmt.bufPrint(&buf, "row-{d}", .{i}) catch unreachable;
+            Vapor.Box().id(Vapor.fmtln("{s}", .{id})).ariaLabel("row").ref(&list_refs[i]).children({
+                Vapor.Text("item").id(Vapor.fmtln("{s}-text", .{id})).end();
+            });
+        }
+    });
+}
+
+// The per-element tables (ARIA attributes, persisted text, `.ref()` handles)
+// kept an entry for every element id ever rendered, so a list that changed
+// its rows grew them forever.
+test "per-element tables drop elements that left the page" {
+    Vapor.init(.{});
+    Vapor.Animation.new();
+    Vapor.lib.resetRerender();
+    Vapor.Animation.removal_queue.clearRetainingCapacity();
+    Vapor.Page(.{ .route = "/list" }, ListPage, null);
+    const a11y = &Vapor.Testing.Accessibility.a11y_map;
+    const texts = &Vapor.Testing.Components.text_string_table;
+    const refs = &Vapor.lib.element_registry;
+
+    list_len = 40;
+    _ = try renderRoute("/root/list");
+    const a11y_full = a11y.count();
+    const texts_full = texts.count();
+    const refs_full = refs.count();
+    try std.testing.expect(a11y_full >= 40 and texts_full >= 40 and refs_full >= 40);
+
+    // The previous render's elements are kept for one more render.
+    list_len = 2;
+    _ = try renderRoute("/root/list");
+    try std.testing.expectEqual(a11y_full, a11y.count());
+    _ = try renderRoute("/root/list");
+    try std.testing.expectEqual(a11y_full - 38, a11y.count());
+    try std.testing.expectEqual(texts_full - 38, texts.count());
+    try std.testing.expectEqual(refs_full - 38, refs.count());
+
+    // Elements still on the page keep their entries across many renders.
+    for (0..5) |_| _ = try renderRoute("/root/list");
+    try std.testing.expectEqual(a11y_full - 38, a11y.count());
+    try std.testing.expectEqual(texts_full - 38, texts.count());
+    try std.testing.expectEqual(refs_full - 38, refs.count());
+    try std.testing.expect(refs.get(Vapor.lib.hashKey("row-1")) != null);
+}
