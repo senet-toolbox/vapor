@@ -160,6 +160,10 @@ fn stylesPage() void {
         });
         // A new width each click, so a new class each render.
         Box().id("styled").width(.px(100 + style_step)).height(.px(20)).end();
+        // Same styles, different classes: each keeps its own class.
+        Box().id("hovered").hover(.{ .opacity = 0.5 }).width(.px(40 + style_step)).end();
+        Box().id("class-a").class("user-a").width(.px(30)).end();
+        Box().id("class-b").class("user-b").width(.px(30)).end();
         Box().id("responsive")
             .responsive(.mobile, .{ .child_gap = 4 })
             .responsive(.desktop, .{ .child_gap = 8 })

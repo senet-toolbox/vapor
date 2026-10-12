@@ -24,7 +24,7 @@ import {
   resetTimers,
 } from "./traversal.js";
 import { state } from "./state.js";
-import { styleRuleCache, styleClassCache } from "./styling.js";
+import { styleRuleCache } from "./styling.js";
 import { parseWasmError } from "./formatter.js";
 import { readRenderCommand, readUINode, readWasmString } from "./memory_reader.js";
 export { checkMemoryGrowth } from "./memory_stats.js";

@@ -303,6 +303,7 @@ pub fn configure(ui_ctx: *UIContext, elem_decl: ElemDecl) *UINode {
         }
     }
 
+    foldClassIntoStyleHash(current_open);
     current_open.state_type = elem_decl.state_type;
     current_open.aria_label = elem_decl.aria_label;
     current_open.alt = elem_decl.alt;
@@ -615,6 +616,7 @@ pub fn configureByNode(ui_node: ?*UINode, elem_decl: ElemDecl) *UINode {
         };
     }
 
+    foldClassIntoStyleHash(current_open);
     current_open.state_type = elem_decl.state_type;
     current_open.aria_label = elem_decl.aria_label;
     current_open.alt = elem_decl.alt;
@@ -805,6 +807,7 @@ pub fn configurePlainByNode(ui_node: ?*UINode, elem_decl: ElemDecl) *UINode {
     current_open.props_hash = current_open.finger_print;
 
     // this adds 60ms
+    foldClassIntoStyleHash(current_open);
     current_open.state_type = elem_decl.state_type;
     current_open.aria_label = elem_decl.aria_label;
     current_open.alt = elem_decl.alt;
@@ -812,4 +815,14 @@ pub fn configurePlainByNode(ui_node: ?*UINode, elem_decl: ElemDecl) *UINode {
     current_open.finger_print +%= current_open.style_hash;
 
     return current_open;
+}
+
+/// The class attribute also carries `.class(...)`, a `style_id` and edge
+/// classes, which the style group hashes leave out. The runtime caches class
+/// attributes by `style_hash`, so without this two elements with the same
+/// styles but different classes both got the first one's attribute.
+fn foldClassIntoStyleHash(node: *UINode) void {
+    if (node.style_hash == 0) return;
+    const class = node.class orelse return;
+    node.style_hash +%= hashKey(class);
 }

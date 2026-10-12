@@ -337,6 +337,11 @@ const tests = {
       "@media (min-width: 1024px) {\n  .resp { display: flex; flex-direction: row; gap: 8px; }\n}",
     ], "@media rules");
 
+    const classOf = (id) => p.evaluate(`document.getElementById("${id}").className`);
+    assertEqual((await classOf("class-a")).includes("user-a"), true, "#class-a has user-a");
+    assertEqual((await classOf("class-b")).includes("user-b"), true, "#class-b has user-b");
+    assertEqual((await classOf("class-b")).includes("user-a"), false, "#class-b lacks user-a");
+
     const width = `getComputedStyle(document.getElementById("styled")).width`;
     const count = `${rules}.length`;
     for (let i = 1; i <= 5; i++) {
@@ -352,8 +357,12 @@ const tests = {
     // Styling still applies after the sheet shrank, including to a class
     // string seen before the removal.
     assertEqual((await p.evaluate(media)).length, 2, "@media rules kept");
+    // A hover rule is cached under its real selector, so rebuilding the cache
+    // after the removal does not make the next render insert it again.
     await p.click("restyle");
     await p.waitFor(`${width} === "107px"`, "width 107");
+    const hovers = `${rules}.filter((r) => /^\\.intr_\\w+:hover$/.test(r.selectorText ?? "")).length`;
+    assertEqual(await p.evaluate(hovers), 1, "one hover rule");
   },
 
   async "document listeners for one event are removed one at a time"(p) {

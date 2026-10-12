@@ -164,6 +164,12 @@ noted.
 - The whole stylesheet was regenerated on every route change; only the
   first render's is used.
 - `TextField(...).radius(...)` did nothing.
+- Two elements with the same styles but different `.class(...)`, `style_id`
+  or edge classes got the first one's class attribute in the browser: the
+  runtime cached class attributes by a hash that left those classes out.
+- After unused CSS rules were removed, every hover style still in use was
+  inserted again each time its element changed, since the runtime looked it
+  up under a different name than the one it was stored under.
 - The tables vapor keeps per element (ARIA attributes, the persisted copy
   of each text, `.ref()` handles) kept an entry for every element id ever
   rendered, so a page whose rows changed grew them for the life of the app.
@@ -218,6 +224,12 @@ noted.
 
 ### Internal cleanup (no API change)
 
+- `js/src/styling.js` goes from 491 to 185 lines: one table of generated
+  class prefixes instead of eight copied branches, and six unused functions
+  are gone (`checkMarkStyling`, `applyHoverClass`, `applyFocusClass`,
+  `applyFocusWithinClass`, `applyTooltipClass`, `addKeyframesToStylesheet`).
+  The runtime's class-attribute cache is cleared with each CSS sweep instead
+  of growing for the life of the page.
 - The remaining oversized files are split by concern, each re-exporting what
   it moved so every public name still resolves at its old path (checked
   mechanically, along with the wasm's export and import tables):

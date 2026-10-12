@@ -262,7 +262,7 @@ export function readUINode(offset) {
   // In hot path
   let styleId = "";
   if (style_hash) {
-    styleId = styleClassCache[style_hash]; // Direct property access
+    styleId = styleClassCache.get(style_hash);
     if (styleId === undefined) {
       const classnamePtr = view.getUint32(
         offset + uiNodeLayoutInfo.classnamePtrOffset,
@@ -274,7 +274,7 @@ export function readUINode(offset) {
           true,
         );
         styleId = readWasmString(classnamePtr, classnameLen);
-        styleClassCache[style_hash] = styleId;
+        styleClassCache.set(style_hash, styleId);
       }
     }
   }
