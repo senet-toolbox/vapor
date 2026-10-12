@@ -150,10 +150,7 @@ fn appendWriterToGenerator(gen: *Generator) void {
     if (gen.start + len > gen.buffer.len) {
         // Truncate rather than run past the buffer. `unreachable` here was
         // undefined behaviour in the ReleaseSmall builds that ship.
-        Vapor.printlnErr(
-            "css: stylesheet exceeds the {d} byte buffer, output truncated at {d}",
-            .{ gen.buffer.len, gen.start },
-        );
+        Vapor.report.err("css: stylesheet exceeds the {d} byte buffer, output truncated at {d}", .{ gen.buffer.len, gen.start });
         return;
     }
     gen.end += len;
@@ -192,7 +189,7 @@ fn writeCommonStyleGroup(
             // Losing this token means the rule is not emitted for that
             // pseudo-state, not that the whole stylesheet is invalid.
             const full_token = std.fmt.allocPrint(allocator, "{s}{s}", .{ common_key, suffix }) catch |err| {
-                Vapor.printlnErr("css: could not build token '{s}{s}': {any}", .{ common_key, suffix, err });
+                Vapor.report.err("css: could not build token '{s}{s}': {any}", .{ common_key, suffix, err });
                 return;
             };
             writeToken(full_token);
@@ -317,7 +314,7 @@ pub fn writeNodeStyle(gen: *Generator, node: *UINode) void {
                 // Generate the "fbc-..." selector
                 var fbc_buf: [256]u8 = undefined; // Buffer for UUID string
                 const fbc_selector = std.fmt.bufPrint(&fbc_buf, "fbc-{s}", .{node.uuid}) catch |err| {
-                    Vapor.printlnErr("css: uuid too long for a selector '{s}': {any}", .{ node.uuid, err });
+                    Vapor.report.err("css: uuid too long for a selector '{s}': {any}", .{ node.uuid, err });
                     continue;
                 };
                 writeFullNodeRule(gen, node, fbc_selector);
@@ -363,7 +360,7 @@ pub fn getCSS(gen: *Generator) []const u8 {
         const len: usize = css.len;
         gen.end += len;
         if (gen.start + len > gen.buffer.len) {
-            Vapor.printlnErr("Buffer overflow, increase buffer size {d}\n", .{gen.start + len});
+            Vapor.report.err("Buffer overflow, increase buffer size {d}", .{gen.start + len});
             @panic("vapor: Buffer overflow, increase buffer size");
         }
         @memcpy(gen.buffer[gen.start..gen.end], css[0..len]);

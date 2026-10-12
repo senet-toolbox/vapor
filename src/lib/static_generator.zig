@@ -155,9 +155,9 @@ pub fn generateHtml(route: []const u8, dir: []const u8) void {
     Vapor.nodes_with_events.clearRetainingCapacity();
 
     const old_route_op = Vapor.router.searchRoute(route) orelse blk: {
-        Vapor.printlnSrcErr("No Route found", .{}, @src());
+        Vapor.report.err("No Route found", .{});
         break :blk Vapor.router.searchRoute("/root/error") orelse {
-            Vapor.printlnSrcErr("No Error Route found", .{}, @src());
+            Vapor.report.err("No Error Route found", .{});
             Vapor.status.valid_url = false;
             break :blk null;
         };
@@ -174,13 +174,13 @@ pub fn generateHtml(route: []const u8, dir: []const u8) void {
     // Create new context
     const new_ctx: *UIContext = Vapor.arena(.frame).create(UIContext) catch {
         Vapor.status.render_cycle = false;
-        Vapor.println("Failed to allocate UIContext\n", .{});
+        Vapor.report.err("Failed to allocate UIContext", .{});
         return;
     };
 
     UIContext.initContext(new_ctx) catch |err| {
         Vapor.status.render_cycle = false;
-        Vapor.println("Allocator ran out of space {any}\n", .{err});
+        Vapor.report.err("Allocator ran out of space {any}", .{err});
         new_ctx.deinit();
         Vapor.allocator_global.destroy(new_ctx);
         return;

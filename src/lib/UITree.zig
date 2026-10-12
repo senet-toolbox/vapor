@@ -314,7 +314,7 @@ pub fn open(ui_ctx: *UIContext, elem_decl: ElemDecl) !*UINode {
 
     current_open.appendChild(node);
     ui_ctx.stackRegister(node) catch |err| {
-        Vapor.printlnSrcErr("Could not register node {any}", .{err}, @src());
+        Vapor.report.err("Could not register node {any}", .{err});
         return err;
     };
 
@@ -417,7 +417,7 @@ fn markClasses(hashes: [10]u32) void {
     for (hashes[1..], class_types[1..]) |hash, class_type| {
         if (hash == 0) continue;
         Vapor.class_cache.markUsed(hash, class_type) catch |err| {
-            Vapor.printlnErr("class cache: could not mark a class, its rule may be removed early: {any}", .{err});
+            Vapor.report.err("class cache: could not mark a class, its rule may be removed early: {any}", .{err});
         };
     }
 }
@@ -523,7 +523,7 @@ pub fn buildClassString(
     if (writer.buffer[0..writer.pos].len == 0) return;
 
     const full_class = std.fmt.allocPrint(Vapor.arena(.frame), "{s}{s}", .{ writer.buffer[0..writer.pos], additional_classes orelse "" }) catch |err| {
-        Vapor.printlnErr("Could not create string {any} To many classes have been created\n", .{err});
+        Vapor.report.err("Could not create string {any} To many classes have been created", .{err});
         return err;
     };
     // Cached for later renders; without the cache this render still works.
@@ -560,7 +560,7 @@ pub fn close(ui_ctx: *UIContext) void {
     if (uuid_depth > 0) {
         uuid_depth -= 1;
     } else {
-        Vapor.printlnSrcErr("Depth is negative {}", .{uuid_depth}, @src());
+        Vapor.report.err("Depth is negative {}", .{uuid_depth});
     }
     ui_ctx.stackPop();
 }

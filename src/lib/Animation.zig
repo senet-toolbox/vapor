@@ -793,7 +793,7 @@ pub const zoomOutRotate = PresetsModule.zoomOutRotate;
 pub fn build(self: Animation) void {
     if (Vapor.animations == null) return;
     Vapor.animations.?.put(self._name, self) catch |err| {
-        Vapor.println("Could not create animation {any}\n", .{err});
+        Vapor.report.err("Could not create animation {any}", .{err});
     };
 }
 

@@ -46,7 +46,7 @@ pub export fn onPopStateCallback() callconv(.c) void {
 
 pub export fn callbackCtx(callback_ptr: u32, object_ptr: ?*DynamicObject) callconv(.c) void {
     const node = Vapor.ctx_callback_registry.get(callback_ptr) orelse {
-        std.log.err("Ctx Callback Not found {any}\n", .{callback_ptr});
+        Vapor.report.err("Ctx Callback Not found {any}", .{callback_ptr});
         return;
     };
     node.data.dynamic_object = object_ptr;
@@ -58,11 +58,11 @@ pub export fn callbackCtx(callback_ptr: u32, object_ptr: ?*DynamicObject) callco
 
 pub export fn resizeCallback(resize_callback: u32, object_ptr: ?*DynamicObject) callconv(.c) void {
     if (object_ptr == null) {
-        std.log.err("Resize Entry is Null", .{});
+        Vapor.report.err("Resize Entry is Null", .{});
         return;
     }
     const erased = Vapor.resize_callbacks.get(resize_callback) orelse {
-        std.log.err("Resize Ctx Callback Not found {any}\n", .{resize_callback});
+        Vapor.report.err("Resize Ctx Callback Not found {any}", .{resize_callback});
         return;
     };
 
@@ -72,10 +72,10 @@ pub export fn resizeCallback(resize_callback: u32, object_ptr: ?*DynamicObject) 
 // --- Rendering & Tree Management ---
 pub export fn renderUI(route: [*:0]u8) callconv(.c) u32 {
     Vapor.renderCycle(route) catch |err| {
-        Vapor.printlnSrcErr("Error while rendering", .{}, @src());
+        Vapor.report.err("Error while rendering", .{});
         switch (err) {
             error.NoRouteFound => {
-                Vapor.printlnSrcErr("No Route found", .{}, @src());
+                Vapor.report.err("No Route found", .{});
             },
         }
         return 0;
@@ -143,7 +143,7 @@ pub export fn allocUint8Frame(length: u32) callconv(.c) [*]const u8 {
 
 pub export fn allocate(size: usize) callconv(.c) ?[*]f32 {
     const buf = Vapor.allocator_global.alloc(f32, size) catch |err| {
-        Vapor.println("{any}\n", .{err});
+        Vapor.report.err("{any}", .{err});
         return null;
     };
     return buf.ptr;
@@ -151,7 +151,7 @@ pub export fn allocate(size: usize) callconv(.c) ?[*]f32 {
 
 pub export fn allocateU32(size: usize) callconv(.c) ?[*]u32 {
     const buf = Vapor.arena(.persist).alloc(u32, size) catch |err| {
-        Vapor.println("{any}\n", .{err});
+        Vapor.report.err("{any}", .{err});
         return null;
     };
     return buf.ptr;
@@ -167,9 +167,6 @@ pub export fn getCSSLen() callconv(.c) usize {
 }
 
 pub export fn getRenderCommandPtr(tree: *Vapor.CommandsTree) callconv(.c) [*]u8 {
-    if (std.mem.eql(u8, tree.node.id, "global-style")) {
-        Vapor.println("getRenderCommandPtr {any}\n", .{tree.node.node_ptr.dirty});
-    }
     return @ptrCast(tree.node);
 }
 
@@ -212,10 +209,10 @@ pub export fn resetRerender() callconv(.c) void {
 
 pub export fn setRouteRenderTree(ptr: [*:0]u8) callconv(.c) u32 {
     Vapor.renderCycle(ptr) catch |err| {
-        Vapor.printlnSrcErr("Error while rendering", .{}, @src());
+        Vapor.report.err("Error while rendering", .{});
         switch (err) {
             error.NoRouteFound => {
-                Vapor.printlnSrcErr("No Route found", .{}, @src());
+                Vapor.report.err("No Route found", .{});
             },
         }
         return 0;

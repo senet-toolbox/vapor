@@ -138,7 +138,7 @@ pub export fn getStyle(ptr: ?*UINode) ?[*]const u8 {
         if (animations_ptr.has_animation_enter) {
             if (Vapor.string_table.get(animations_ptr.animation_enter)) |name| anim: {
                 const animation = (if (Vapor.animations) |a| a.get(name) else null) orelse {
-                    Vapor.printlnErr("animation '{s}' is not defined; register it with Vapor.Animation before using it", .{name});
+                    Vapor.report.err("animation '{s}' is not defined; register it with Vapor.Animation before using it", .{name});
                     break :anim;
                 };
                 writer.write("animation:") catch {};
@@ -378,7 +378,7 @@ export fn getAnimationStyle(ptr: ?*UINode) ?[*]const u8 {
     if (packed_animations.has_animation_enter) {
         if (Vapor.string_table.get(packed_animations.animation_enter)) |name| {
             const animation = Vapor.animations.?.get(name) orelse {
-                Vapor.printErr("Animation not found in animations.zig; Please make sure to Run .build() on the animation", .{});
+                Vapor.report.err("Animation not found in animations.zig; Please make sure to Run .build() on the animation", .{});
                 return null;
             };
             writer.write("animation:") catch {};
@@ -404,7 +404,7 @@ pub export fn getExitAnimationStyle(ptr: ?*UINode) ?[*]const u8 {
     if (packed_animations.has_animation_exit) {
         if (Vapor.string_table.get(packed_animations.animation_exit)) |name| {
             const animation = Vapor.animations.?.get(name) orelse {
-                Vapor.printErr("Exit Animation not found in animations.zig; Please make sure to Run .build() on the animation", .{});
+                Vapor.report.err("Exit Animation not found in animations.zig; Please make sure to Run .build() on the animation", .{});
                 return null;
             };
             StyleCompiler.generateAnimation(&animation, &writer);

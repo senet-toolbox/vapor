@@ -557,6 +557,9 @@ fn BigSvgPage() void {
 // An Svg over the inline limit used to return a builder without its node,
 // so .end() panicked with "builder has no node".
 test "an oversized Svg renders empty instead of panicking" {
+    // The oversized Svg is reported once, as an error.
+    Vapor.lib.expected_reports = 1;
+    defer std.testing.expectEqual(@as(u32, 0), Vapor.lib.expected_reports) catch @panic("expected error not reported");
     comptime std.debug.assert(big_svg.len > 2048);
     Vapor.init(.{});
     Vapor.Animation.new();
@@ -743,6 +746,9 @@ test "writer reserves a trailing byte so callers can NUL-terminate" {
 }
 
 test "writer refuses writes past capacity instead of overflowing" {
+    // The overflow is reported once, as an error.
+    Vapor.lib.expected_reports = 1;
+    defer std.testing.expectEqual(@as(u32, 0), Vapor.lib.expected_reports) catch @panic("expected error not reported");
     var buffer: [16]u8 = undefined;
     var writer: Writer = undefined;
     writer.init(&buffer);
@@ -761,6 +767,9 @@ test "writer refuses writes past capacity instead of overflowing" {
 }
 
 test "writer bounds-checks every write entry point" {
+    // The overflow is reported once, as an error.
+    Vapor.lib.expected_reports = 1;
+    defer std.testing.expectEqual(@as(u32, 0), Vapor.lib.expected_reports) catch @panic("expected error not reported");
     var buffer: [4]u8 = undefined;
     var writer: Writer = undefined;
     writer.init(&buffer);
@@ -784,6 +793,9 @@ test "writer bounds-checks every write entry point" {
 }
 
 test "writer reset clears the overflow flag" {
+    // The overflow is reported once, as an error.
+    Vapor.lib.expected_reports = 1;
+    defer std.testing.expectEqual(@as(u32, 0), Vapor.lib.expected_reports) catch @panic("expected error not reported");
     var buffer: [8]u8 = undefined;
     var writer: Writer = undefined;
     writer.init(&buffer);
@@ -799,6 +811,9 @@ test "writer reset clears the overflow flag" {
 }
 
 test "writer handles a zero-length buffer without underflowing capacity" {
+    // The overflow is reported once, as an error.
+    Vapor.lib.expected_reports = 1;
+    defer std.testing.expectEqual(@as(u32, 0), Vapor.lib.expected_reports) catch @panic("expected error not reported");
     var buffer: [0]u8 = undefined;
     var writer: Writer = undefined;
     writer.init(&buffer);
@@ -1331,6 +1346,9 @@ test "style compiler keeps min and max apart for vp and elastic widths" {
 }
 
 test "style compiler truncates instead of running past its buffer" {
+    // The overflow is reported once, as an error.
+    Vapor.lib.expected_reports = 1;
+    defer std.testing.expectEqual(@as(u32, 0), Vapor.lib.expected_reports) catch @panic("expected error not reported");
     // A generous tail the writer is not allowed to touch. Before Writer was
     // bounds-checked, an oversized style walked straight into it.
     var backing = [_]u8{0xAA} ** 128;
@@ -1355,6 +1373,9 @@ test "style compiler truncates instead of running past its buffer" {
 }
 
 test "style compiler keeps truncating safely once full" {
+    // The overflow is reported once, as an error.
+    Vapor.lib.expected_reports = 1;
+    defer std.testing.expectEqual(@as(u32, 0), Vapor.lib.expected_reports) catch @panic("expected error not reported");
     var backing = [_]u8{0xAA} ** 96;
     const capacity = 8;
     var writer: Vapor.Writer = undefined;

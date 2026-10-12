@@ -121,7 +121,7 @@ fn reconcileDeletions(old_node: *UINode, new_node: *UINode, len_old: usize, len_
     // Add all *old* nodes from the middle section to the map
     for (old_items[start..back_i_old], start..) |old_child, j| {
         node_map.put(old_child.uuid, j) catch {
-            Vapor.printlnSrcErr("Could not put node into node_map {any}\n", .{old_child.uuid}, @src());
+            Vapor.report.err("Could not put node into node_map {any}", .{old_child.uuid});
         };
     }
 
@@ -193,7 +193,7 @@ fn reconcileSame(old_node: *UINode, new_node: *UINode, len: usize) void {
     // Add all *new* nodes from the middle section to the map
     for (new_items[start..end], start..) |new_child, j| {
         node_map.put(new_child.uuid, j) catch {
-            Vapor.printlnSrcErr("Could not put node into node_map {any}\n", .{new_child.uuid}, @src());
+            Vapor.report.err("Could not put node into node_map {any}", .{new_child.uuid});
         };
     }
 
@@ -267,7 +267,7 @@ fn reconcileAdditions(old_node: *UINode, new_node: *UINode, len_old: usize, len_
     // Add all *new* nodes from the middle section to the map
     for (new_items[start..end_new], start..) |new_child, j| {
         node_map.put(new_child.uuid, j) catch {
-            Vapor.printlnSrcErr("Could not put node into node_map {any}\n", .{new_child.uuid}, @src());
+            Vapor.report.err("Could not put node into node_map {any}", .{new_child.uuid});
         };
     }
 

@@ -19,8 +19,7 @@ pub fn printUIRouteTree(route: []const u8) void {
 
     // Get the old context for current route
     const old_route = Vapor.router.searchRoute(route) orelse {
-        Vapor.printlnWithColor("No Router found {s}\n", .{route}, "#FF3029", "ERROR");
-        Vapor.printlnWithColor("Loading Error Page\n", .{}, "#FF3029", "ERROR");
+        Vapor.report.err("no page for route '{s}'", .{route});
         return;
     };
     Vapor.render_page = old_route.page;
@@ -28,12 +27,12 @@ pub fn printUIRouteTree(route: []const u8) void {
     const old_ctx = Vapor.current_ctx;
     // Create new context
     const new_ctx: *UIContext = Vapor.allocator_global.create(UIContext) catch {
-        Vapor.println("Failed to allocate UIContext\n", .{});
+        Vapor.report.err("Failed to allocate UIContext", .{});
         return;
     };
 
     UIContext.initContext(new_ctx) catch |err| {
-        Vapor.println("Allocator ran out of space {any}\n", .{err});
+        Vapor.report.err("Allocator ran out of space {any}", .{err});
         new_ctx.deinit();
         Vapor.allocator_global.destroy(new_ctx);
         return;
@@ -144,24 +143,24 @@ pub fn printStaticTextNode(node: *UINode) void {
         var valid_text: []const u8 = "";
         if (node.text) |text| {
             valid_text = escapeForJson(text) catch |err| {
-                Vapor.printlnErr("static text: skipping '{s}': {any}", .{ node.uuid, err });
+                Vapor.report.err("static text: skipping '{s}': {any}", .{ node.uuid, err });
                 break :blk;
             };
         } else if (node.href) |href| {
             valid_text = escapeForJson(href) catch |err| {
-                Vapor.printlnErr("static text: skipping '{s}': {any}", .{ node.uuid, err });
+                Vapor.report.err("static text: skipping '{s}': {any}", .{ node.uuid, err });
                 break :blk;
             };
         } else break :blk;
         defer Vapor.allocator_global.free(valid_text);
         if (Vapor.writer.end > Vapor.current_route.len + 10) {
             _ = Vapor.writer.write(",\n") catch |err| {
-                Vapor.printlnErr("static text: manifest truncated at '{s}': {any}", .{ node.uuid, err });
+                Vapor.report.err("static text: manifest truncated at '{s}': {any}", .{ node.uuid, err });
                 break :blk;
             };
         }
         Vapor.writer.print("\"{s}\":\"{s}\"", .{ node.uuid, valid_text }) catch |err| {
-            Vapor.printlnErr("static text: manifest truncated at '{s}': {any}", .{ node.uuid, err });
+            Vapor.report.err("static text: manifest truncated at '{s}': {any}", .{ node.uuid, err });
             break :blk;
         };
     }
@@ -180,7 +179,7 @@ pub var component_id_collection_failed: bool = false;
 pub fn collectComponentIds(node: *UINode, selected_type: Vapor.ElementType, component_ids: *std.array_list.Managed([]const u8)) void {
     if (node.type == selected_type) {
         component_ids.append(node.uuid) catch |err| {
-            Vapor.printlnErr("queryComponentIds: could not record '{s}': {any}", .{ node.uuid, err });
+            Vapor.report.err("queryComponentIds: could not record '{s}': {any}", .{ node.uuid, err });
             component_id_collection_failed = true;
         };
     }

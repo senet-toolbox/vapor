@@ -59,7 +59,7 @@ fn createPackedLayer(layer: types.BackgroundLayer, current_hash_v: *u32) types.P
             Configuration.packed_layer.Gradient.type = gradient.type;
             Configuration.packed_layer.Gradient.direction = gradient.direction;
             var gradient_colors = Vapor.arena(.frame).alloc(types.PackedColor, gradient.colors.len) catch |err| {
-                Vapor.printlnErr("gradient: could not allocate colours, layer skipped: {any}", .{err});
+                Vapor.report.err("gradient: could not allocate colours, layer skipped: {any}", .{err});
                 break :blk;
             };
             for (gradient.colors, 0..) |color, j| {
@@ -67,7 +67,7 @@ fn createPackedLayer(layer: types.BackgroundLayer, current_hash_v: *u32) types.P
             }
             const count = Vapor.packed_colors.count() + 1;
             Vapor.packed_colors.put(count, gradient_colors) catch |err| {
-                Vapor.printlnErr("gradient: could not register colours, layer skipped: {any}", .{err});
+                Vapor.report.err("gradient: could not register colours, layer skipped: {any}", .{err});
                 break :blk;
             };
             Configuration.packed_layer.Gradient.colors_ptr = count;
@@ -76,7 +76,7 @@ fn createPackedLayer(layer: types.BackgroundLayer, current_hash_v: *u32) types.P
             hash_v +%= std.hash.XxHash32.hash(0, std.mem.asBytes(&Configuration.packed_layer));
         },
         else => {
-            Vapor.printlnSrcErr("Not implemented yet {any}", .{layer}, @src());
+            Vapor.report.err("Not implemented yet {any}", .{layer});
         },
     }
     current_hash_v.* = hash_v;
@@ -88,13 +88,13 @@ fn configureLayers(visual: *const Vapor.Types.Visual, current_hash_v: u32) u32 {
     var packed_layers: []types.PackedLayer = undefined;
     if (visual.layer) |layer| {
         packed_layers = Vapor.arena(.frame).alloc(types.PackedLayer, 1) catch |err| {
-            Vapor.printlnErr("layers: could not allocate, background layer skipped: {any}", .{err});
+            Vapor.report.err("layers: could not allocate, background layer skipped: {any}", .{err});
             return hash_v;
         };
         packed_layers[0] = createPackedLayer(layer, &hash_v);
     } else if (visual.layers) |layers| {
         packed_layers = Vapor.arena(.frame).alloc(types.PackedLayer, layers.len) catch |err| {
-            Vapor.printlnErr("layers: could not allocate, background layers skipped: {any}", .{err});
+            Vapor.report.err("layers: could not allocate, background layers skipped: {any}", .{err});
             return hash_v;
         };
         for (layers, 0..) |layer, i| {
@@ -105,7 +105,7 @@ fn configureLayers(visual: *const Vapor.Types.Visual, current_hash_v: u32) u32 {
     }
     const count = Vapor.packed_layers.count() + 1;
     Vapor.packed_layers.put(count, packed_layers) catch |err| {
-        Vapor.printlnErr("layers: could not register, background layers skipped: {any}", .{err});
+        Vapor.report.err("layers: could not register, background layers skipped: {any}", .{err});
         return hash_v;
     };
     Configuration.packed_visual.packed_layers.items_ptr = count;
@@ -191,7 +191,7 @@ pub fn configureVisual(ui_node: *UINode, style: *const Vapor.Style) u32 {
             packed_visual_ptr.* = Configuration.packed_visual;
             ui_node.packed_field_ptrs.?.visual_ptr = packed_visual_ptr;
         } else |err| {
-            Vapor.printlnErr("style: could not allocate, node renders without this group: {any}", .{err});
+            Vapor.report.err("style: could not allocate, node renders without this group: {any}", .{err});
         }
         return hash_v;
     }
@@ -205,7 +205,7 @@ pub fn configureVisual(ui_node: *UINode, style: *const Vapor.Style) u32 {
     )) |ptr| {
         ui_node.packed_field_ptrs.?.visual_ptr = ptr;
     } else |err| {
-        Vapor.printlnErr("style: could not cache, node renders without this group: {any}", .{err});
+        Vapor.report.err("style: could not cache, node renders without this group: {any}", .{err});
     }
 
     return hash_v;
@@ -349,7 +349,7 @@ pub fn checkVisual(visual: *const types.Visual, packet_visual: *types.PackedVisu
         count += 1;
         packet_visual.text_shadow = count;
         Vapor.shadows.put(count, text_shadow) catch |err| {
-            Vapor.printlnErr("shadow: could not register, shadow skipped: {any}", .{err});
+            Vapor.report.err("shadow: could not register, shadow skipped: {any}", .{err});
             packet_visual.text_shadow = 0;
         };
     }
@@ -359,7 +359,7 @@ pub fn checkVisual(visual: *const types.Visual, packet_visual: *types.PackedVisu
         count += 1;
         packet_visual.new_shadow = count;
         Vapor.shadows.put(count, new_shadow) catch |err| {
-            Vapor.printlnErr("shadow: could not register, shadow skipped: {any}", .{err});
+            Vapor.report.err("shadow: could not register, shadow skipped: {any}", .{err});
             packet_visual.new_shadow = 0;
         };
     }

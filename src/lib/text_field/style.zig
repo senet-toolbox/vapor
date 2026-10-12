@@ -11,7 +11,7 @@ const Color = types.Color;
 /// warning) elsewhere.
 pub fn ellipsis(self: *const Self, value: types.Ellipsis) Self {
     if (self._elem_type != .Text) {
-        Vapor.printWarn("Ellipsis can only be used on Text, not {any}", .{self._elem_type});
+        Vapor.report.warn("Ellipsis can only be used on Text, not {any}", .{self._elem_type});
         return self.*;
     }
     var new_self: Self = self.*;
@@ -540,11 +540,7 @@ pub fn inlineStyle(self: *const Self, comptime fmt: []const u8, args: anytype) S
     var new_self: Self = self.*;
     const allocator = Vapor.arena(.frame);
     const text = std.fmt.allocPrint(allocator, fmt, args) catch |err| {
-        Vapor.printlnColor(
-            \\Error formatting text: {any}\n"
-            \\FMT: {s}\n"
-            \\ARGS: {any}\n"
-        , .{ err, fmt, args }, .hex("#FF3029"));
+        Vapor.report.err("inlineStyle: could not format, style skipped: {any}", .{err});
         return new_self;
     };
     Vapor.frame_arena.addBytesUsed(text.len);

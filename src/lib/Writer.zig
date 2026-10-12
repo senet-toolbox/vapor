@@ -53,10 +53,7 @@ fn reserve(self: *Writer, n: usize) Error![]u8 {
 fn overflow(self: *Writer, needed: usize) Error {
     if (!self.overflowed) {
         self.overflowed = true;
-        Vapor.printlnErr(
-            "Writer out of space: needed {d} more bytes at {d}/{d}. Output is truncated.",
-            .{ needed, self.pos, self.size },
-        );
+        Vapor.report.err("Writer out of space: needed {d} more bytes at {d}/{d}. Output is truncated.", .{ needed, self.pos, self.size });
     }
     return error.OutOfSpace;
 }
@@ -231,7 +228,7 @@ pub fn writeU32(self: *Writer, value: u32) Error!void {
 /// Logs the written text (`std.log.info`).
 pub fn print(self: *Writer) !void {
     const len: usize = self.pos;
-    std.log.info("{s}", .{self.buffer[0..len]});
+    Vapor.report.info("{s}", .{self.buffer[0..len]});
 }
 
 /// Print only the current segment (from start to pos)

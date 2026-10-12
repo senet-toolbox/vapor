@@ -98,8 +98,8 @@ pub export fn dispatchEvent(event_type_int: u32, callback_id: u32) void {
     };
 
     const erased = Vapor.erased_event_registry.get(callback_id) orelse {
-        std.log.err("Event Callback not found {s}\n", .{@tagName(event_type)});
-        Vapor.printlnSrcErr("Event Callback not found\n", .{}, @src());
+        Vapor.report.err("Event Callback not found {s}", .{@tagName(event_type)});
+        Vapor.report.err("Event Callback not found", .{});
         return;
     };
 
@@ -129,9 +129,6 @@ pub export fn dispatchNodeEvent(ui_node: *UINode, event_type_int: u32) void {
 
             if (Vapor.mode == .atomic and event_type != .pointermove and event_type != .scroll and ui_node.cycle == true) {
                 if (ui_node.type != .Form) {
-                    if (event_type == .rightclick) {
-                        std.log.info("rightclick", .{});
-                    }
                     Vapor.cycle();
                 }
             }
@@ -148,7 +145,7 @@ pub fn attachEventCtxCallback(ui_node: *UINode, event_type: Vapor.EventType, cb:
     if (ui_node.event_handlers) |handlers| {
         for (handlers.handlers.items) |handler| {
             if (handler.event_type == event_type) {
-                std.log.err("Event: {any}", .{event_type});
+                Vapor.report.err("Event: {any}", .{event_type});
                 return error.EventAlreadyAttached;
             }
         }
@@ -180,13 +177,13 @@ pub fn addGlobalListener(event_type: Vapor.EventType, cb: fn (*Event) void) ?u32
     if (!Vapor.isWasi) return null;
 
     const erased = ErasedEventCallback.make(Vapor.arena(.persist), event_type, cb, .{}) catch |err| {
-        Vapor.printlnErr("addGlobalListener: could not allocate callback, listener not attached: {any}", .{err});
+        Vapor.report.err("addGlobalListener: could not allocate callback, listener not attached: {any}", .{err});
         return null;
     };
 
     const id = Vapor.next_global_listener_id;
     Vapor.erased_event_registry.put(id, erased) catch |err| {
-        Vapor.printlnErr("addGlobalListener: could not register, listener not attached: {any}", .{err});
+        Vapor.report.err("addGlobalListener: could not register, listener not attached: {any}", .{err});
         return null;
     };
 
@@ -204,13 +201,13 @@ pub fn addGlobalListenerCtx(event_type: Vapor.EventType, cb: anytype, args: anyt
     if (!Vapor.isWasi) return null;
 
     const erased = ErasedEventCallback.make(Vapor.arena(.persist), event_type, cb, args) catch |err| {
-        Vapor.printlnErr("addGlobalListenerCtx: could not allocate callback, listener not attached: {any}", .{err});
+        Vapor.report.err("addGlobalListenerCtx: could not allocate callback, listener not attached: {any}", .{err});
         return null;
     };
 
     const id = Vapor.next_global_listener_id;
     Vapor.erased_event_registry.put(id, erased) catch |err| {
-        Vapor.printlnErr("addGlobalListenerCtx: could not register, listener not attached: {any}", .{err});
+        Vapor.report.err("addGlobalListenerCtx: could not register, listener not attached: {any}", .{err});
         return null;
     };
 
@@ -304,14 +301,14 @@ pub fn assignUserId(node: *UINode, new_id: []const u8) void {
 pub fn moveEntry(map: anytype, from: u32, to: u32) void {
     const kv = map.fetchRemove(from) orelse return;
     map.put(to, kv.value) catch |err| {
-        Vapor.printlnErr("assignUserId: could not re-register entry, it is lost: {any}", .{err});
+        Vapor.report.err("assignUserId: could not re-register entry, it is lost: {any}", .{err});
     };
 }
 
 // The JS/WASM side calls back with the id:
 pub export fn invokeErasedCallback(id: u32) void {
     var erased = Vapor.button_callbacks.get(id) orelse Vapor.erased_registry.get(id) orelse {
-        std.log.err("Erased Callback not found {d}", .{id});
+        Vapor.report.err("Erased Callback not found {d}", .{id});
         return;
     };
     erased.call();
@@ -323,7 +320,7 @@ pub export fn invokeErasedCallback(id: u32) void {
 // The JS/WASM side calls back with the id:
 pub export fn invokeHooksErasedCallback(id: u32) void {
     var erased = Vapor.erased_hooks_registry.get(id) orelse {
-        std.log.err("Hooks Callback not found {d}", .{id});
+        Vapor.report.err("Hooks Callback not found {d}", .{id});
         return;
     };
     erased.call();

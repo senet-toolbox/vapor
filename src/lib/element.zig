@@ -121,7 +121,7 @@ pub const Element = struct {
     pub fn scrollTo(self: *Element, options: ScrollOptions) void {
         if (!Vapor.isWasi) return;
         const id = self._get_id() orelse {
-            Vapor.printlnSrc("Id is null", .{}, @src());
+            Vapor.report.warn("Element: not bound to an element on the page; bind it with .ref() first", .{});
             return;
         };
         Wasm.scrollToBehaviorWasm(id.ptr, id.len, options.top, options.left, options.behavior, options.block);
@@ -131,7 +131,7 @@ pub const Element = struct {
     pub fn scrollToBottom(self: *Element, value: u32) void {
         if (!Vapor.isWasi) return;
         const id = self._get_id() orelse {
-            Vapor.printlnSrc("Id is null", .{}, @src());
+            Vapor.report.warn("Element: not bound to an element on the page; bind it with .ref() first", .{});
             return;
         };
         const attribute: []const u8 = "scrollBottom";
@@ -143,7 +143,7 @@ pub const Element = struct {
     pub fn scrollHeight(self: *Element) f32 {
         if (!Vapor.isWasi) return 0;
         const id = self._get_id() orelse {
-            Vapor.printlnSrc("Id is null", .{}, @src());
+            Vapor.report.warn("Element: not bound to an element on the page; bind it with .ref() first", .{});
             return 0;
         };
         const attribute: []const u8 = "scrollHeight";
@@ -154,7 +154,7 @@ pub const Element = struct {
     pub fn scrollWidth(self: *Element) u32 {
         if (!Vapor.isWasi) return 0;
         const id = self._get_id() orelse {
-            Vapor.printlnSrc("Id is null", .{}, @src());
+            Vapor.report.warn("Element: not bound to an element on the page; bind it with .ref() first", .{});
             return 0;
         };
         const attribute: []const u8 = "scrollWidth";
@@ -165,7 +165,7 @@ pub const Element = struct {
     pub fn scrollToTop(self: *Element, value: f32) void {
         if (!Vapor.isWasi) return;
         const id = self._get_id() orelse {
-            Vapor.printlnSrc("Id is null", .{}, @src());
+            Vapor.report.warn("Element: not bound to an element on the page; bind it with .ref() first", .{});
             return;
         };
         const attribute: []const u8 = "scrollTop";
@@ -176,7 +176,7 @@ pub const Element = struct {
     /// Sets a DOM attribute on the element.
     pub fn setAttribute(self: *Element, key: []const u8, value: []const u8) void {
         const id = self._get_id() orelse {
-            Vapor.printlnSrc("Id is null", .{}, @src());
+            Vapor.report.warn("Element: not bound to an element on the page; bind it with .ref() first", .{});
             return;
         };
         if (isWasi) {
@@ -197,7 +197,7 @@ pub const Element = struct {
     pub fn scrollIntoView(self: *Element, options: ScrollIntoViewOptions) void {
         if (!Vapor.isWasi) return;
         const id = self._get_id() orelse {
-            Vapor.printlnSrc("Id is null", .{}, @src());
+            Vapor.report.warn("Element: not bound to an element on the page; bind it with .ref() first", .{});
             return;
         };
         Wasm.scrollIntoViewWasm(id.ptr, id.len, options.behavior, options.block);
@@ -207,7 +207,7 @@ pub const Element = struct {
     pub fn toOffsetWidth(self: *Element, value: u32) void {
         if (!Vapor.isWasi) return;
         const id = self._get_id() orelse {
-            Vapor.printlnSrc("Id is null", .{}, @src());
+            Vapor.report.warn("Element: not bound to an element on the page; bind it with .ref() first", .{});
             return;
         };
         const attribute: []const u8 = "offsetWidth";
@@ -219,7 +219,7 @@ pub const Element = struct {
     pub fn getAttributeNumber(self: *Element, attribute: []const u8) u32 {
         if (!Vapor.isWasi) return 0;
         const id = self._get_id() orelse {
-            Vapor.printlnSrc("Id is null", .{}, @src());
+            Vapor.report.warn("Element: not bound to an element on the page; bind it with .ref() first", .{});
             return 0;
         };
         return Wasm.getAttributeWasmNumber(id.ptr, id.len, attribute.ptr, attribute.len);
@@ -228,7 +228,7 @@ pub const Element = struct {
     /// The text cursor's position in a text field.
     pub fn cursorPosition(self: *Element) u32 {
         const id = self._get_id() orelse {
-            Vapor.printlnSrc("Id is null", .{}, @src());
+            Vapor.report.warn("Element: not bound to an element on the page; bind it with .ref() first", .{});
             return 0;
         };
         const attribute: []const u8 = "selectionStart";
@@ -238,7 +238,7 @@ pub const Element = struct {
     /// Moves the text cursor in a text field.
     pub fn setCursorPosition(self: *Element, value: usize) void {
         const id = self._get_id() orelse {
-            Vapor.printlnSrc("Id is null", .{}, @src());
+            Vapor.report.warn("Element: not bound to an element on the page; bind it with .ref() first", .{});
             return;
         };
         if (isWasi) {
@@ -253,7 +253,7 @@ pub const Element = struct {
         if (!Vapor.isWasi) return Selection{ .start = 0, .end = 0 };
 
         const id = self._get_id() orelse {
-            Vapor.printlnSrc("Id is null", .{}, @src());
+            Vapor.report.warn("Element: not bound to an element on the page; bind it with .ref() first", .{});
             return null;
         };
         const selections = Wasm.selectionWasm(id.ptr, id.len);
@@ -272,7 +272,7 @@ pub const Element = struct {
     /// Sets a numeric DOM property.
     pub fn mutate(self: *Element, attribute: []const u8, value: u32) void {
         const id = self._get_id() orelse {
-            Vapor.printlnSrc("Id is null", .{}, @src());
+            Vapor.report.warn("Element: not bound to an element on the page; bind it with .ref() first", .{});
             return;
         };
         mutateDomElement(id.ptr, id.len, attribute.ptr, attribute.len, @floatFromInt(value));
@@ -288,11 +288,11 @@ pub const Element = struct {
     ) void {
         if (!Vapor.isWasi) return;
         const ui_node = self._node_ptr orelse {
-            Vapor.printlnSrc("Node is null", .{}, @src());
+            Vapor.report.warn("Element: not bound to an element on the page; bind it with .ref() first", .{});
             @panic("vapor: Node is null");
         };
         return Vapor.attachEventCtxCallback(ui_node, event_type, cb, args) catch |err| {
-            std.log.err("Event Callback Error: {any}\n", .{err});
+            Vapor.report.err("Event Callback Error: {any}", .{err});
             @panic("vapor: Event Callback Error");
         };
     }
@@ -302,7 +302,7 @@ pub const Element = struct {
     /// which every render re-attaches. Returns an id for `removeListener`.
     pub fn addListener(self: *Element, event_type: types.EventType, cb: fn (event: *Event) void) ?usize {
         const ui_node = self._node_ptr orelse {
-            Vapor.printlnSrc("Node is null", .{}, @src());
+            Vapor.report.warn("Element: not bound to an element on the page; bind it with .ref() first", .{});
             return null;
         };
         if (isWasi) {
@@ -319,7 +319,7 @@ pub const Element = struct {
         cb_idx: usize,
     ) ?bool {
         const id = self._get_id() orelse {
-            Vapor.printlnSrc("Id is null", .{}, @src());
+            Vapor.report.warn("Element: not bound to an element on the page; bind it with .ref() first", .{});
             return null;
         };
         return Vapor.destroyElementEventListener(id, event_type, cb_idx);
@@ -332,7 +332,7 @@ pub const Element = struct {
         cb_idx: usize,
     ) ?bool {
         const id = self._get_id() orelse {
-            Vapor.printlnSrc("Id is null", .{}, @src());
+            Vapor.report.warn("Element: not bound to an element on the page; bind it with .ref() first", .{});
             return null;
         };
         return Vapor.destroyElementInstEventListener(id, event_type, cb_idx);
@@ -341,7 +341,7 @@ pub const Element = struct {
     /// Sets one CSS property in the element's inline style.
     pub fn mutateStyleString(self: *Element, attribute: []const u8, value: []const u8) void {
         const id = self._get_id() orelse {
-            Vapor.printlnSrc("Id is null", .{}, @src());
+            Vapor.report.warn("Element: not bound to an element on the page; bind it with .ref() first", .{});
             return;
         };
         mutateDomElementStyleString(id.ptr, id.len, attribute.ptr, attribute.len, value.ptr, value.len);
@@ -494,7 +494,7 @@ pub const Element = struct {
         if (!self.style_dirty) return;
 
         const attributes = self.attributes orelse {
-            std.log.err("Attributes not set", .{});
+            Vapor.report.err("Attributes not set", .{});
             return;
         };
         var aw: std.Io.Writer.Allocating = .init(Vapor.persist.allocator());
@@ -523,7 +523,7 @@ pub const Element = struct {
     pub fn mutateDomElementString(self: *Element, attribute: []const u8, value: []const u8) void {
         if (!Vapor.isWasi) return;
         const id = self._get_id() orelse {
-            Vapor.printlnSrc("Id is null", .{}, @src());
+            Vapor.report.warn("Element: not bound to an element on the page; bind it with .ref() first", .{});
             return;
         };
         Wasm.mutateDomElementStringWasm(id.ptr, id.len, attribute.ptr, attribute.len, value.ptr, value.len);
@@ -532,7 +532,7 @@ pub const Element = struct {
     /// Applies a `Style`'s fields directly to the element's inline style.
     pub fn mutateStyle(self: *Element, style: *const Style) void {
         const id = self._get_id() orelse {
-            Vapor.printlnSrc("Id is null", .{}, @src());
+            Vapor.report.warn("Element: not bound to an element on the page; bind it with .ref() first", .{});
             return;
         };
 
@@ -560,7 +560,7 @@ pub const Element = struct {
     /// Scrolls the content to `value` pixels from the left.
     pub fn scrollLeft(self: *Element, value: u32) void {
         const id = self._get_id() orelse {
-            Vapor.printlnSrc("Id is null", .{}, @src());
+            Vapor.report.warn("Element: not bound to an element on the page; bind it with .ref() first", .{});
             return;
         };
         const attribute: []const u8 = "scrollLeft";
@@ -571,7 +571,7 @@ pub const Element = struct {
     /// The element's offset box relative to its offset parent.
     pub fn getOffsets(self: *Element) ?Offsets {
         const id = self._get_id() orelse {
-            Vapor.printlnSrc("Id is null", .{}, @src());
+            Vapor.report.warn("Element: not bound to an element on the page; bind it with .ref() first", .{});
             return null;
         };
         // const bounds_ptr = Vapor.getOffsets(id.ptr, @intCast(id.len));
@@ -596,7 +596,7 @@ pub const Element = struct {
     /// The element's box relative to the viewport.
     pub fn getBoundingClientRect(self: *Element) ?Vapor.Bounds {
         const id = self._get_id() orelse {
-            std.log.err("Could not get Bounding Rectangle, Id is null, Attach the element to a Node first", .{});
+            Vapor.report.err("Could not get Bounding Rectangle, Id is null, Attach the element to a Node first", .{});
             return null;
         };
 
@@ -606,7 +606,7 @@ pub const Element = struct {
     /// Empties a text field.
     pub fn clear(self: *Element) void {
         const id = self._get_id() orelse {
-            Vapor.printlnSrc("Id is null", .{}, @src());
+            Vapor.report.warn("Element: not bound to an element on the page; bind it with .ref() first", .{});
             return;
         };
         const text = "";
@@ -616,18 +616,18 @@ pub const Element = struct {
     /// Sets a text field's value.
     pub fn setText(self: *Element, text: []const u8) void {
         const id = self._get_id() orelse {
-            Vapor.printlnSrc("Id is null", .{}, @src());
+            Vapor.report.warn("Element: not bound to an element on the page; bind it with .ref() first", .{});
             return;
         };
 
         if (self.buf) |*buf| {
             buf.clearRetainingCapacity();
             buf.appendSlice(text) catch {
-                std.log.err("Could not append slice {any}\n", .{text});
+                Vapor.report.err("Could not append slice {any}", .{text});
                 return;
             };
             self.text = buf.toOwnedSlice() catch {
-                std.log.err("Could not toOwnedSlice {any}\n", .{text});
+                Vapor.report.err("Could not toOwnedSlice {any}", .{text});
                 return;
             };
         } else {
@@ -639,7 +639,7 @@ pub const Element = struct {
     /// A text field's current value.
     pub fn getInputValue(self: *Element) ?[]const u8 {
         const id = self._get_id() orelse {
-            Vapor.printlnSrc("Id is null", .{}, @src());
+            Vapor.report.warn("Element: not bound to an element on the page; bind it with .ref() first", .{});
             return null;
         };
         if (!isWasi) return null;
@@ -650,13 +650,13 @@ pub const Element = struct {
     /// Focuses the element (meant for text fields).
     pub fn focus(self: *Element) void {
         const id = self._get_id() orelse {
-            Vapor.printlnSrc("Cannot Focus on Element, Id is null", .{}, @src());
-            std.log.err("Potentially the Element is not in the DOM or mounted Yet, the Element need to exist in the UI to be focusable", .{});
-            std.log.err("Check your if statement?", .{});
+            Vapor.report.warn("Element: not bound to an element on the page; bind it with .ref() first", .{});
+            Vapor.report.err("Potentially the Element is not in the DOM or mounted Yet, the Element need to exist in the UI to be focusable", .{});
+            Vapor.report.err("Check your if statement?", .{});
             return;
         };
         if (self.element_type != .TextField and self.element_type != .TextArea) {
-            Vapor.println("Can only focus on TextField Element, add element Type Input\n", .{});
+            Vapor.report.err("Can only focus on TextField Element, add element Type Input", .{});
             return;
         }
         Vapor.focus(id);
@@ -665,7 +665,7 @@ pub const Element = struct {
     /// Whether the element has focus.
     pub fn focused(self: *Element) bool {
         const id = self._get_id() orelse {
-            Vapor.printlnSrc("Id is null", .{}, @src());
+            Vapor.report.warn("Element: not bound to an element on the page; bind it with .ref() first", .{});
             return false;
         };
         return Vapor.focused(id);
@@ -674,11 +674,11 @@ pub const Element = struct {
     /// Clicks the element, as if the user had.
     pub fn click(self: *Element) void {
         const id = self._get_id() orelse {
-            Vapor.printlnSrc("Id is null", .{}, @src());
+            Vapor.report.warn("Element: not bound to an element on the page; bind it with .ref() first", .{});
             return;
         };
         if (self.element_type != .TextField) {
-            Vapor.println("Must be TextField type", .{});
+            Vapor.report.err("Must be TextField type", .{});
             return;
         }
         if (isWasi) {
@@ -688,7 +688,7 @@ pub const Element = struct {
     /// Starts the camera stream into this video element.
     pub fn startVideo(self: *Element) void {
         const id = self._get_id() orelse {
-            Vapor.printlnSrcErr("Id is null", .{}, @src());
+            Vapor.report.err("Id is null", .{});
             @panic("vapor: Id is null");
         };
         if (isWasi) {
@@ -699,7 +699,7 @@ pub const Element = struct {
     /// Plays the video.
     pub fn playVideo(self: *Element) void {
         const id = self._get_id() orelse {
-            Vapor.printlnSrcErr("Id is null", .{}, @src());
+            Vapor.report.err("Id is null", .{});
             @panic("vapor: Id is null");
         };
         if (isWasi) {
@@ -711,7 +711,7 @@ pub const Element = struct {
     pub fn pauseVideo(self: *Element) void {
         if (!isWasi) return;
         const id = self._get_id() orelse {
-            Vapor.printlnSrcErr("Id is null", .{}, @src());
+            Vapor.report.err("Id is null", .{});
             @panic("vapor: Id is null");
         };
         Wasm.pauseVideoWasm(id.ptr, id.len);
@@ -720,7 +720,7 @@ pub const Element = struct {
     /// Stops the camera stream.
     pub fn stopCamera(self: *Element) void {
         const id = self._get_id() orelse {
-            Vapor.printlnSrcErr("Id is null", .{}, @src());
+            Vapor.report.err("Id is null", .{});
             @panic("vapor: Id is null");
         };
         if (isWasi) {
@@ -731,7 +731,7 @@ pub const Element = struct {
     /// Jumps to `time` seconds.
     pub fn seekVideo(self: *Element, time: f32) void {
         const id = self._get_id() orelse {
-            Vapor.printlnSrcErr("Id is null", .{}, @src());
+            Vapor.report.err("Id is null", .{});
             @panic("vapor: Id is null");
         };
         if (isWasi) {
@@ -742,7 +742,7 @@ pub const Element = struct {
     /// Volume from 0 to 1.
     pub fn setVolume(self: *Element, volume: f32) void {
         const id = self._get_id() orelse {
-            Vapor.printlnSrcErr("Id is null", .{}, @src());
+            Vapor.report.err("Id is null", .{});
             @panic("vapor: Id is null");
         };
         Wasm.setVolumeWasm(id.ptr, id.len, volume);
@@ -751,7 +751,7 @@ pub const Element = struct {
     /// Mutes the video.
     pub fn muteVideo(self: *Element) void {
         const id = self._get_id() orelse {
-            Vapor.printlnSrcErr("Id is null", .{}, @src());
+            Vapor.report.err("Id is null", .{});
             @panic("vapor: Id is null");
         };
         Wasm.muteVideoWasm(id.ptr, id.len, true);
@@ -761,7 +761,7 @@ pub const Element = struct {
     pub fn getVideoDuration(self: *Element) f32 {
         if (!isWasi) return 0;
         const id = self._get_id() orelse {
-            Vapor.printlnSrcErr("Id is null", .{}, @src());
+            Vapor.report.err("Id is null", .{});
             @panic("vapor: Id is null");
         };
         return Wasm.getVideoDurationWasm(id.ptr, id.len);
@@ -771,7 +771,7 @@ pub const Element = struct {
     pub fn getVideoCurrentTime(self: *Element) f32 {
         if (!isWasi) return 0;
         const id = self._get_id() orelse {
-            Vapor.printlnSrcErr("Id is null", .{}, @src());
+            Vapor.report.err("Id is null", .{});
             @panic("vapor: Id is null");
         };
         return Wasm.getVideoCurrentTimeWasm(id.ptr, id.len);
@@ -781,7 +781,7 @@ pub const Element = struct {
     pub fn translate3d(element: *Element, translation: Translate3d) ?void {
         if (!isWasi) return;
         const id = element._get_id() orelse {
-            Vapor.printlnSrcErr("Id is null", .{}, @src());
+            Vapor.report.err("Id is null", .{});
             return null;
         };
         Wasm.translate3dWasm(id.ptr, id.len, translation.x, translation.y, translation.z);
@@ -791,7 +791,7 @@ pub const Element = struct {
     pub fn setPointerCapture(element: *Element, evt: *Event) void {
         if (!isWasi) return;
         const id = element._get_id() orelse {
-            Vapor.printlnSrcErr("Id is null", .{}, @src());
+            Vapor.report.err("Id is null", .{});
             return;
         };
         Wasm.setPointerCaptureWasm(id.ptr, id.len, evt.id);
@@ -801,10 +801,10 @@ pub const Element = struct {
     pub fn releasePointerCapture(element: *Element, evt: *Event) void {
         if (!isWasi) return;
         const id = element._get_id() orelse {
-            Vapor.printlnSrcErr("Id is null", .{}, @src());
+            Vapor.report.err("Id is null", .{});
             return;
         };
-        std.log.info("{s} {any}", .{ id, evt.type });
+        Vapor.report.info("{s} {any}", .{ id, evt.type });
         Wasm.releasePointerCaptureWasm(id.ptr, id.len, evt.id);
     }
 };
@@ -829,14 +829,6 @@ pub fn mutateDomElement(
 ) void {
     if (isWasi) {
         Wasm.mutateDomElementWasm(id_ptr, id_len, attribute, attribute_len, value);
-    } else {
-        // Dummy implementation - log the action if needed
-        if (comptime std.debug.runtime_safety) {
-            const id = id_ptr[0..id_len];
-            const attr = attribute[0..attribute_len];
-            Vapor.println("DOM: Would set element '{s}' attribute '{s}' to {d}\n", .{ id, attr, value });
-        }
-        // No-op in non-WASM environments
     }
 }
 
@@ -864,14 +856,6 @@ pub fn mutateDomElementStyle(
 ) void {
     if (isWasi) {
         Wasm.mutateDomElementStyleWasm(id_ptr, id_len, attribute, attribute_len, value);
-    } else {
-        // Dummy implementation - log the action if needed
-        if (comptime std.debug.runtime_safety) {
-            const id = id_ptr[0..id_len];
-            const attr = attribute[0..attribute_len];
-            Vapor.println("DOM: Would set element '{s}' style '{s}' to {d:.2}\n", .{ id, attr, value });
-        }
-        // No-op in non-WASM environments
     }
 }
 
@@ -886,15 +870,6 @@ pub fn mutateDomElementStyleString(
 ) void {
     if (isWasi) {
         Wasm.mutateDomElementStyleStringWasm(id_ptr, id_len, attribute, attribute_len, value_ptr, value_len);
-    } else {
-        // Dummy implementation - log the action if needed
-        if (comptime std.debug.runtime_safety) {
-            const id = id_ptr[0..id_len];
-            const attr = attribute[0..attribute_len];
-            const value = value_ptr[0..value_len];
-            Vapor.println("DOM: Would set element '{s}' style '{s}' to '{s}'\n", .{ id, attr, value });
-        }
-        // No-op in non-WASM environments
     }
 }
 

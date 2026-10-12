@@ -116,12 +116,12 @@ fn runMountHooks(created: ?*const fn () void, mounted: ?*const fn () void) void 
 /// 2 destroy. Same mechanism as the builders' `.onMount` and friends.
 fn setNodeHook(ui_node: *UINode, slot: usize, comptime hook_name: []const u8, cb: anytype, args: anytype) void {
     const erased = Vapor.ErasedCallback.make(Vapor.arena(.frame), cb, args) catch |err| {
-        Vapor.printlnErr("Hooks: could not allocate callback: {any}", .{err});
+        Vapor.report.err("Hooks: could not allocate callback: {any}", .{err});
         return;
     };
     const callback_id = hashKey(ui_node.uuid) +% hashKey(hook_name);
     Vapor.erased_hooks_registry.put(callback_id, erased) catch |err| {
-        Vapor.printlnErr("Hooks: could not register callback: {any}", .{err});
+        Vapor.report.err("Hooks: could not register callback: {any}", .{err});
         return;
     };
     ui_node.on_callbacks[slot] = callback_id;
@@ -138,7 +138,7 @@ const Layout = enum { center, start, end };
 /// Opens a node for `elem_decl`; panics if it cannot be allocated.
 pub fn createNode(elem_decl: ElementDecl) *UINode {
     const ui_node = LifeCycle.open(elem_decl) orelse {
-        // Vapor.printlnSrcErr("Could not add component to lifecycle {any}\n", .{error.CouldNotAllocate}, @src());
+        // Vapor.report.err("Could not add component to lifecycle {any}", .{error.CouldNotAllocate});
         @panic("vapor: Could not add component to lifecycle");
     };
     return ui_node;
@@ -368,7 +368,7 @@ pub const ComponentBuilder = struct {
             .state_type = _state_type,
             .elem_type = self._elem_type,
         }) orelse {
-            Vapor.printlnSrcErr("Node is null", .{}, @src());
+            Vapor.report.err("Node is null", .{});
             @panic("vapor: Node is null");
         };
         new_self._ui_node = node;

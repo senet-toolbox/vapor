@@ -21,7 +21,7 @@ pub fn store(key: []const u8, value: anytype) void {
         .int, .comptime_int, .float, .comptime_float, .bool => {
             var buf: [64]u8 = undefined;
             const text = std.fmt.bufPrint(&buf, "{}", .{value}) catch |err| {
-                Vapor.printlnErr("store: could not format '{s}': {any}", .{ key, err });
+                Vapor.report.err("store: could not format '{s}': {any}", .{ key, err });
                 return;
             };
             Wasm.setLocalStorageStringWasm(key.ptr, key.len, text.ptr, text.len);
@@ -41,7 +41,7 @@ pub fn store(key: []const u8, value: anytype) void {
             Wasm.setLocalStorageStringWasm(key.ptr, key.len, string.ptr, string.len);
         },
         else => {
-            Vapor.printlnErr("Cannot store non string or int float types TYPE: {any}", .{@TypeOf(value)});
+            Vapor.report.err("Cannot store non string or int float types TYPE: {any}", .{@TypeOf(value)});
         },
     }
 }
@@ -55,7 +55,7 @@ pub fn getStore(comptime T: type, key: []const u8) ?T {
             const string = Wasm.getLocalStorageStringWasm(key.ptr, key.len) orelse return null;
             const value = std.mem.span(string);
             const handle = Vapor.storage_table.replaceOrAddStr(key, value) catch |err| {
-                Vapor.printlnErr("getStore: could not intern '{s}': {any}", .{ key, err });
+                Vapor.report.err("getStore: could not intern '{s}': {any}", .{ key, err });
                 return null;
             };
             const stored_value = Vapor.storage_table.getStr(handle) orelse return null;
@@ -72,7 +72,7 @@ pub fn getStore(comptime T: type, key: []const u8) ?T {
                 const string = Wasm.getLocalStorageStringWasm(key.ptr, key.len) orelse return null;
                 const value = std.mem.span(string);
                 const handle = Vapor.storage_table.replaceOrAddStr(key, value) catch |err| {
-                    Vapor.printlnErr("getStore: could not intern '{s}': {any}", .{ key, err });
+                    Vapor.report.err("getStore: could not intern '{s}': {any}", .{ key, err });
                     return null;
                 };
                 const stored_value = Vapor.storage_table.getStr(handle) orelse return null;

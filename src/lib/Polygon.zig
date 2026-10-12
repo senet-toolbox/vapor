@@ -478,6 +478,6 @@ fn writeFloat(writer: *Writer, val: f32) void {
 pub fn build(self: Polygons) void {
     if (Vapor.polygons_table == null) return;
     Vapor.polygons_table.?.put(self.class, self) catch |err| {
-        Vapor.println("Could not create polygon {any}\n", .{err});
+        Vapor.report.err("Could not create polygon {any}", .{err});
     };
 }

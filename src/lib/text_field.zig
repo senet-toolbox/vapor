@@ -75,7 +75,7 @@ pub const TextFieldBuilder = struct {
             .state_type = _state_type,
             .elem_type = self._elem_type,
         }) orelse {
-            Vapor.printlnSrcErr("Node is null", .{}, @src());
+            Vapor.report.err("Node is null", .{});
             @panic("vapor: Node is null");
         };
         new_self._ui_node = node;
@@ -246,7 +246,7 @@ pub const TextFieldBuilder = struct {
                 .bind_fn = self._bind_update_fn,
                 .user_cb = self._on_change_cb,
             }}) catch |err| {
-                Vapor.printlnErr("text field: could not attach change handler: {any}", .{err});
+                Vapor.report.err("text field: could not attach change handler: {any}", .{err});
             };
         }
 
@@ -268,7 +268,7 @@ pub const TextFieldBuilder = struct {
     /// The field's id.
     pub fn getUUID(self: *const Self) []const u8 {
         if (self._ui_node == null) {
-            Vapor.printlnSrcErr("getUUID Failed: Node is null", .{}, @src());
+            Vapor.report.err("getUUID Failed: Node is null", .{});
             return "";
         }
         return self._ui_node.?.uuid;
@@ -376,7 +376,7 @@ const API = struct {
     /// Runtime export: the number of parameter fields.
     pub fn getTextFieldCount(node_ptr: *UINode) callconv(.c) u32 {
         const text_field_params = node_ptr.text_field_params orelse {
-            Vapor.printErr("Error: No text_field_params found {any}", .{node_ptr.type});
+            Vapor.report.err("Error: No text_field_params found {any}", .{node_ptr.type});
             return 0;
         };
         switch (text_field_params.*) {

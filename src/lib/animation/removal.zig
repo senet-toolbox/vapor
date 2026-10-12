@@ -91,7 +91,7 @@ pub const RemovalQueue = struct {
 
         const anim_id: AnimationId = if (has_exit_animation) blk: {
             const css_ptr = getExitAnimationStyle(node) orelse {
-                Vapor.printErr("Exit Animation not found could not ENQUE, Please make sure to Run .build() on the animation", .{});
+                Vapor.report.err("Exit Animation not found could not ENQUE, Please make sure to Run .build() on the animation", .{});
                 break :blk std.math.maxInt(AnimationId);
             };
             const len = StyleCompiler.getAnimationLen();

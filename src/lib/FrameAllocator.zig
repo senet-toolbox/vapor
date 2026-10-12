@@ -147,7 +147,7 @@ pub fn createRouteArena(self: *FrameAllocator) *RouteFrameArena {
     // Returns *RouteFrameArena, so there is no value to degrade to. @panic at
     // least aborts identically in every optimize mode and says why.
     const route_arena = self.backing_allocator.create(RouteFrameArena) catch |err| {
-        Vapor.printlnErr("createRouteArena: allocation failed: {any}", .{err});
+        Vapor.report.err("createRouteArena: allocation failed: {any}", .{err});
         @panic("vapor: out of memory creating a route arena");
     };
     route_arena.* = RouteFrameArena.init(self.backing_allocator);
@@ -166,7 +166,7 @@ pub fn frameAllocator(self: *FrameAllocator) Allocator {
     if (self.current_route_arena) |route| {
         return route.allocator();
     }
-    // Vapor.printErr("Cannot access the frame allocator, first create the Route via Page() then proceed with initliazation", .{});
+    // Vapor.report.err("Cannot access the frame allocator, first create the Route via Page() then proceed with initliazation", .{});
     // return self.persistentAllocator();
     @panic("No route set - call setCurrentRoute first");
 }

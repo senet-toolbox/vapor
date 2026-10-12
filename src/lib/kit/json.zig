@@ -13,7 +13,7 @@ pub fn parse(comptime T: type, json_str: []const u8, arena_type: Vapor.ArenaType
         .allocate = .alloc_always,
         .ignore_unknown_fields = true,
     }) catch |err| {
-        Vapor.println("Error could not parse json {any}\n", .{err});
+        Vapor.report.err("Error could not parse json {any}", .{err});
         return error.MalformedJson;
     };
 

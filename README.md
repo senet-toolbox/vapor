@@ -335,6 +335,22 @@ file (e.g. Netlify `/* /app.html 200`); unknown paths then render your
 | `-Dstatic` | `false` | Static-render mode                        |
 | `-Datomic` | `true`  | Atomic render cycle                       |
 
+## Logging
+
+Route `std.log` to the browser console by making `Vapor.lib.log` your
+`logFn`:
+
+```zig
+pub const std_options = std.Options{
+    .logFn = Vapor.lib.log,
+};
+```
+
+Vapor reports its own problems — a failed allocation, an animation that was
+never registered, an `Element` used before `.ref()` — the same way, with the
+scope `.vapor`, so they show up as `[vapor] ...`. Debug and ReleaseSafe builds
+include them; ReleaseSmall and ReleaseFast leave them out.
+
 ## Bundle size
 
 Size depends almost entirely on what your application pulls in — icon sets and

@@ -59,7 +59,6 @@ pub const Window = struct {
                 return params_str;
             }
         } else {
-            Vapor.printlnSrc("Attempted to get params, but not wasi", .{}, @src());
             return null;
         }
     }
@@ -80,7 +79,6 @@ pub const Window = struct {
             const origin_str = std.mem.span(_origin);
             return origin_str;
         } else {
-            Vapor.printlnSrc("Attempted to get origin, but not wasi", .{}, @src());
             return "";
         }
     }
@@ -257,8 +255,6 @@ extern fn setWindowLocationWasm(
 pub fn setWindowLocation(url: []const u8) void {
     if (isWasi) {
         setWindowLocationWasm(url.ptr, url.len);
-    } else {
-        Vapor.printlnSrc("Attempted to reroute, but not wasi {s}", .{url}, @src());
     }
 }
 
@@ -271,8 +267,6 @@ extern fn navigateWasm(
 pub fn navigate(path: []const u8) void {
     if (isWasi) {
         navigateWasm(path.ptr, path.len);
-    } else {
-        Vapor.printlnSrc("Attempted to reroute, but not wasi {s}", .{path}, @src());
     }
 }
 
@@ -282,8 +276,6 @@ extern fn backWasm() void;
 pub fn back() void {
     if (isWasi) {
         backWasm();
-    } else {
-        Vapor.printlnSrc("Attempted to reroute, but not wasi", .{}, @src());
     }
 }
 
@@ -296,8 +288,6 @@ extern fn routePushWASM(
 pub fn routePush(path: []const u8) void {
     if (isWasi) {
         routePushWASM(path.ptr, path.len);
-    } else {
-        Vapor.printlnSrc("Attempted to reroute, but not wasi {s}", .{path}, @src());
     }
 }
 
@@ -331,7 +321,6 @@ pub fn getWindowParams() ?[]const u8 {
             return params_str;
         }
     } else {
-        Vapor.printlnSrc("Attempted to get params, but not wasi", .{}, @src());
         return null;
     }
 }
@@ -635,7 +624,7 @@ pub fn StructSchema(comptime T: type) type {
 
             const struct_fields = type_info.@"struct".fields;
             fields = Vapor.arena(.persist).alloc(FieldDescriptor, struct_fields.len) catch |err| {
-                Vapor.printlnErr("StructSchema: allocation failed: {any}", .{err});
+                Vapor.report.err("StructSchema: allocation failed: {any}", .{err});
                 @panic("vapor: out of memory building a struct schema");
             };
 
@@ -734,8 +723,8 @@ pub const Observer = struct {
             fn runFn(action: *Vapor.Action) void {
                 const run_node: *Vapor.Node = @fieldParentPtr("data", action);
                 const object = run_node.data.dynamic_object orelse {
-                    Vapor.printlnSrcErr("Bridge: Observer callback called without object, this is a js side issue", .{}, @src());
-                    Vapor.printlnSrcErr("No object found", .{}, @src());
+                    Vapor.report.err("Bridge: Observer callback called without object, this is a js side issue", .{});
+                    Vapor.report.err("No object found", .{});
                     return;
                 };
                 const target: Target = DynamicObject.convertFromDynamicToType(Target, object);
@@ -745,14 +734,14 @@ pub const Observer = struct {
         };
 
         const closure = Vapor.arena(.persist).create(Closure) catch |err| {
-            Vapor.println("Error could not create closure {any}\n ", .{err});
+            Vapor.report.err("could not create closure: {any}", .{err});
             @panic("vapor: Error could not create closure");
         };
         closure.* = .{};
 
         const hash = hashKey(name);
         Vapor.ctx_callback_registry.put(hash, &closure.run_node) catch |err| {
-            Vapor.println("Button Function Registry {any}\n", .{err});
+            Vapor.report.err("Button Function Registry {any}", .{err});
         };
 
         if (isWasi) {
@@ -783,7 +772,7 @@ pub const Observer = struct {
     pub fn observe(self: *Observer, item: Vapor.ObserverNode, index: ?usize) void {
         if (!isWasi) return;
         self.oberver_nodes.append(item) catch |err| {
-            Vapor.printlnErr("observe: could not record node, not observed: {any}", .{err});
+            Vapor.report.err("observe: could not record node, not observed: {any}", .{err});
             return;
         };
         const hash = hashKey(self.name);
@@ -809,7 +798,7 @@ pub const API = struct {
         const hook_cb = Vapor.hooks_inst_callbacks.get(id).?;
         const params_str = Kit.getWindowParams() orelse "";
         const path = Kit.getWindowPath() orelse {
-            Vapor.printlnSrcErr("Hooks ERROR: Could not get window path", .{}, @src());
+            Vapor.report.err("Hooks ERROR: Could not get window path", .{});
             return;
         };
         var params = std.StringHashMap([]const u8).init(Vapor.arena(.frame));
@@ -913,7 +902,7 @@ pub const ResizeEntry = struct {
 pub var global_resizer: ?ResizeObserver = undefined;
 
 fn globalResizeCallback(_: ResizeEntry) void {
-    std.log.info("Resized code container", .{});
+    Vapor.report.info("Resized code container", .{});
 }
 
 /// The shared ResizeObserver behind `.onResize`.
@@ -975,7 +964,7 @@ pub const ResizeObserver = struct {
             fn runFn(action: *Vapor.Action) void {
                 const run_node: *Vapor.Node = @fieldParentPtr("data", action);
                 const object = run_node.data.dynamic_object orelse {
-                    Vapor.printlnSrcErr("ResizeObserver callback called without object", .{}, @src());
+                    Vapor.report.err("ResizeObserver callback called without object", .{});
                     return;
                 };
                 const entry: Entry = DynamicObject.convertFromDynamicToType(Entry, object);
@@ -985,14 +974,14 @@ pub const ResizeObserver = struct {
         };
 
         const closure = Vapor.arena(.persist).create(Closure) catch |err| {
-            Vapor.printlnErr("ResizeObserver: allocation failed: {any}", .{err});
+            Vapor.report.err("ResizeObserver: allocation failed: {any}", .{err});
             @panic("vapor: out of memory creating a ResizeObserver");
         };
         closure.* = .{};
 
         const hash = hashKey(name);
         Vapor.ctx_callback_registry.put(hash, &closure.run_node) catch |err| {
-            Vapor.println("ResizeObserver registry error {any}\n", .{err});
+            Vapor.report.err("ResizeObserver registry error {any}", .{err});
         };
 
         if (isWasi) {
@@ -1011,7 +1000,7 @@ pub const ResizeObserver = struct {
     pub fn observeWithCallback(self: *ResizeObserver, item: Vapor.ObserverNode, callback_hash: ?u32) void {
         if (!isWasi) return;
         self.observer_nodes.append(item) catch |err| {
-            Vapor.printlnErr("observe: could not record node, not observed: {any}", .{err});
+            Vapor.report.err("observe: could not record node, not observed: {any}", .{err});
             return;
         };
         const hash = hashKey(self.name);
@@ -1030,7 +1019,7 @@ pub const ResizeObserver = struct {
     pub fn observe(self: *ResizeObserver, item: Vapor.ObserverNode, index: ?usize) void {
         if (!isWasi) return;
         self.observer_nodes.append(item) catch |err| {
-            Vapor.printlnErr("observe: could not record node, not observed: {any}", .{err});
+            Vapor.report.err("observe: could not record node, not observed: {any}", .{err});
             return;
         };
         const hash = hashKey(self.name);
@@ -1111,7 +1100,7 @@ pub fn useWss(wss_options: WssOptions) !Wss {
         wss_callbacks = std.AutoHashMap(u32, WssOptions).init(Vapor.arena(.persist));
         const key = utils.hash(wss_options.key);
         wss_callbacks.?.put(key, wss_options) catch |err| {
-            std.log.err("Error adding wss options {any}\n", .{err});
+            Vapor.report.err("Error adding wss options {any}", .{err});
             return error.CouldNotAddWssOptions;
         };
         createWss(wss_options.port, key, wss_options.query.ptr, wss_options.query.len);
@@ -1121,7 +1110,7 @@ pub fn useWss(wss_options: WssOptions) !Wss {
     } else if (wss_callbacks) |*callbacks| {
         const key = utils.hash(wss_options.key);
         callbacks.put(key, wss_options) catch |err| {
-            std.log.err("Error adding wss options {any}\n", .{err});
+            Vapor.report.err("Error adding wss options {any}", .{err});
             return error.CouldNotAddWssOptions;
         };
         createWss(wss_options.port, key, wss_options.query.ptr, wss_options.query.len);
@@ -1135,7 +1124,7 @@ pub fn useWss(wss_options: WssOptions) !Wss {
 export fn onWssConnection(id: u32) void {
     if (wss_callbacks) |callbacks| {
         const wss_ops = callbacks.get(id) orelse {
-            std.log.err("Error getting wss options {any}\n", .{error.CouldNotGetWssCallbacks});
+            Vapor.report.err("Error getting wss options {any}", .{error.CouldNotGetWssCallbacks});
             return;
         };
         if (wss_ops.on_connection) |cb| {
@@ -1150,7 +1139,7 @@ export fn onWssMessage(id: u32, msg_nullterm: [*:0]u8) void {
     const msg = std.mem.span(msg_nullterm);
     if (wss_callbacks) |callbacks| {
         const wss_ops = callbacks.get(id) orelse {
-            std.log.err("Error getting wss options {any}\n", .{error.CouldNotGetWssCallbacks});
+            Vapor.report.err("Error getting wss options {any}", .{error.CouldNotGetWssCallbacks});
             return;
         };
         if (wss_ops.on_message) |cb| {
@@ -1165,7 +1154,7 @@ export fn onWssMessage(id: u32, msg_nullterm: [*:0]u8) void {
 export fn onWssClose(id: u32) void {
     if (wss_callbacks) |callbacks| {
         const wss_ops = callbacks.get(id) orelse {
-            std.log.err("Error getting wss options {any}\n", .{error.CouldNotGetWssCallbacks});
+            Vapor.report.err("Error getting wss options {any}", .{error.CouldNotGetWssCallbacks});
             return;
         };
         if (wss_ops.on_close) |cb| {

@@ -92,6 +92,12 @@ Kept as aliases until the next major version:
 - Text fields get the margin shorthands elements had: `.mt`, `.mb`, `.ml`,
   `.mr`, `.mx`, `.my`.
 
+- vapor reports its own problems through `std.log` with scope `.vapor`
+  (shown as `[vapor] ...` by `Vapor.lib.log`). About 150 of these reports
+  printed nothing before, and the rest went through four different
+  functions. ReleaseSmall and ReleaseFast builds leave them out, which made
+  the browser-test app 9% smaller.
+
 ### Fixed
 
 Found while documenting the API; each has a unit or browser test unless

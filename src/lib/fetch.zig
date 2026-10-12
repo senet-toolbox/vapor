@@ -618,7 +618,7 @@ pub const Request = struct {
             existing
         else blk: {
             const new = Vapor.arena(.persist).create(Request) catch |err| {
-                Vapor.printlnErr("fetch: allocation failed: {any}", .{err});
+                Vapor.report.err("fetch: allocation failed: {any}", .{err});
                 @panic("vapor: out of memory creating a request");
             };
             const owned_key = RequestKey{
@@ -628,7 +628,7 @@ pub const Request = struct {
             };
             // Not registering only costs coalescing; the request still runs.
             fetch_registry.put(owned_key, new) catch |err| {
-                Vapor.printlnErr("fetch: could not register for coalescing: {any}", .{err});
+                Vapor.report.err("fetch: could not register for coalescing: {any}", .{err});
             };
             break :blk new;
         };
@@ -663,12 +663,12 @@ pub const Request = struct {
         // mutations, which a UI realistically never hits. TODO: bound or grow.
         const persist = Vapor.allocator_global;
         const entry = persist.create(RequestEntry) catch |err| {
-            Vapor.printlnErr("fetch: allocation failed: {any}", .{err});
+            Vapor.report.err("fetch: allocation failed: {any}", .{err});
             @panic("vapor: out of memory creating a request entry");
         };
         entry.* = .{ .arena = std.heap.ArenaAllocator.init(persist) };
         const f = persist.create(Request) catch |err| {
-            Vapor.printlnErr("fetch: allocation failed: {any}", .{err});
+            Vapor.report.err("fetch: allocation failed: {any}", .{err});
             @panic("vapor: out of memory creating a request");
         };
         f.* = .{
@@ -684,7 +684,7 @@ pub const Request = struct {
         if (request_registry.get(key)) |existing| return existing;
 
         const entry = Vapor.allocator_global.create(RequestEntry) catch |err| {
-            Vapor.printlnErr("fetch: allocation failed: {any}", .{err});
+            Vapor.report.err("fetch: allocation failed: {any}", .{err});
             @panic("vapor: out of memory creating a request entry");
         };
         entry.* = .{
@@ -696,7 +696,7 @@ pub const Request = struct {
             .tag = Vapor.allocator_global.dupe(u8, key.tag) catch "",
         };
         request_registry.put(owned_key, entry) catch |err| {
-            Vapor.printlnErr("fetch: could not register request: {any}", .{err});
+            Vapor.report.err("fetch: could not register request: {any}", .{err});
         };
         return entry;
     }
@@ -769,7 +769,7 @@ pub const Request = struct {
 
         const arena_alloc = entry.allocator();
         const closure = arena_alloc.create(Closure) catch {
-            Vapor.printlnSrcErr("fetch: closure alloc failed\n", .{}, @src());
+            Vapor.report.err("fetch: closure alloc failed", .{});
             entry.state = .err;
             return;
         };
@@ -788,7 +788,7 @@ pub const Request = struct {
         };
 
         fetch_callback_registry.put(id, erased) catch {
-            Vapor.printlnSrcErr("fetch: registry put failed\n", .{}, @src());
+            Vapor.report.err("fetch: registry put failed", .{});
             entry.state = .err;
             return;
         };
@@ -803,7 +803,7 @@ pub const Request = struct {
         };
 
         if (self.debug) {
-            std.log.info("fetch {s}: {s}", .{ self.url, json });
+            Vapor.report.info("fetch {s}: {s}", .{ self.url, json });
         }
 
         if (Vapor.isWasi) {

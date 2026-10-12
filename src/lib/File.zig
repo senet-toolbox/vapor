@@ -64,8 +64,8 @@ pub fn readText(file_reader: *FileReader, file_index: usize, onload: fn ([]const
             fn runFn(action: *Vapor.Action) void {
                 const run_node: *Vapor.Node = @fieldParentPtr("data", action);
                 const object = run_node.data.dynamic_object orelse {
-                    Vapor.printlnSrcErr("Bridge: Observer callback called without object, this is a js side issue", .{}, @src());
-                    Vapor.printlnSrcErr("No object found", .{}, @src());
+                    Vapor.report.err("Bridge: Observer callback called without object, this is a js side issue", .{});
+                    Vapor.report.err("No object found", .{});
                     return;
                 };
                 const file: FileContents = Vapor.convertFromDynamicToType(FileContents, object);
@@ -75,13 +75,13 @@ pub fn readText(file_reader: *FileReader, file_index: usize, onload: fn ([]const
         };
 
         const closure = Vapor.arena(.frame).create(Closure) catch |err| {
-            Vapor.printErr("Failed to create onload closure {any}\n", .{err});
+            Vapor.report.err("Failed to create onload closure {any}", .{err});
             return;
         };
         closure.* = .{};
 
         Vapor.ctx_callback_registry.put(callback_id, &closure.run_node) catch |err| {
-            Vapor.printErr("Failed to register onload callback {any}\n", .{err});
+            Vapor.report.err("Failed to register onload callback {any}", .{err});
             return;
         };
 
@@ -100,8 +100,8 @@ pub fn readBase64(file_reader: *FileReader, file_index: usize, onload: fn ([]con
             fn runFn(action: *Vapor.Action) void {
                 const run_node: *Vapor.Node = @fieldParentPtr("data", action);
                 const object = run_node.data.dynamic_object orelse {
-                    Vapor.printlnSrcErr("Bridge: Observer callback called without object, this is a js side issue", .{}, @src());
-                    Vapor.printlnSrcErr("No object found", .{}, @src());
+                    Vapor.report.err("Bridge: Observer callback called without object, this is a js side issue", .{});
+                    Vapor.report.err("No object found", .{});
                     return;
                 };
                 const file: FileContents = Vapor.convertFromDynamicToType(FileContents, object);
@@ -111,14 +111,14 @@ pub fn readBase64(file_reader: *FileReader, file_index: usize, onload: fn ([]con
         };
 
         const closure = Vapor.arena(.frame).create(Closure) catch |err| {
-            Vapor.println("Error could not create closure {any}\n ", .{err});
+            Vapor.report.err("could not create closure: {any}", .{err});
             @panic("vapor: Error could not create closure");
         };
         closure.* = .{};
 
         const id = Vapor.ctx_callback_registry.count() + 1;
         Vapor.ctx_callback_registry.put(id, &closure.run_node) catch |err| {
-            Vapor.println("Button Function Registry {any}\n", .{err});
+            Vapor.report.err("Button Function Registry {any}", .{err});
             @panic("vapor: Button Function Registry");
         };
 
@@ -162,16 +162,16 @@ pub fn fileInfo(file_reader: *FileReader, file_index: usize) !FileInfo {
                 .int => {
                     if (obj_value == .string) {
                         @field(cloned_form, field.name) = std.fmt.parseInt(field.type, obj_value.string, 10) catch |err| blk: {
-                            Vapor.printErr("Error parsing int field {s} value {s} {any}", .{ field.name, obj_value.string, err });
+                            Vapor.report.err("Error parsing int field {s} value {s} {any}", .{ field.name, obj_value.string, err });
                             break :blk 0;
                         };
                     } else {
                         @field(cloned_form, field.name) = @intCast(obj_value.int);
-                        Vapor.printlnSrcErr("WE NEED TO CHECK THIS SO THAT THE SIGNEDNESS IS OKAY", .{}, @src());
+                        Vapor.report.err("WE NEED TO CHECK THIS SO THAT THE SIGNEDNESS IS OKAY", .{});
                     }
                 },
                 else => {
-                    Vapor.printlnSrcErr("Cannot set non string or int float types TYPE: {any}", .{@TypeOf(obj_value)});
+                    Vapor.report.err("Cannot set non string or int float types TYPE: {any}", .{@TypeOf(obj_value)});
                 },
             }
         }

@@ -27,7 +27,7 @@ pub const HookType = enum(u8) {
 /// buttons.
 pub fn onPopState(callback: *const fn () void) void {
     Vapor.pop_state_funcs.append(callback) catch |err| {
-        Vapor.printlnErr("Button Function Registry {any}\n", .{err});
+        Vapor.report.err("Button Function Registry {any}", .{err});
     };
 }
 
@@ -38,7 +38,7 @@ pub fn onMount(callback: anytype, args: anytype) void {
     }
 
     const ui_node = Vapor.current_ctx.currentNode() orelse {
-        std.log.err("No current node found", .{});
+        Vapor.report.err("No current node found", .{});
         return;
     };
 
@@ -49,17 +49,17 @@ pub fn onMount(callback: anytype, args: anytype) void {
     callback_id +%= Vapor.hashKey(Vapor.on_mount_hash);
 
     if (ui_node.on_callbacks[0] != 0) {
-        std.log.err("onMount callback already exists on Element: {s}\n Using first created callback", .{ui_node.uuid});
+        Vapor.report.err("onMount: element '{s}' already has a mount callback; keeping the first", .{ui_node.uuid});
         return;
     }
 
     const erased = Vapor.ErasedCallback.make(Vapor.arena(.frame), callback, args) catch |err| {
-        Vapor.println("Error could not create closure {any}\n", .{err});
+        Vapor.report.err("could not create closure: {any}", .{err});
         return;
     };
 
     Vapor.erased_hooks_registry.put(callback_id, erased) catch |err| {
-        Vapor.printlnErr("Could Not add mount callback {any}", .{err});
+        Vapor.report.err("Could Not add mount callback {any}", .{err});
         return;
     };
     ui_node.on_callbacks[0] = callback_id;
@@ -86,7 +86,7 @@ pub fn onLayout(callback: anytype, args: anytype) void {
     };
 
     const closure = Vapor.allocator_global.create(Closure) catch |err| {
-        Vapor.printlnErr("onLayout: could not allocate closure, callback not scheduled: {any}", .{err});
+        Vapor.report.err("onLayout: could not allocate closure, callback not scheduled: {any}", .{err});
         return;
     };
     closure.* = .{
@@ -94,7 +94,7 @@ pub fn onLayout(callback: anytype, args: anytype) void {
     };
 
     Vapor.on_end_ctx_funcs.append(&closure.run_node) catch |err| {
-        Vapor.println("Hooks Function Registry {any}\n", .{err});
+        Vapor.report.err("Hooks Function Registry {any}", .{err});
     };
 }
 
@@ -102,7 +102,7 @@ pub fn onLayout(callback: anytype, args: anytype) void {
 /// WARNING: This is a dangerous hook, and can cause infinite loops
 pub fn onCommit(callback: *const fn () void) void {
     Vapor.on_commit_funcs.append(callback) catch |err| {
-        Vapor.printlnErr("Button Function Registry {any}\n", .{err});
+        Vapor.report.err("Button Function Registry {any}", .{err});
     };
 }
 
@@ -127,7 +127,7 @@ pub fn onCommitCtx(callback: anytype, args: anytype) void {
     };
 
     const closure = Vapor.arena(.frame).create(Closure) catch |err| {
-        Vapor.printlnErr("onCommitCtx: could not allocate closure, callback not scheduled: {any}", .{err});
+        Vapor.report.err("onCommitCtx: could not allocate closure, callback not scheduled: {any}", .{err});
         return;
     };
     closure.* = .{
@@ -135,7 +135,7 @@ pub fn onCommitCtx(callback: anytype, args: anytype) void {
     };
 
     Vapor.on_commit_ctx_funcs.append(&closure.run_node) catch |err| {
-        Vapor.println("Hooks Function Registry {any}\n", .{err});
+        Vapor.report.err("Hooks Function Registry {any}", .{err});
     };
 }
 

@@ -129,12 +129,12 @@ pub fn formData(evt: *Event, form_value: anytype) ?@typeInfo(@TypeOf(form_value)
                 .int => {
                     if (obj_value == .string) {
                         @field(cloned_form, field.name) = std.fmt.parseInt(field.type, obj_value.string, 10) catch |err| blk: {
-                            Vapor.printlnErr("Error parsing int field {s} value {s} {any}", .{ field.name, obj_value.string, err });
+                            Vapor.report.err("Error parsing int field {s} value {s} {any}", .{ field.name, obj_value.string, err });
                             break :blk 0;
                         };
                     } else {
                         @field(cloned_form, field.name) = @intCast(obj_value.int);
-                        Vapor.printlnSrcErr("WE NEED TO CHECK THIS SO THAT THE SIGNEDNESS IS OKAY", .{}, @src());
+                        Vapor.report.err("WE NEED TO CHECK THIS SO THAT THE SIGNEDNESS IS OKAY", .{});
                     }
                 },
                 .@"struct" => {
@@ -143,7 +143,7 @@ pub fn formData(evt: *Event, form_value: anytype) ?@typeInfo(@TypeOf(form_value)
                     @field(cloned_form, field.name) = section;
                 },
                 else => {
-                    Vapor.printlnErr("Cannot set non string or int float types TYPE", .{});
+                    Vapor.report.err("Cannot set non string or int float types TYPE", .{});
                 },
             }
         }
@@ -184,7 +184,7 @@ fn fillStruct(comptime T: type, cloned_form: *T, obj: *DynamicObject.DynamicObje
                 .int => {
                     if (obj_value == .string) {
                         @field(cloned_form, field.name) = std.fmt.parseInt(field.type, obj_value.string, 10) catch |err| blk: {
-                            Vapor.printlnErr("Error parsing int field {s} value {s} {any}", .{ field.name, obj_value.string, err });
+                            Vapor.report.err("Error parsing int field {s} value {s} {any}", .{ field.name, obj_value.string, err });
                             break :blk 0;
                         };
                     } else {
@@ -197,15 +197,15 @@ fn fillStruct(comptime T: type, cloned_form: *T, obj: *DynamicObject.DynamicObje
                     @field(cloned_form, field.name) = if (obj_value == .float) obj_value.float else 0;
                 },
                 .@"enum" => {
-                    std.log.info("Enum: {any}", .{obj_value});
+                    Vapor.report.info("Enum: {any}", .{obj_value});
                 },
                 .@"struct" => {},
                 else => {
-                    Vapor.printlnErr("Cannot set unsupported type for field {s}: {any}", .{ field.name, field.type });
+                    Vapor.report.err("Cannot set unsupported type for field {s}: {any}", .{ field.name, field.type });
                 },
             }
         } else {
-            std.log.warn("Field {s} not found in DynamicObject instead found {s}\n", .{ field.name, obj.fields.items[index].name });
+            Vapor.report.warn("Field {s} not found in DynamicObject instead found {s}", .{ field.name, obj.fields.items[index].name });
         }
     }
 }

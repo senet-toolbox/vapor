@@ -18,7 +18,7 @@ pub fn TextArea() Self {
     };
 
     const ui_node = LifeCycle.open(elem_decl) orelse {
-        Vapor.printlnSrcErr("Could not add component Link to lifecycle {any}\n", .{error.CouldNotAllocate}, @src());
+        Vapor.report.err("Could not add component Link to lifecycle {any}", .{error.CouldNotAllocate});
         @panic("vapor: Could not add component Link to lifecycle");
     };
 
@@ -41,7 +41,7 @@ pub fn TextField(textfield_type: types.InputTypes) Self {
         .can_have_children = false,
     };
     const ui_node = LifeCycle.open(elem_decl) orelse {
-        Vapor.printlnSrcErr("{any}\n", .{error.CouldNotAllocate}, @src());
+        Vapor.report.err("{any}", .{error.CouldNotAllocate});
         @panic("vapor: could not allocate a TextField node");
     };
 
@@ -119,7 +119,7 @@ pub fn TextField(textfield_type: types.InputTypes) Self {
             };
         },
         else => {
-            Vapor.printlnSrcErr("Error: TextField only accepts valid types, Not valid: {any}", .{textfield_type}, @src());
+            Vapor.report.err("Error: TextField only accepts valid types, Not valid: {any}", .{textfield_type});
             @panic("vapor: Error: TextField only accepts valid types, Not valid");
             // @compileError("TextField only accepts []const u8 or TextInput");
         },
@@ -131,7 +131,7 @@ pub fn TextField(textfield_type: types.InputTypes) Self {
 pub fn placeholder(self: *const Self, value: anytype) Self {
     var new_self: Self = self.*;
     var text_field_params = new_self._text_field_params orelse {
-        Vapor.printlnSrcErr("TextFieldParams is null", .{}, @src());
+        Vapor.report.err("TextFieldParams is null", .{});
         return self.*;
     };
 
@@ -171,13 +171,13 @@ pub fn placeholder(self: *const Self, value: anytype) Self {
                         text_field_params.date.default_len = value.len;
                     },
                     else => {
-                        Vapor.printlnSrcErr("Error: Placeholder and TextField Type mismatch TextFieldType: {any} PlaceholderType: {any}", .{ self._text_field_type, V }, @src());
+                        Vapor.report.err("Error: Placeholder and TextField Type mismatch TextFieldType: {any} PlaceholderType: {any}", .{ self._text_field_type, V });
                         @panic("vapor: Error: Placeholder and TextField Type mismatch TextFieldType: PlaceholderType");
                         // @compileError("TextField only accepts []const u8 or TextInput");
                     },
                 }
             } else {
-                Vapor.printlnErr("Cannot set integer placeholder on type: {any}", .{@typeInfo(V).pointer});
+                Vapor.report.err("Cannot set integer placeholder on type: {any}", .{@typeInfo(V).pointer});
                 // @compileError("Placeholder received a generic pointer that is not a []const u8 string slice.");
             }
         },
@@ -188,7 +188,7 @@ pub fn placeholder(self: *const Self, value: anytype) Self {
                     text_field_params.int.default = value;
                 },
                 else => {
-                    Vapor.printlnErr("Cannot set integer placeholder on type: " ++ @typeName(V), .{});
+                    Vapor.report.err("Cannot set integer placeholder on type: " ++ @typeName(V), .{});
                 },
                 // else => @compileError("Cannot set integer placeholder on type: " ++ @typeName(V)),
             }
@@ -199,7 +199,7 @@ pub fn placeholder(self: *const Self, value: anytype) Self {
                     text_field_params.float.default = value;
                 },
                 else => {
-                    Vapor.printlnErr("Cannot set float placeholder on type: " ++ @typeName(V), .{});
+                    Vapor.report.err("Cannot set float placeholder on type: " ++ @typeName(V), .{});
                 },
                 // else => @compileError("Cannot set float placeholder on type: " ++ @typeName(V)),
             }
@@ -226,7 +226,7 @@ pub fn fieldName(self: *const Self, name: []const u8) Self {
 pub fn required(self: *const Self, value: bool) Self {
     var new_self: Self = self.*;
     if (self._elem_type != .TextField and self._elem_type != .TextArea) {
-        Vapor.printlnErr("bindValue only works on TextField and TextArea", .{});
+        Vapor.report.err("bindValue only works on TextField and TextArea", .{});
         return self.*;
     }
 
@@ -235,7 +235,7 @@ pub fn required(self: *const Self, value: bool) Self {
             new_self._text_field_params.?.radio.required = value;
         },
         else => {
-            Vapor.printlnErr("NOT IMPLEMENTED", .{});
+            Vapor.report.err("NOT IMPLEMENTED", .{});
             return self.*;
         },
     }
@@ -246,12 +246,12 @@ pub fn required(self: *const Self, value: bool) Self {
 pub fn valStr(self: *const Self, value: []const u8) Self {
     var new_self: Self = self.*;
     if (self._elem_type != .TextField and self._elem_type != .TextArea) {
-        Vapor.printlnErr("bindValue only works on TextField and TextArea", .{});
+        Vapor.report.err("bindValue only works on TextField and TextArea", .{});
         return self.*;
     }
 
     _ = self._ui_node orelse {
-        Vapor.printlnSrcErr("Node is null must ref() first, before setting onChange", .{}, @src());
+        Vapor.report.err("Node is null must ref() first, before setting onChange", .{});
         @panic("vapor: Node is null must ref() first, before setting onChange");
     };
 
@@ -277,7 +277,7 @@ pub fn valStr(self: *const Self, value: []const u8) Self {
             new_self._text_field_params.?.date.value_len = value.len;
         },
         else => {
-            Vapor.printlnErr("NOT IMPLEMENTED", .{});
+            Vapor.report.err("NOT IMPLEMENTED", .{});
             return self.*;
         },
     }
@@ -289,27 +289,27 @@ pub fn valStr(self: *const Self, value: []const u8) Self {
 pub fn val(self: *const Self, value: anytype) Self {
     var new_self: Self = self.*;
     if (self._elem_type != .TextField and self._elem_type != .TextArea) {
-        Vapor.printlnErr("bindValue only works on TextField or TextArea", .{});
+        Vapor.report.err("bindValue only works on TextField or TextArea", .{});
         return self.*;
     }
     if (@typeInfo(@TypeOf(value)) != .pointer) {
-        Vapor.printlnErr("bindValue only works on pointer types", .{});
+        Vapor.report.err("bindValue only works on pointer types", .{});
         return self.*;
     }
 
     _ = self._ui_node orelse {
-        Vapor.printlnSrcErr("Node is null must ref() first, before setting onChange", .{}, @src());
+        Vapor.report.err("Node is null must ref() first, before setting onChange", .{});
         @panic("vapor: Node is null must ref() first, before setting onChange");
     };
 
     switch (self._text_field_type) {
         .password => {
             if (@TypeOf(value.*) != []const u8) {
-                Vapor.printlnErr("val and TextField type mismatch", .{});
+                Vapor.report.err("val and TextField type mismatch", .{});
                 return self.*;
             }
             _ = Vapor.text_field_table.replaceOrAdd(value) catch |err| {
-                std.log.err("bindValue: Could not add string to table {any}\n", .{err});
+                Vapor.report.err("bindValue: Could not add string to table {any}", .{err});
                 @panic("vapor: bindValue: Could not add string to table");
             };
 
@@ -318,11 +318,11 @@ pub fn val(self: *const Self, value: anytype) Self {
         },
         .email => {
             if (@TypeOf(value.*) != []const u8) {
-                Vapor.printlnErr("val and TextField type mismatch", .{});
+                Vapor.report.err("val and TextField type mismatch", .{});
                 return self.*;
             }
             _ = Vapor.text_field_table.replaceOrAdd(value) catch |err| {
-                std.log.err("bindValue: Could not add string to table {any}\n", .{err});
+                Vapor.report.err("bindValue: Could not add string to table {any}", .{err});
                 @panic("vapor: bindValue: Could not add string to table");
             };
 
@@ -331,11 +331,11 @@ pub fn val(self: *const Self, value: anytype) Self {
         },
         .string => {
             if (@TypeOf(value.*) != []const u8) {
-                Vapor.printlnErr("val and TextField type mismatch {any} != []const u8", .{@TypeOf(value.*)});
+                Vapor.report.err("val and TextField type mismatch {any} != []const u8", .{@TypeOf(value.*)});
                 return self.*;
             }
             _ = Vapor.text_field_table.replaceOrAdd(value) catch |err| {
-                std.log.err("bindValue: Could not add string to table {any}\n", .{err});
+                Vapor.report.err("bindValue: Could not add string to table {any}", .{err});
                 @panic("vapor: bindValue: Could not add string to table");
             };
 
@@ -344,11 +344,11 @@ pub fn val(self: *const Self, value: anytype) Self {
         },
         .telephone => {
             if (@TypeOf(value.*) != []const u8) {
-                Vapor.printlnErr("val and TextField type mismatch", .{});
+                Vapor.report.err("val and TextField type mismatch", .{});
                 return self.*;
             }
             _ = Vapor.text_field_table.replaceOrAdd(value) catch |err| {
-                std.log.err("bindValue: Could not add string to table {any}\n", .{err});
+                Vapor.report.err("bindValue: Could not add string to table {any}", .{err});
                 @panic("vapor: bindValue: Could not add string to table");
             };
 
@@ -358,7 +358,7 @@ pub fn val(self: *const Self, value: anytype) Self {
 
         .int => {
             if (@TypeOf(value.*) != i32) {
-                Vapor.printlnErr("val and TextField type mismatch {any}", .{@TypeOf(value.*)});
+                Vapor.report.err("val and TextField type mismatch {any}", .{@TypeOf(value.*)});
                 return self.*;
             }
             new_self._text_field_params.?.int.value = value.*;
@@ -366,14 +366,14 @@ pub fn val(self: *const Self, value: anytype) Self {
         },
         .float => {
             if (@TypeOf(value.*) != f32) {
-                Vapor.printlnErr("val and TextField type mismatch", .{});
+                Vapor.report.err("val and TextField type mismatch", .{});
                 return self.*;
             }
             new_self._text_field_params.?.float.value = value.*;
         },
         .date => {
             if (@TypeOf(value.*) != []const u8) {
-                Vapor.printlnErr("val and TextField type mismatch", .{});
+                Vapor.report.err("val and TextField type mismatch", .{});
                 return self.*;
             }
             new_self._text_field_params.?.date.value_ptr = value.ptr;
@@ -381,14 +381,14 @@ pub fn val(self: *const Self, value: anytype) Self {
         },
         .radio => {
             if (@TypeOf(value.*) != []const u8) {
-                Vapor.printlnErr("val and TextField type mismatch", .{});
+                Vapor.report.err("val and TextField type mismatch", .{});
                 return self.*;
             }
             new_self._text_field_params.?.radio.value_ptr = value.ptr;
             new_self._text_field_params.?.radio.value_len = value.len;
         },
         else => {
-            Vapor.printlnErr("NOT IMPLEMENTED", .{});
+            Vapor.report.err("NOT IMPLEMENTED", .{});
             return self.*;
         },
     }
@@ -403,22 +403,22 @@ pub fn val(self: *const Self, value: anytype) Self {
 pub fn bind(self: *const Self, value: anytype) Self {
     var new_self: Self = self.*;
     if (self._elem_type != .TextField and self._elem_type != .TextArea) {
-        Vapor.printlnErr("bindValue only works on TextField", .{});
+        Vapor.report.err("bindValue only works on TextField", .{});
         return self.*;
     }
     if (@typeInfo(@TypeOf(value)) != .pointer) {
-        Vapor.printlnErr("bindValue only works on pointer types", .{});
+        Vapor.report.err("bindValue only works on pointer types", .{});
         return self.*;
     }
 
     switch (self._text_field_type) {
         .password => {
             if (@TypeOf(value.*) != []const u8) {
-                Vapor.printlnErr("Password bindValue and TextField type mismatch", .{});
+                Vapor.report.err("Password bindValue and TextField type mismatch", .{});
                 return self.*;
             }
             _ = Vapor.text_field_table.replaceOrAdd(value) catch |err| {
-                std.log.err("bindValue: Could not add string to table {any}\n", .{err});
+                Vapor.report.err("bindValue: Could not add string to table {any}", .{err});
                 @panic("vapor: bindValue: Could not add string to table");
             };
 
@@ -427,11 +427,11 @@ pub fn bind(self: *const Self, value: anytype) Self {
         },
         .email => {
             if (@TypeOf(value.*) != []const u8) {
-                Vapor.printlnErr("Email bindValue and TextField type mismatch", .{});
+                Vapor.report.err("Email bindValue and TextField type mismatch", .{});
                 return self.*;
             }
             _ = Vapor.text_field_table.replaceOrAdd(value) catch |err| {
-                std.log.err("bindValue: Could not add string to table {any}\n", .{err});
+                Vapor.report.err("bindValue: Could not add string to table {any}", .{err});
                 @panic("vapor: bindValue: Could not add string to table");
             };
 
@@ -440,11 +440,11 @@ pub fn bind(self: *const Self, value: anytype) Self {
         },
         .telephone => {
             if (@TypeOf(value.*) != []const u8) {
-                Vapor.printlnErr("Telephone bindValue and TextField type mismatch", .{});
+                Vapor.report.err("Telephone bindValue and TextField type mismatch", .{});
                 return self.*;
             }
             _ = Vapor.text_field_table.replaceOrAdd(value) catch |err| {
-                std.log.err("bindValue: Could not add string to table {any}\n", .{err});
+                Vapor.report.err("bindValue: Could not add string to table {any}", .{err});
                 @panic("vapor: bindValue: Could not add string to table");
             };
 
@@ -453,15 +453,15 @@ pub fn bind(self: *const Self, value: anytype) Self {
         },
         .string => {
             if (@TypeOf(value.*) == []u8) {
-                Vapor.printlnErr("String bindValue and TextField type mismatch {any}", .{@typeInfo(@TypeOf(value.*))});
+                Vapor.report.err("String bindValue and TextField type mismatch {any}", .{@typeInfo(@TypeOf(value.*))});
                 return self.*;
             } else if (@TypeOf(value.*) == []const u8) {
                 _ = Vapor.text_field_table.replaceOrAdd(value) catch |err| {
-                    std.log.err("bindValue: Could not add string to table {any}\n", .{err});
+                    Vapor.report.err("bindValue: Could not add string to table {any}", .{err});
                     @panic("vapor: bindValue: Could not add string to table");
                 };
             } else {
-                Vapor.printlnErr("String bindValue and TextField type mismatch {any}", .{@typeInfo(@TypeOf(value.*))});
+                Vapor.report.err("String bindValue and TextField type mismatch {any}", .{@typeInfo(@TypeOf(value.*))});
                 return self.*;
             }
 
@@ -470,7 +470,7 @@ pub fn bind(self: *const Self, value: anytype) Self {
         },
         .int => {
             if (@TypeOf(value.*) != i32) {
-                Vapor.printlnErr("int bindValue and TextField type mismatch {any}", .{@TypeOf(value.*)});
+                Vapor.report.err("int bindValue and TextField type mismatch {any}", .{@TypeOf(value.*)});
                 return self.*;
             }
 
@@ -478,21 +478,21 @@ pub fn bind(self: *const Self, value: anytype) Self {
         },
         .float => {
             if (@TypeOf(value.*) != f32) {
-                Vapor.printlnErr("Float bindValue and TextField type mismatch", .{});
+                Vapor.report.err("Float bindValue and TextField type mismatch", .{});
                 return self.*;
             }
         },
         .date => {
             if (@TypeOf(value.*) == []u8) {
-                Vapor.printlnErr("String bindValue and TextField type mismatch {any}", .{@typeInfo(@TypeOf(value.*))});
+                Vapor.report.err("String bindValue and TextField type mismatch {any}", .{@typeInfo(@TypeOf(value.*))});
                 return self.*;
             } else if (@TypeOf(value.*) == []const u8) {
                 _ = Vapor.text_field_table.replaceOrAdd(value) catch |err| {
-                    std.log.err("bindValue: Could not add string to table {any}\n", .{err});
+                    Vapor.report.err("bindValue: Could not add string to table {any}", .{err});
                     @panic("vapor: bindValue: Could not add string to table");
                 };
             } else {
-                Vapor.printlnErr("String bindValue and TextField type mismatch {any}", .{@typeInfo(@TypeOf(value.*))});
+                Vapor.report.err("String bindValue and TextField type mismatch {any}", .{@typeInfo(@TypeOf(value.*))});
                 return self.*;
             }
 
@@ -500,7 +500,7 @@ pub fn bind(self: *const Self, value: anytype) Self {
             new_self._text_field_params.?.date.value_len = value.*.len;
         },
         else => {
-            Vapor.printlnErr("NOT IMPLEMENTED", .{});
+            Vapor.report.err("NOT IMPLEMENTED", .{});
             return self.*;
         },
     }
@@ -516,7 +516,7 @@ pub fn bind(self: *const Self, value: anytype) Self {
 
             typed.* = switch (@typeInfo(T)) {
                 .int, .float, .comptime_int, .comptime_float => evt.number() catch blk: {
-                    std.log.err("Error casting number", .{});
+                    Vapor.report.err("Error casting number", .{});
                     break :blk 0;
                 },
                 .pointer => |info| if (info.child == u8) evt.text() else @compileError("unsupported pointer type"),
@@ -535,7 +535,7 @@ pub fn bind(self: *const Self, value: anytype) Self {
 pub fn config(self: *const Self, text_field_config: types.TextFieldConfig) Self {
     var new_self: Self = self.*;
     var text_field_params = new_self._text_field_params orelse {
-        Vapor.printlnSrcErr("TextFieldParams is null", .{}, @src());
+        Vapor.report.err("TextFieldParams is null", .{});
         return self.*;
     };
     switch (text_field_params) {

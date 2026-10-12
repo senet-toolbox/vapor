@@ -74,7 +74,7 @@ pub const Draggable = struct {
     /// `.createDraggable(d)`.
     pub fn init(element: *Vapor.Element) *Draggable {
         const self = Vapor.arena(.persist).create(Draggable) catch |err| {
-            Vapor.printlnErr("Draggable.init: allocation failed: {any}", .{err});
+            Vapor.report.err("Draggable.init: allocation failed: {any}", .{err});
             @panic("vapor: out of memory creating a Draggable");
         };
         self.* = .{ .element = element };
@@ -170,11 +170,11 @@ pub const Draggable = struct {
 
         // Add document-level listeners for move and up
         self.move_listener_id = Vapor.addGlobalListenerCtx(.pointermove, handlePointerMove, .{self}) orelse {
-            Vapor.printlnErr("Draggable: could not add the pointermove listener; drag not started", .{});
+            Vapor.report.err("Draggable: could not add the pointermove listener; drag not started", .{});
             return;
         };
         self.up_listener_id = Vapor.addGlobalListenerCtx(.pointerup, handlePointerUp, .{self}) orelse {
-            Vapor.printlnErr("Draggable: could not add the pointerup listener; drag not started", .{});
+            Vapor.report.err("Draggable: could not add the pointerup listener; drag not started", .{});
             return;
         };
 
@@ -230,7 +230,6 @@ pub const Draggable = struct {
 
         // Remove document listeners
         if (self.move_listener_id) |id| {
-            Vapor.println("handlePointerUp", .{});
             _ = Vapor.removeGlobalListener(.pointermove, id);
             self.move_listener_id = null;
         }

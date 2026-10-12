@@ -461,7 +461,7 @@ fn initHooks(self: *KeyStone) void {
 
 fn exchangeHook(_: Vapor.HookContext) void {
     if (!maybeHandleAuthExchange()) {
-        std.log.err("Failed to handle auth exchange", .{});
+        Vapor.report.err("Failed to handle auth exchange", .{});
     }
 }
 

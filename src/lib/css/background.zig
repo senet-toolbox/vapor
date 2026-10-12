@@ -68,7 +68,7 @@ pub fn gradientToCSS(gradient: Types.PackedGradient, writer: *Writer) !void {
             writer.write("radial-gradient(") catch {};
         },
         else => {
-            Vapor.printlnSrcErr("Gradient is not radius or linear", .{}, @src());
+            Vapor.report.err("Gradient is not radius or linear", .{});
         },
     }
     switch (gradient.direction.type) {
@@ -86,7 +86,7 @@ pub fn gradientToCSS(gradient: Types.PackedGradient, writer: *Writer) !void {
     }
     if (gradient.colors_ptr > 0) {
         const colors = Vapor.packed_colors.get(gradient.colors_ptr) orelse {
-            Vapor.printlnSrcErr("Colors ptr is null", .{}, @src());
+            Vapor.report.err("Colors ptr is null", .{});
             return;
         };
         for (colors) |color| {

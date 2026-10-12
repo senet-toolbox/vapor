@@ -95,7 +95,7 @@ pub fn configure(ui_ctx: *UIContext, elem_decl: ElemDecl) *UINode {
 
     if (elem_decl.elem_type == .ListItem) {
         if (parent.type != .List) {
-            Vapor.printlnErr("ListItem must be a child of a List, Otherwise reconciliation will fail\n", .{});
+            Vapor.report.err("ListItem must be a child of a List, Otherwise reconciliation will fail", .{});
         }
     }
 
@@ -114,7 +114,7 @@ pub fn configure(ui_ctx: *UIContext, elem_decl: ElemDecl) *UINode {
 
     if (elem_decl.hover_style_fields) |fields| {
         const hover_style_fields = Vapor.arena(.frame).create([]const types.StyleFields) catch |err| blk_hover: {
-            Vapor.printlnErr("hover style: could not allocate, hover styles skipped: {any}", .{err});
+            Vapor.report.err("hover style: could not allocate, hover styles skipped: {any}", .{err});
             break :blk_hover null;
         } orelse return current_open;
         hover_style_fields.* = fields;
@@ -128,7 +128,7 @@ pub fn configure(ui_ctx: *UIContext, elem_decl: ElemDecl) *UINode {
 
     if (elem_decl.text_field_params) |params| blk_tfp: {
         const text_field_params = Vapor.arena(.frame).create(types.TextFieldParams) catch |err| {
-            Vapor.printlnErr("text field: could not allocate params, field renders without them: {any}", .{err});
+            Vapor.report.err("text field: could not allocate params, field renders without them: {any}", .{err});
             break :blk_tfp;
         };
         text_field_params.* = params;
@@ -154,7 +154,7 @@ pub fn configure(ui_ctx: *UIContext, elem_decl: ElemDecl) *UINode {
 
     if (elem_decl.accessibility) |accessibility| {
         Accessibility.a11y_map.put(hashKey(current_open.uuid), accessibility) catch |err| {
-            std.log.err("Error adding accessibility {any}\n", .{err});
+            Vapor.report.err("Error adding accessibility {any}", .{err});
         };
         current_open.accessibility = true;
         current_open.finger_print +%= hashKey(Accessibility.toAttributeString(accessibility));
@@ -298,7 +298,7 @@ pub fn configure(ui_ctx: *UIContext, elem_decl: ElemDecl) *UINode {
                 hash_tv,
                 additional_classes,
             ) catch |err| {
-                Vapor.printlnErr("Could not build class string {any}\n", .{err});
+                Vapor.report.err("Could not build class string {any}", .{err});
             };
         }
     }
@@ -330,7 +330,7 @@ pub fn configureByNode(ui_node: ?*UINode, elem_decl: ElemDecl) *UINode {
     // Early exit if style hasn't changed
     if (elem_decl.elem_type == .ListItem) {
         if (parent.type != .List) {
-            Vapor.printlnErr("ListItem must be a child of a List, Otherwise reconciliation will fail\n", .{});
+            Vapor.report.err("ListItem must be a child of a List, Otherwise reconciliation will fail", .{});
         }
     }
 
@@ -349,7 +349,7 @@ pub fn configureByNode(ui_node: ?*UINode, elem_decl: ElemDecl) *UINode {
 
     if (elem_decl.text_field_params) |params| blk_tfp: {
         const text_field_params = Vapor.arena(.frame).create(types.TextFieldParams) catch |err| {
-            Vapor.printlnErr("text field: could not allocate params, field renders without them: {any}", .{err});
+            Vapor.report.err("text field: could not allocate params, field renders without them: {any}", .{err});
             break :blk_tfp;
         };
         text_field_params.* = params;
@@ -462,7 +462,7 @@ pub fn configureByNode(ui_node: ?*UINode, elem_decl: ElemDecl) *UINode {
 
     if (elem_decl.hover_style_fields) |fields| {
         const hover_style_fields = Vapor.arena(.frame).create([]const types.StyleFields) catch |err| blk_hover: {
-            Vapor.printlnErr("hover style: could not allocate, hover styles skipped: {any}", .{err});
+            Vapor.report.err("hover style: could not allocate, hover styles skipped: {any}", .{err});
             break :blk_hover null;
         } orelse return current_open;
         hover_style_fields.* = fields;
@@ -471,7 +471,7 @@ pub fn configureByNode(ui_node: ?*UINode, elem_decl: ElemDecl) *UINode {
 
     if (elem_decl.accessibility) |accessibility| {
         Accessibility.a11y_map.put(hashKey(current_open.uuid), accessibility) catch |err| {
-            std.log.err("Error adding accessibility {any}\n", .{err});
+            Vapor.report.err("Error adding accessibility {any}", .{err});
         };
         current_open.accessibility = true;
         current_open.finger_print +%= hashKey(Accessibility.toAttributeString(accessibility));
@@ -611,7 +611,7 @@ pub fn configureByNode(ui_node: ?*UINode, elem_decl: ElemDecl) *UINode {
             hash_tv,
             additional_classes,
         ) catch |err| {
-            Vapor.printlnErr("Could not build class string {any}\n", .{err});
+            Vapor.report.err("Could not build class string {any}", .{err});
         };
     }
 
@@ -641,7 +641,7 @@ pub fn configurePlainByNode(ui_node: ?*UINode, elem_decl: ElemDecl) *UINode {
 
     if (elem_decl.elem_type == .ListItem) {
         if (parent.type != .List) {
-            Vapor.printlnErr("ListItem must be a child of a List, Otherwise reconciliation will fail\n", .{});
+            Vapor.report.err("ListItem must be a child of a List, Otherwise reconciliation will fail", .{});
         }
     }
 
@@ -657,7 +657,7 @@ pub fn configurePlainByNode(ui_node: ?*UINode, elem_decl: ElemDecl) *UINode {
 
     if (elem_decl.text_field_params) |params| blk_tfp: {
         const text_field_params = Vapor.arena(.frame).create(types.TextFieldParams) catch |err| {
-            Vapor.printlnErr("text field: could not allocate params, field renders without them: {any}", .{err});
+            Vapor.report.err("text field: could not allocate params, field renders without them: {any}", .{err});
             break :blk_tfp;
         };
         text_field_params.* = params;
@@ -769,7 +769,7 @@ pub fn configurePlainByNode(ui_node: ?*UINode, elem_decl: ElemDecl) *UINode {
 
     if (elem_decl.accessibility) |accessibility| {
         Accessibility.a11y_map.put(hashKey(current_open.uuid), accessibility) catch |err| {
-            std.log.err("Error adding accessibility {any}\n", .{err});
+            Vapor.report.err("Error adding accessibility {any}", .{err});
         };
         current_open.accessibility = true;
         current_open.finger_print +%= hashKey(Accessibility.toAttributeString(accessibility));

@@ -47,7 +47,7 @@ pub fn configureTransforms(ui_node: *UINode, style: *const Vapor.Style) u32 {
             packed_transforms_ptr.* = Configuration.packed_transforms;
             ui_node.packed_field_ptrs.?.transforms_ptr = packed_transforms_ptr;
         } else |err| {
-            Vapor.printlnErr("style: could not allocate, node renders without this group: {any}", .{err});
+            Vapor.report.err("style: could not allocate, node renders without this group: {any}", .{err});
         }
         return hash_t;
     }
@@ -60,7 +60,7 @@ pub fn configureTransforms(ui_node: *UINode, style: *const Vapor.Style) u32 {
     )) |ptr| {
         ui_node.packed_field_ptrs.?.transforms_ptr = ptr;
     } else |err| {
-        Vapor.printlnErr("style: could not cache, node renders without this group: {any}", .{err});
+        Vapor.report.err("style: could not cache, node renders without this group: {any}", .{err});
     }
     return hash_t;
 }
@@ -113,7 +113,7 @@ pub fn configureAnimations(ui_node: *UINode, elem_decl: ElemDecl) u32 {
             packed_animations_ptr.* = Configuration.packed_animations;
             ui_node.packed_field_ptrs.?.animations_ptr = packed_animations_ptr;
         } else |err| {
-            Vapor.printlnErr("style: could not allocate, node renders without this group: {any}", .{err});
+            Vapor.report.err("style: could not allocate, node renders without this group: {any}", .{err});
         }
         return hash_a;
     }
@@ -127,7 +127,7 @@ pub fn configureAnimations(ui_node: *UINode, elem_decl: ElemDecl) u32 {
     )) |ptr| {
         ui_node.packed_field_ptrs.?.animations_ptr = ptr;
     } else |err| {
-        Vapor.printlnErr("style: could not cache, node renders without this group: {any}", .{err});
+        Vapor.report.err("style: could not cache, node renders without this group: {any}", .{err});
     }
     return hash_a;
 }
@@ -194,7 +194,7 @@ pub fn configureInteractive(ui_node: *UINode, style: *const Vapor.Style) u32 {
             packed_interactive_ptr.* = Configuration.packed_interactive;
             ui_node.packed_field_ptrs.?.interactive_ptr = packed_interactive_ptr;
         } else |err| {
-            Vapor.printlnErr("style: could not allocate, node renders without this group: {any}", .{err});
+            Vapor.report.err("style: could not allocate, node renders without this group: {any}", .{err});
         }
         return hash_i;
     }
@@ -208,7 +208,7 @@ pub fn configureInteractive(ui_node: *UINode, style: *const Vapor.Style) u32 {
     )) |ptr| {
         ui_node.packed_field_ptrs.?.interactive_ptr = ptr;
     } else |err| {
-        Vapor.printlnErr("style: could not cache, node renders without this group: {any}", .{err});
+        Vapor.report.err("style: could not cache, node renders without this group: {any}", .{err});
     }
     return hash_i;
 }

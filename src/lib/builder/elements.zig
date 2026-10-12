@@ -30,7 +30,7 @@ pub fn Heading(level: u8, text: []const u8) Self {
 /// render (a global or `Vapor.persist` allocation).
 pub fn Video(options: *const types.Video) Self {
     const ui_node = Vapor.current_ctx.open(.{ .state_type = Self._state_type, .elem_type = .Video, .can_have_children = false }) catch |err| {
-        println("{any}\n", .{err});
+        Vapor.report.err("{any}", .{err});
         @panic("vapor: could not allocate a Video node");
     };
     return Self{ ._elem_type = .Video, ._video = options, ._ui_node = ui_node, ._returns_close = false };
@@ -93,7 +93,7 @@ pub fn TableHead() Self {
 pub fn Form(submit: anytype, args: anytype) Self {
     const ui_node = Components.createNode(.{ .state_type = Self._state_type, .elem_type = .Form });
     Vapor.attachEventCtxCallback(ui_node, .submit, submit, args) catch |err| {
-        Vapor.println("ONSUBMIT: Could not attach event callback {any}\n", .{err});
+        Vapor.report.err("Form: could not attach the event callback: {any}", .{err});
         @panic("vapor: ONSUBMIT: Could not attach event callback");
     };
     return Self{ ._ui_node = ui_node, ._elem_type = .Form, ._returns_close = true };
@@ -102,7 +102,7 @@ pub fn Form(submit: anytype, args: anytype) Self {
 /// `<section>`.
 pub fn Section() Self {
     const ui_node = LifeCycle.open(.{ .state_type = Self._state_type, .elem_type = .Intersection }) orelse {
-        Vapor.printlnSrcErr("Could not add component to lifecycle {any}\n", .{error.CouldNotAllocate}, @src());
+        Vapor.report.err("Could not add component to lifecycle {any}", .{error.CouldNotAllocate});
         @panic("vapor: Could not add component to lifecycle");
     };
     return Self{ ._ui_node = ui_node, ._elem_type = .Intersection, ._returns_close = true };
@@ -111,7 +111,7 @@ pub fn Section() Self {
 /// `<ul>`. Put `ListItem`s in it.
 pub fn List() Self {
     const ui_node = LifeCycle.open(.{ .state_type = Self._state_type, .elem_type = .List }) orelse {
-        Vapor.printlnSrcErr("Could not add component to lifecycle {any}\n", .{error.CouldNotAllocate}, @src());
+        Vapor.report.err("Could not add component to lifecycle {any}", .{error.CouldNotAllocate});
         @panic("vapor: Could not add component to lifecycle");
     };
     return Self{ ._ui_node = ui_node, ._elem_type = .List, ._returns_close = true };
@@ -120,7 +120,7 @@ pub fn List() Self {
 /// `<li>`.
 pub fn ListItem() Self {
     const ui_node = LifeCycle.open(.{ .state_type = Self._state_type, .elem_type = .ListItem }) orelse {
-        Vapor.printlnSrcErr("Could not add component to lifecycle {any}\n", .{error.CouldNotAllocate}, @src());
+        Vapor.report.err("Could not add component to lifecycle {any}", .{error.CouldNotAllocate});
         @panic("vapor: Could not add component to lifecycle");
     };
     return Self{ ._ui_node = ui_node, ._elem_type = .ListItem, ._returns_close = true };
@@ -129,11 +129,11 @@ pub fn ListItem() Self {
 /// A flex container that centres its children on both axes.
 pub fn Center() *Self {
     const ui_node = LifeCycle.open(.{ .state_type = Self._state_type, .elem_type = .FlexBox }) orelse {
-        Vapor.printlnSrcErr("Could not add component to lifecycle {any}\n", .{error.CouldNotAllocate}, @src());
+        Vapor.report.err("Could not add component to lifecycle {any}", .{error.CouldNotAllocate});
         @panic("vapor: Could not add component to lifecycle");
     };
     const self = Vapor.arena(.frame).create(Self) catch |err| {
-        Vapor.printlnErr("component builder: allocation failed: {any}", .{err});
+        Vapor.report.err("component builder: allocation failed: {any}", .{err});
         @panic("vapor: out of memory creating a component");
     };
     self.* = .{
@@ -153,7 +153,7 @@ pub fn SubmitButton() Self {
     };
 
     const ui_node = LifeCycle.open(elem_decl) orelse {
-        Vapor.printlnSrcErr("LifeCycle open could not allocate {any}\n", .{error.CouldNotAllocate}, @src());
+        Vapor.report.err("LifeCycle open could not allocate {any}", .{error.CouldNotAllocate});
         @panic("vapor: LifeCycle open could not allocate");
     };
 
@@ -169,18 +169,18 @@ pub fn Button(cb: anytype, args: anytype) Self {
     };
 
     const ui_node = LifeCycle.open(elem_decl) orelse {
-        Vapor.printlnSrcErr("LifeCycle open could not allocate {any}\n", .{error.CouldNotAllocate}, @src());
+        Vapor.report.err("LifeCycle open could not allocate {any}", .{error.CouldNotAllocate});
         @panic("vapor: LifeCycle open could not allocate");
     };
 
     const erased = Vapor.ErasedCallback.make(Vapor.arena(.frame), cb, args) catch |err| {
-        println("Error could not create closure {any}\n", .{err});
+        Vapor.report.err("could not create closure: {any}", .{err});
         @panic("vapor: Error could not create closure");
     };
 
     const callback_id = hashKey(ui_node.uuid);
     Vapor.button_callbacks.put(callback_id, erased) catch |err| {
-        println("Registry error {any}\n", .{err});
+        Vapor.report.err("Registry error {any}", .{err});
         @panic("vapor: Registry error");
     };
 
@@ -190,7 +190,7 @@ pub fn Button(cb: anytype, args: anytype) Self {
 /// A flex container laid out as a column.
 pub fn Stack() Self {
     const ui_node = LifeCycle.open(.{ .state_type = Self._state_type, .elem_type = .FlexBox }) orelse {
-        Vapor.printlnSrcErr("Could not add component to lifecycle {any}\n", .{error.CouldNotAllocate}, @src());
+        Vapor.report.err("Could not add component to lifecycle {any}", .{error.CouldNotAllocate});
         @panic("vapor: Could not add component to lifecycle");
     };
     ui_node.direction = .column;
@@ -201,7 +201,7 @@ pub fn Stack() Self {
 /// modified clicks (new tab, other origin) behave as normal links.
 pub fn Link(options: Components.LinkOptions) Self {
     const ui_node = LifeCycle.open(.{ .state_type = Self._state_type, .elem_type = .Link, .href = options.url, .aria_label = options.aria_label }) orelse {
-        Vapor.printlnSrcErr("Could not add component Link to lifecycle {any}\n", .{error.CouldNotAllocate}, @src());
+        Vapor.report.err("Could not add component Link to lifecycle {any}", .{error.CouldNotAllocate});
         @panic("vapor: Could not add component Link to lifecycle");
     };
 
@@ -211,7 +211,7 @@ pub fn Link(options: Components.LinkOptions) Self {
 /// `<a>` that always does a full browser navigation to `options.url`.
 pub fn RedirectLink(options: Components.LinkOptions) Self {
     const ui_node = LifeCycle.open(.{ .state_type = Self._state_type, .elem_type = .RedirectLink, .href = options.url, .aria_label = options.aria_label }) orelse {
-        Vapor.printlnSrcErr("Could not add component Link to lifecycle {any}\n", .{error.CouldNotAllocate}, @src());
+        Vapor.report.err("Could not add component Link to lifecycle {any}", .{error.CouldNotAllocate});
         @panic("vapor: Could not add component Link to lifecycle");
     };
     return Self{ ._ui_node = ui_node, ._elem_type = .RedirectLink, ._aria_label = options.aria_label, ._href = options.url, ._returns_close = true };
@@ -220,7 +220,7 @@ pub fn RedirectLink(options: Components.LinkOptions) Self {
 /// `<label>` with `text`.
 pub fn Label(text: []const u8) Self {
     const ui_node = LifeCycle.open(.{ .state_type = .static, .elem_type = .Label, .text = text, .can_have_children = false }) orelse {
-        Vapor.printlnSrcErr("Could not add component to lifecycle {any}\n", .{error.CouldNotAllocate}, @src());
+        Vapor.report.err("Could not add component to lifecycle {any}", .{error.CouldNotAllocate});
         @panic("vapor: Could not add component to lifecycle");
     };
     return Self{ ._elem_type = .Label, ._text = text, ._ui_node = ui_node, ._returns_close = false };
@@ -232,12 +232,12 @@ pub fn Code(value: anytype) Self {
         .pointer => break :blk value,
         .int => break :blk Vapor.fmtln("{any}", .{value}),
         else => {
-            Vapor.printlnErr("Text only accepts []const u8 or number types, NOT {any}", .{@TypeOf(value)});
+            Vapor.report.err("Text only accepts []const u8 or number types, NOT {any}", .{@TypeOf(value)});
             return Self{ ._elem_type = .Code, ._text = "", ._returns_close = false };
         },
     };
     const ui_node = LifeCycle.open(.{ .state_type = Self._state_type, .elem_type = .Code, .can_have_children = false }) orelse {
-        Vapor.printlnSrcErr("Could not add component to lifecycle {any}\n", .{error.CouldNotAllocate}, @src());
+        Vapor.report.err("Could not add component to lifecycle {any}", .{error.CouldNotAllocate});
         @panic("vapor: Could not add component to lifecycle");
     };
     return Self{ ._elem_type = .Code, ._text = text, ._ui_node = ui_node, ._returns_close = false };
@@ -246,7 +246,7 @@ pub fn Code(value: anytype) Self {
 /// Empty space `val` pixels tall that fills the available width.
 pub fn Spacer(val: f32) Self {
     const ui_node = LifeCycle.open(.{ .state_type = Self._state_type, .elem_type = .Spacer, .can_have_children = false }) orelse {
-        Vapor.printlnSrcErr("Could not add component to lifecycle {any}\n", .{error.CouldNotAllocate}, @src());
+        Vapor.report.err("Could not add component to lifecycle {any}", .{error.CouldNotAllocate});
         @panic("vapor: Could not add component to lifecycle");
     };
     return Self{ ._elem_type = .Spacer, ._ui_node = ui_node, ._size = .hw(.px(val), .expand), ._returns_close = false };
@@ -256,7 +256,7 @@ pub fn Spacer(val: f32) Self {
 /// until you give it one with `.background(...)`.
 pub fn Divider(w: f32) Self {
     const ui_node = LifeCycle.open(.{ .state_type = Self._state_type, .elem_type = .FlexBox, .can_have_children = false }) orelse {
-        Vapor.printlnSrcErr("Could not add component to lifecycle {any}\n", .{error.CouldNotAllocate}, @src());
+        Vapor.report.err("Could not add component to lifecycle {any}", .{error.CouldNotAllocate});
         @panic("vapor: Could not add component to lifecycle");
     };
     return Self{ ._elem_type = .FlexBox, ._ui_node = ui_node, ._size = .hw(.expand, .px(w)), ._returns_close = false };
@@ -265,7 +265,7 @@ pub fn Divider(w: f32) Self {
 /// `<iframe>` loading `iframe_src`.
 pub fn Iframe(iframe_src: ?[]const u8) Self {
     const ui_node = LifeCycle.open(.{ .state_type = Self._state_type, .elem_type = .Iframe, .can_have_children = false }) orelse {
-        Vapor.printlnSrcErr("Could not add component to lifecycle {any}\n", .{error.CouldNotAllocate}, @src());
+        Vapor.report.err("Could not add component to lifecycle {any}", .{error.CouldNotAllocate});
         @panic("vapor: Could not add component to lifecycle");
     };
     return Self{ ._elem_type = .Iframe, ._ui_node = ui_node, ._returns_close = false, ._href = iframe_src };
@@ -274,7 +274,7 @@ pub fn Iframe(iframe_src: ?[]const u8) Self {
 /// `<fieldset>` for grouping form controls.
 pub fn FieldSet() Self {
     const ui_node = LifeCycle.open(.{ .state_type = Self._state_type, .elem_type = .FieldSet }) orelse {
-        Vapor.printlnSrcErr("Could not add component to lifecycle {any}\n", .{error.CouldNotAllocate}, @src());
+        Vapor.report.err("Could not add component to lifecycle {any}", .{error.CouldNotAllocate});
         @panic("vapor: Could not add component to lifecycle");
     };
     return Self{ ._elem_type = .FieldSet, ._ui_node = ui_node, ._returns_close = true };
@@ -283,7 +283,7 @@ pub fn FieldSet() Self {
 /// Text showing a number or an enum's tag name, formatted for this render.
 pub fn Number(value: anytype) Self {
     const ui_node = LifeCycle.open(.{ .state_type = Self._state_type, .elem_type = .Text, .can_have_children = false }) orelse {
-        Vapor.printlnSrcErr("Could not add component to lifecycle {any}\n", .{error.CouldNotAllocate}, @src());
+        Vapor.report.err("Could not add component to lifecycle {any}", .{error.CouldNotAllocate});
         @panic("vapor: Could not add component to lifecycle");
     };
     const text = blk: switch (@typeInfo(@TypeOf(value))) {
@@ -303,7 +303,7 @@ pub fn Number(value: anytype) Self {
             break :blk n;
         },
         else => {
-            Vapor.printlnErr("Text only accepts []const u8 or number types, NOT {any}", .{@TypeOf(value)});
+            Vapor.report.err("Text only accepts []const u8 or number types, NOT {any}", .{@TypeOf(value)});
             return Self{ ._elem_type = .Text, ._text = "", ._ui_node = ui_node, ._returns_close = false };
         },
     };
@@ -315,7 +315,7 @@ pub fn Number(value: anytype) Self {
 pub fn Text(value: anytype) *Self {
     const ui_node = Components.createNode(.{ .state_type = Self._state_type, .elem_type = .Text, .can_have_children = false });
     const self = Vapor.arena(.frame).create(Self) catch |err| {
-        Vapor.printlnErr("component builder: allocation failed: {any}", .{err});
+        Vapor.report.err("component builder: allocation failed: {any}", .{err});
         @panic("vapor: out of memory creating a component");
     };
     const text = blk: switch (@typeInfo(@TypeOf(value))) {
@@ -346,7 +346,7 @@ pub fn Text(value: anytype) *Self {
             break :blk n;
         },
         else => {
-            Vapor.printlnErr("Text only accepts []const u8 or number types, NOT {any}", .{@TypeOf(value)});
+            Vapor.report.err("Text only accepts []const u8 or number types, NOT {any}", .{@TypeOf(value)});
             return Self{ ._elem_type = .Text, ._text = "", ._ui_node = ui_node, ._returns_close = false };
         },
     };
@@ -387,7 +387,7 @@ pub fn Icon(token: IconTokens) Self {
 pub fn Svg(options: struct { svg: []const u8, override: bool = false }) Self {
     const ui_node = Components.createNode(.{ .elem_type = .Svg, .can_have_children = false });
     if (options.svg.len > 2048 and Vapor.build_options.enable_debug and !options.override) {
-        Vapor.printlnErr("Svg is too large inlining: {d}B, use Graphic;\nSVG Content:\n{s}...", .{ options.svg.len, options.svg[0..100] });
+        Vapor.report.err("Svg is too large inlining: {d}B, use Graphic;\nSVG Content:\n{s}...", .{ options.svg.len, options.svg[0..100] });
         return Self{ ._elem_type = .Svg, ._svg = "", ._ui_node = ui_node, ._returns_close = false };
     }
     return Self{ ._elem_type = .Svg, ._svg = options.svg, ._ui_node = ui_node, ._returns_close = false };

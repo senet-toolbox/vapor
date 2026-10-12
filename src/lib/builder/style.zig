@@ -22,7 +22,7 @@ pub fn fontStyle(self: *const Self, font_style: types.FontStyle) Self {
 /// warning) elsewhere.
 pub fn ellipsis(self: *const Self, value: types.Ellipsis) Self {
     if (self._elem_type != .Text and self._elem_type != .TextArea and self._elem_type != .TextField and self._elem_type != .TextFmt) {
-        std.log.warn("Ellipsis can only be used on Text, not {any}", .{self._elem_type});
+        Vapor.report.warn("Ellipsis can only be used on Text, not {any}", .{self._elem_type});
         return self.*;
     }
     var n = self.*;
@@ -170,8 +170,8 @@ pub fn class(self: *const Self, class_name: []const u8) Self {
 pub fn classFmt(self: *const Self, comptime fmt: []const u8, args: anytype) Self {
     var n = self.*;
     const allocator = Vapor.arena(.frame);
-    const text = std.fmt.allocPrint(allocator, fmt, args) catch {
-        // Vapor.printlnColor(\\Error formatting text: {any}\n"\\FMT: {s}\n"\\ARGS: {any}\n", .{ err, fmt, args }, .hex("#FF3029"));
+    const text = std.fmt.allocPrint(allocator, fmt, args) catch |err| {
+        Vapor.report.err("classFmt: could not format, class skipped: {any}", .{err});
         return n;
     };
     Vapor.frame_arena.addBytesUsed(text.len);

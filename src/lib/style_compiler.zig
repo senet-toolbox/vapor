@@ -91,7 +91,7 @@ pub fn writeStyleField(field: Types.StyleFields, visual: *const Types.PackedVisu
             }
         },
         else => {
-            Vapor.printlnErr("StyleField not implemented {any}", .{field});
+            Vapor.report.err("StyleField not implemented {any}", .{field});
             @panic("vapor: StyleField not implemented");
         },
     }
@@ -224,7 +224,7 @@ pub fn generateVisual(visual: *const Types.PackedVisual, writer: writer_t) void 
 
     if (visual.text_shadow > 0) blk: {
         const shadow = Vapor.shadows.get(visual.text_shadow) orelse {
-            std.log.err("Could not acquire shadow", .{});
+            Vapor.report.err("Could not acquire shadow", .{});
             break :blk;
         };
         writer.write("text-shadow:") catch {};
@@ -234,7 +234,7 @@ pub fn generateVisual(visual: *const Types.PackedVisual, writer: writer_t) void 
 
     if (visual.new_shadow > 0) blk: {
         const shadow = Vapor.shadows.get(visual.new_shadow) orelse {
-            std.log.err("Could not acquire shadow", .{});
+            Vapor.report.err("Could not acquire shadow", .{});
             break :blk;
         };
         writer.write("box-shadow:") catch {};
@@ -281,11 +281,11 @@ pub fn generateVisual(visual: *const Types.PackedVisual, writer: writer_t) void 
     if (visual.animation != StringTable.null_handle) blk: {
         if (Vapor.string_table.get(visual.animation)) |name| {
             if (Vapor.animations == null) {
-                Vapor.printlnErr("animations map not found, please remember to run Animations.new()", .{});
+                Vapor.report.err("animations map not found, please remember to run Animations.new()", .{});
                 break :blk;
             }
             const animation = Vapor.animations.?.get(name) orelse {
-                Vapor.printlnSrcErr("Animations stringtable not found, please remember to run .build() on the animation within init, ensure Animations.new() is called before build", .{}, @src());
+                Vapor.report.err("Animations stringtable not found, please remember to run .build() on the animation within init, ensure Animations.new() is called before build", .{});
                 return;
             };
             writer.write("animation:") catch {};
@@ -565,7 +565,7 @@ pub fn generateAnimations(animations: *const Types.PackedAnimations, writer: any
     if (animations.has_animation_enter) {
         if (Vapor.string_table.get(animations.animation_enter)) |name| anim: {
             const animation = (if (Vapor.animations) |a| a.get(name) else null) orelse {
-                Vapor.printlnErr("animation '{s}' is not defined; register it with Vapor.Animation before using it", .{name});
+                Vapor.report.err("animation '{s}' is not defined; register it with Vapor.Animation before using it", .{name});
                 break :anim;
             };
             writer.write("animation:") catch {};
@@ -673,7 +673,7 @@ pub fn setGlobalStyleVariables(catalog: Catalog) void {
         const name = theme_def.name;
         const theme = theme_def.theme;
         if (theme_def.default and has_default) {
-            Vapor.printlnErr("Theme {s} is default, but another theme is also default", .{name});
+            Vapor.report.err("Theme {s} is default, but another theme is also default", .{name});
             return;
         }
         if (theme_def.default) {

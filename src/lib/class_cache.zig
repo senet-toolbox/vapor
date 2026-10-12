@@ -198,7 +198,7 @@ pub const ClassCache = struct {
     /// Sweeps, then asks the runtime to delete the rules of the tombstones.
     pub fn batchRemove(self: *Self) void {
         self.sweep() catch |err| {
-            Vapor.printlnErr("class cache: sweep failed, unused rules kept: {any}", .{err});
+            Vapor.report.err("class cache: sweep failed, unused rules kept: {any}", .{err});
         };
         if (self.tombstones.items.len == 0) return;
         if (Vapor.isWasi) {

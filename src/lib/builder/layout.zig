@@ -94,7 +94,7 @@ pub fn spacing(self: *const Self, value: u8) Self {
     var n = self.*;
     n._child_gap = value;
     const node = self._ui_node orelse {
-        Vapor.printlnSrcErr("Node is null", .{}, @src());
+        Vapor.report.err("Node is null", .{});
         return self.*;
     };
     node.spacing = value;
@@ -280,7 +280,7 @@ pub fn minWidth(self: *const Self, min: types.Sizing) Self {
         .percent => .{ .type = .min_percent, .size = min.size },
         .fixed => .{ .type = .min_px, .size = min.size },
         else => {
-            Vapor.printlnErr("minWidth: only .percent and .px sizes are supported; ignored", .{});
+            Vapor.report.err("minWidth: only .percent and .px sizes are supported; ignored", .{});
             return self.*;
         },
     };
@@ -300,7 +300,7 @@ pub fn maxWidth(self: *const Self, max: types.Sizing) Self {
         .percent => .{ .type = .max_percent, .size = max.size },
         .fixed => .{ .type = .max_px, .size = max.size },
         else => {
-            Vapor.printlnErr("maxWidth: only .percent and .px sizes are supported; ignored", .{});
+            Vapor.report.err("maxWidth: only .percent and .px sizes are supported; ignored", .{});
             return self.*;
         },
     };
@@ -331,7 +331,7 @@ pub fn minHeight(self: *const Self, min: types.Sizing) Self {
         .percent => .{ .type = .min_percent, .size = min.size },
         .fixed => .{ .type = .min_px, .size = min.size },
         else => {
-            Vapor.printlnErr("minHeight: only .percent and .px sizes are supported; ignored", .{});
+            Vapor.report.err("minHeight: only .percent and .px sizes are supported; ignored", .{});
             return self.*;
         },
     };
@@ -351,7 +351,7 @@ pub fn maxHeight(self: *const Self, max: types.Sizing) Self {
         .percent => .{ .type = .max_percent, .size = max.size },
         .fixed => .{ .type = .max_px, .size = max.size },
         else => {
-            Vapor.printlnErr("maxHeight: only .percent and .px sizes are supported; ignored", .{});
+            Vapor.report.err("maxHeight: only .percent and .px sizes are supported; ignored", .{});
             return self.*;
         },
     };
@@ -367,7 +367,7 @@ pub fn maxHeight(self: *const Self, max: types.Sizing) Self {
 /// takes that share of the row, less its part of the `spacing`.
 pub fn columns(self: *const Self, column_count: u8) *const Self {
     const node = self._ui_node orelse {
-        Vapor.printlnSrcErr("Node is null", .{}, @src());
+        Vapor.report.err("Node is null", .{});
         return self;
     };
     node.column_count = column_count;

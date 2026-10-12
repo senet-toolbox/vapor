@@ -60,7 +60,7 @@ pub fn configureLayouts(ui_node: *UINode, style: *const Vapor.Style) u32 {
             packed_layout_ptr.* = Configuration.packed_layout;
             ui_node.packed_field_ptrs.?.layout_ptr = packed_layout_ptr;
         } else |err| {
-            Vapor.printlnErr("style: could not allocate, node renders without this group: {any}", .{err});
+            Vapor.report.err("style: could not allocate, node renders without this group: {any}", .{err});
         }
         return hash_l;
     }
@@ -73,7 +73,7 @@ pub fn configureLayouts(ui_node: *UINode, style: *const Vapor.Style) u32 {
     )) |ptr| {
         ui_node.packed_field_ptrs.?.layout_ptr = ptr;
     } else |err| {
-        Vapor.printlnErr("style: could not cache, node renders without this group: {any}", .{err});
+        Vapor.report.err("style: could not cache, node renders without this group: {any}", .{err});
     }
     return hash_l;
 }
@@ -199,7 +199,7 @@ pub fn configureResponsive(ui_node: *UINode, style: *const Vapor.Style) u32 {
             packed_responsive_ptr.* = Configuration.packed_responsive;
             ui_node.packed_field_ptrs.?.responsive_ptr = packed_responsive_ptr;
         } else |err| {
-            Vapor.printlnErr("style: could not allocate, node renders without this group: {any}", .{err});
+            Vapor.report.err("style: could not allocate, node renders without this group: {any}", .{err});
         }
         return hash_r;
     }
@@ -213,7 +213,7 @@ pub fn configureResponsive(ui_node: *UINode, style: *const Vapor.Style) u32 {
     )) |ptr| {
         ui_node.packed_field_ptrs.?.responsive_ptr = ptr;
     } else |err| {
-        Vapor.printlnErr("style: could not cache, node renders without this group: {any}", .{err});
+        Vapor.report.err("style: could not cache, node renders without this group: {any}", .{err});
     }
 
     return hash_r;
@@ -249,7 +249,7 @@ pub fn configurePositions(ui_node: *UINode, style: *const Vapor.Style) u32 {
             packed_position_ptr.* = Configuration.packed_position;
             ui_node.packed_field_ptrs.?.position_ptr = packed_position_ptr;
         } else |err| {
-            Vapor.printlnErr("style: could not allocate, node renders without this group: {any}", .{err});
+            Vapor.report.err("style: could not allocate, node renders without this group: {any}", .{err});
         }
         return hash_p;
     }
@@ -262,7 +262,7 @@ pub fn configurePositions(ui_node: *UINode, style: *const Vapor.Style) u32 {
     )) |ptr| {
         ui_node.packed_field_ptrs.?.position_ptr = ptr;
     } else |err| {
-        Vapor.printlnErr("style: could not cache, node renders without this group: {any}", .{err});
+        Vapor.report.err("style: could not cache, node renders without this group: {any}", .{err});
     }
     return hash_p;
 }
@@ -281,7 +281,7 @@ pub fn configureMarginsPaddings(ui_node: *UINode, style: *const Vapor.Style) u32
             packed_margin_paddings_ptr.* = Configuration.packed_margins_paddings;
             ui_node.packed_field_ptrs.?.margins_paddings_ptr = packed_margin_paddings_ptr;
         } else |err| {
-            Vapor.printlnErr("style: could not allocate, node renders without this group: {any}", .{err});
+            Vapor.report.err("style: could not allocate, node renders without this group: {any}", .{err});
         }
         return hash_mp;
     }
@@ -294,7 +294,7 @@ pub fn configureMarginsPaddings(ui_node: *UINode, style: *const Vapor.Style) u32
     )) |ptr| {
         ui_node.packed_field_ptrs.?.margins_paddings_ptr = ptr;
     } else |err| {
-        Vapor.printlnErr("style: could not cache, node renders without this group: {any}", .{err});
+        Vapor.report.err("style: could not cache, node renders without this group: {any}", .{err});
     }
     return hash_mp;
 }

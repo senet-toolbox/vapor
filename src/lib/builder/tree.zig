@@ -164,7 +164,7 @@ pub fn end(self: *const Self) void {
 /// The element's id: the one set with `.id`, or the generated one.
 pub fn getUUID(self: *const Self) []const u8 {
     if (self._ui_node == null) {
-        Vapor.printlnSrcErr("getUUID Failed: Node is null", .{}, @src());
+        Vapor.report.err("getUUID Failed: Node is null", .{});
         return "";
     }
     return self._ui_node.?.uuid;

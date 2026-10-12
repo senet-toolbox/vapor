@@ -327,7 +327,6 @@ pub fn getDaysInMonth(month: u8, year: i32) u8 {
 pub fn getDaysInMonthArray(allocator: *std.mem.Allocator, month: u8, year: i32) ![]DateTime {
     const days_count = getDaysInMonth(month, year);
     if (days_count == 0) {
-        Vapor.println("Invalid Month", .{});
         return error.InvalidMonth;
     }
 
@@ -335,7 +334,6 @@ pub fn getDaysInMonthArray(allocator: *std.mem.Allocator, month: u8, year: i32) 
 
     for (0..days_count) |i| {
         result[i] = DateTime.init(year, month, @intCast(i + 1), 0, 0, 0);
-        Vapor.println("{any}\n", .{result[i].day});
     }
 
     return result;

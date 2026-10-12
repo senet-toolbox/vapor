@@ -145,7 +145,7 @@ pub fn anchorSource(self: *const Self, name: []const u8) Self {
 /// strings must stay valid until then (literals, or frame allocations).
 pub fn attribute(self: *const Self, attribute_name: []const u8, value: []const u8) *const Self {
     const ui_node = self._ui_node orelse {
-        Vapor.printlnSrcErr("Node is null", .{}, @src());
+        Vapor.report.err("Node is null", .{});
         @panic("vapor: Node is null");
     };
 

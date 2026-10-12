@@ -52,7 +52,7 @@ pub fn fmtln(
 ) []const u8 {
     const allocator = arena(.frame);
     const buf = std.fmt.allocPrint(allocator, fmt, args) catch |err| {
-        Vapor.println("Formatting, Error Could not format argument alloc Error details: {any}\n", .{err});
+        Vapor.report.err("format: could not allocate: {any}", .{err});
         return "";
     };
     return buf;
@@ -67,7 +67,7 @@ pub fn fmtArena(
 ) []const u8 {
     const allocator = arena(arena_type);
     const buf = std.fmt.allocPrint(allocator, fmt, args) catch |err| {
-        Vapor.println("Formatting, Error Could not format argument alloc Error details: {any}\n", .{err});
+        Vapor.report.err("format: could not allocate: {any}", .{err});
         return "";
     };
     return buf;
@@ -80,7 +80,7 @@ pub fn dupe(
 ) []const u8 {
     const allocator = arena(allocator_type);
     const buf = allocator.dupe(u8, args) catch |err| {
-        Vapor.println("Formatting, Error Could not format argument alloc Error details: {any}\n", .{err});
+        Vapor.report.err("format: could not allocate: {any}", .{err});
         return "";
     };
     return buf;
@@ -89,7 +89,7 @@ pub fn dupe(
 /// Interns `value` in vapor's string table, where style and anchor names live.
 pub fn pin(value: []const u8) void {
     _ = Vapor.string_table.intern(value) catch |err| {
-        Vapor.printlnErr("pin: could not intern, string stays unpinned: {any}", .{err});
+        Vapor.report.err("pin: could not intern, string stays unpinned: {any}", .{err});
     };
 }
 
@@ -104,7 +104,7 @@ pub fn unpin(value: []const u8) void {
 /// handle, so call it only between pages.
 pub fn compact() void {
     Vapor.string_table.compact() catch |err| {
-        Vapor.printlnErr("compact: string table left as-is: {any}", .{err});
+        Vapor.report.err("compact: string table left as-is: {any}", .{err});
     };
 }
 
@@ -116,7 +116,7 @@ pub fn cloneFrame(
     if (T == []const u8) return fmtln("{s}", .{value});
     const allocator = arena(.frame);
     const memory: *@TypeOf(value) = allocator.create(T) catch |err| {
-        Vapor.printlnErr("cloneFrame: could not allocate: {any}", .{err});
+        Vapor.report.err("cloneFrame: could not allocate: {any}", .{err});
         return "";
     };
     memory.* = value;
@@ -128,7 +128,7 @@ pub const persist = struct {
     pub fn dupe(value: []const u8) []const u8 {
         const _allocator = Vapor.arena(.persist);
         const buf = _allocator.dupe(u8, value) catch |err| {
-            Vapor.println("Formatting, Error Could not format argument alloc Error details: {any}\n", .{err});
+            Vapor.report.err("format: could not allocate: {any}", .{err});
             return "";
         };
         return buf;
@@ -143,7 +143,7 @@ pub const persist = struct {
     /// Allocates `size` items of `T` that last for the life of the app (until you free it).
     pub fn alloc(comptime T: type, size: usize) ![]T {
         return Vapor.arena(.persist).alloc(T, size) catch |err| {
-            Vapor.println("Formatting, Error Could not format argument alloc Error details: {any}\n", .{err});
+            Vapor.report.err("format: could not allocate: {any}", .{err});
             return err;
         };
     }
@@ -152,7 +152,7 @@ pub const persist = struct {
     pub fn fmt(comptime _fmt: []const u8, args: anytype) []const u8 {
         const _allocator = Vapor.arena(.persist);
         const buf = std.fmt.allocPrint(_allocator, _fmt, args) catch |err| {
-            Vapor.println("Formatting, Error Could not format argument alloc Error details: {any}\n", .{err});
+            Vapor.report.err("format: could not allocate: {any}", .{err});
             return "";
         };
         return buf;
@@ -172,7 +172,7 @@ pub const persist = struct {
     pub fn join(parts: []const []const u8, separator: []const u8) []const u8 {
         const _allocator = Vapor.arena(.persist);
         return std.mem.join(_allocator, separator, parts) catch |err| {
-            Vapor.println("join: could not allocate, returning empty. {any}\n", .{err});
+            Vapor.report.err("join: could not allocate, returning empty. {any}", .{err});
             return "";
         };
     }
@@ -181,7 +181,7 @@ pub const persist = struct {
     pub fn split(str: []const u8, delimiter: []const u8) std.mem.SplitIterator(u8, .sequence) {
         const _allocator = Vapor.arena(.persist);
         var split_buffer = _allocator.alloc(u8, str.len) catch |err| {
-            Vapor.println("split: could not allocate, returning empty. {any}\n", .{err});
+            Vapor.report.err("split: could not allocate, returning empty. {any}", .{err});
             return std.mem.splitSequence(u8, "", delimiter);
         };
         @memcpy(split_buffer[0..], str);
@@ -192,12 +192,12 @@ pub const persist = struct {
     pub fn repeat(str: []const u8, count: usize) []const u8 {
         const _allocator = Vapor.arena(.persist);
         const list = _allocator.alloc([]const u8, count) catch |err| {
-            Vapor.println("repeat: could not allocate, returning empty. {any}\n", .{err});
+            Vapor.report.err("repeat: could not allocate, returning empty. {any}", .{err});
             return "";
         };
         @memset(list, str);
         return std.mem.join(_allocator, "", list) catch |err| {
-            Vapor.println("repeat: could not allocate, returning empty. {any}\n", .{err});
+            Vapor.report.err("repeat: could not allocate, returning empty. {any}", .{err});
             return "";
         };
     }
@@ -240,7 +240,7 @@ pub const view = struct {
     pub fn dupe(value: []const u8) []const u8 {
         const allocator = Vapor.arena(.view);
         const buf = allocator.dupe(u8, value) catch |err| {
-            Vapor.println("Formatting, Error Could not format argument alloc Error details: {any}\n", .{err});
+            Vapor.report.err("format: could not allocate: {any}", .{err});
             return "";
         };
         return buf;
@@ -249,7 +249,7 @@ pub const view = struct {
     pub fn fmt(comptime _fmtln: []const u8, args: anytype) []const u8 {
         const allocator = Vapor.arena(.view);
         const buf = std.fmt.allocPrint(allocator, _fmtln, args) catch |err| {
-            Vapor.println("Formatting, Error Could not format argument alloc Error details: {any}\n", .{err});
+            Vapor.report.err("format: could not allocate: {any}", .{err});
             return "";
         };
         return buf;
@@ -306,7 +306,7 @@ pub const frame = struct {
     pub fn dupe(value: []const u8) []const u8 {
         const allocator = Vapor.arena(.frame);
         const buf = allocator.dupe(u8, value) catch |err| {
-            Vapor.println("Formatting, Error Could not format argument alloc Error details: {any}\n", .{err});
+            Vapor.report.err("format: could not allocate: {any}", .{err});
             return "";
         };
         return buf;
@@ -317,7 +317,7 @@ pub const frame = struct {
         // return _fmtln;
         const allocator = Vapor.arena(.frame);
         const buf = std.fmt.allocPrint(allocator, _fmtln, args) catch |err| {
-            Vapor.println("Formatting, Error Could not format argument alloc Error details: {any}\n", .{err});
+            Vapor.report.err("format: could not allocate: {any}", .{err});
             return "";
         };
         return buf;
@@ -332,7 +332,7 @@ pub const frame = struct {
     /// Allocates `size` items of `T` that last for this render (freed two renders later).
     pub fn alloc(comptime T: type, size: usize) ![]T {
         return Vapor.arena(.frame).alloc(T, size) catch |err| {
-            Vapor.println("Formatting, Error Could not format argument alloc Error details: {any}\n", .{err});
+            Vapor.report.err("format: could not allocate: {any}", .{err});
             return err;
         };
     }
@@ -356,7 +356,7 @@ pub const frame = struct {
     pub fn join(parts: []const []const u8, separator: []const u8) []const u8 {
         const allocator = Vapor.arena(.frame);
         return std.mem.join(allocator, separator, parts) catch |err| {
-            Vapor.println("join: could not allocate, returning empty. {any}\n", .{err});
+            Vapor.report.err("join: could not allocate, returning empty. {any}", .{err});
             return "";
         };
     }
@@ -370,12 +370,12 @@ pub const frame = struct {
     pub fn repeat(str: []const u8, count: usize) []const u8 {
         const allocator = Vapor.arena(.frame);
         const list = allocator.alloc([]const u8, count) catch |err| {
-            Vapor.println("repeat: could not allocate, returning empty. {any}\n", .{err});
+            Vapor.report.err("repeat: could not allocate, returning empty. {any}", .{err});
             return "";
         };
         @memset(list, str);
         return std.mem.join(allocator, "", list) catch |err| {
-            Vapor.println("repeat: could not allocate, returning empty. {any}\n", .{err});
+            Vapor.report.err("repeat: could not allocate, returning empty. {any}", .{err});
             return "";
         };
     }

@@ -4,16 +4,6 @@ const Vapor = @import("vapor.zig");
 const Wasm = @import("wasm.zig");
 const std = @import("std");
 
-/// Currently does nothing: the body was removed, so calls (including
-/// `Vapor.printErr` and vapor's own error reports) produce no output.
-pub fn printlnErr(
-    comptime fmt: []const u8,
-    args: anytype,
-) void {
-    _ = fmt;
-    _ = args;
-}
-
 pub const LogLevel = enum(u32) {
     err = 0,
     warn = 1,
@@ -62,27 +52,6 @@ pub fn printRaw(level: LogLevel, msg: []const u8) void {
     Vapor.consoleLogWasm(@intFromEnum(level), full.ptr, full.len, style.ptr, style.len);
 }
 
-// Convenience wrappers (optional)
-/// Logs at error level to the browser console, unless logging is off.
-pub fn printErr(comptime fmt: []const u8, args: anytype) void {
-    print(.err, fmt, args);
-}
-
-/// Logs at warning level to the browser console, unless logging is off.
-pub fn printWarn(comptime fmt: []const u8, args: anytype) void {
-    print(.warn, fmt, args);
-}
-
-/// Logs at info level to the browser console, unless logging is off.
-pub fn printInfo(comptime fmt: []const u8, args: anytype) void {
-    print(.info, fmt, args);
-}
-
-/// Logs at debug level to the browser console, unless logging is off.
-pub fn printDebug(comptime fmt: []const u8, args: anytype) void {
-    print(.debug, fmt, args);
-}
-
 /// Logs an error with its source location (`@src()`), unless logging is off.
 pub fn printlnSrcErr(
     comptime fmt: []const u8,
@@ -98,50 +67,6 @@ pub fn printlnSrcErr(
         Vapor.allocator_global.free(buf_with_src);
         Vapor.allocator_global.free(buf);
     }
-}
-
-/// Currently does nothing.
-pub fn printlnWithColor(
-    comptime fmt: []const u8,
-    args: anytype,
-    color: []const u8,
-    title: []const u8,
-) void {
-    _ = fmt;
-    _ = args;
-    _ = color;
-    _ = title;
-}
-
-/// Currently does nothing.
-pub fn printlnColor(
-    comptime fmt: []const u8,
-    args: anytype,
-    color: Vapor.Types.Color,
-) void {
-    _ = fmt;
-    _ = args;
-    _ = color;
-}
-
-/// Currently does nothing.
-pub fn printlnAllocation(
-    comptime fmt: []const u8,
-    args: anytype,
-) void {
-    _ = fmt;
-    _ = args;
-}
-
-/// Currently does nothing.
-pub fn printlnSrc(
-    comptime fmt: []const u8,
-    args: anytype,
-    src: std.builtin.SourceLocation,
-) void {
-    _ = fmt;
-    _ = args;
-    _ = src;
 }
 
 /// Logs a line to the browser console (unless logging is off), and to stderr natively.
@@ -166,23 +91,35 @@ pub fn alert(comptime fmt: []const u8, args: anytype) void {
     }
 }
 
-/// A `std.Options.logFn` that sends `std.log` to the browser console (unless
-/// logging is off): `pub const std_options = .{ .logFn = Vapor.lib.log };`.
+/// Whether vapor's own reports (`std.log` scope `.vapor`) are compiled in.
+/// Release builds that optimize for size or speed drop them, so a shipped
+/// app carries none of their messages.
+pub const vapor_reports = switch (@import("builtin").mode) {
+    .Debug, .ReleaseSafe => true,
+    .ReleaseSmall, .ReleaseFast => false,
+};
+
+/// A `std.Options.logFn` that sends `std.log` to the browser console, and to
+/// stderr natively: `pub const std_options = .{ .logFn = Vapor.lib.log };`.
+/// Messages from a scope other than `.default` are prefixed with it, e.g.
+/// `[vapor]` for vapor's own reports (see `vapor_reports`).
 pub fn log(
     comptime level: std.log.Level,
     comptime scope: @EnumLiteral(),
     comptime format: []const u8,
     args: anytype,
 ) void {
-    _ = scope;
-    if (Vapor.isWasi and Vapor.build_options.enable_debug) {
-        switch (level) {
-            .err => _ = printErr(format, args),
-            .warn => _ = printWarn(format, args),
-            .info => _ = printInfo(format, args),
-            .debug => _ = printDebug(format, args),
-        }
-    } else if (!Vapor.isWasi) {
-        std.debug.print(format, args);
+    if (scope == .vapor and !vapor_reports) return;
+    const prefix = if (scope == .default) "" else "[" ++ @tagName(scope) ++ "] ";
+    if (Vapor.isWasi) {
+        const log_level: LogLevel = switch (level) {
+            .err => .err,
+            .warn => .warn,
+            .info => .info,
+            .debug => .debug,
+        };
+        print(log_level, prefix ++ format, args);
+    } else {
+        std.debug.print(prefix ++ format ++ "\n", args);
     }
 }

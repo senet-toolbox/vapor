@@ -215,10 +215,13 @@ pub const unpin = lib.unpin;
 pub const compact = lib.compact;
 
 // ── Logging ─────────────────────────────────────────────────────────────────
-// Output goes to the browser console, and to stderr natively. Logging is on
-// in every build; turn it off with `Vapor.lib.build_options.enable_debug =
-// false`. For errors use `print(.err, ...)`, `printErrSrc`, or `std.log`
-// routed through `Vapor.lib.log` (see `std_options` in the app template).
+// Output goes to the browser console, and to stderr natively. Use `std.log`
+// with `Vapor.lib.log` as the app's `logFn` (see `std_options` in the app
+// template), or the helpers below. vapor reports its own problems (a failed
+// allocation, an animation that was never registered, an `Element` used
+// before `.ref()`) through `std.log` with scope `.vapor`, shown as
+// `[vapor] ...`; ReleaseSmall and ReleaseFast builds leave those out.
+// `Vapor.lib.build_options.enable_debug = false` silences the console.
 
 pub const println = lib.println;
 pub const print = lib.print;

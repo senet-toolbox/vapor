@@ -623,6 +623,6 @@ fn writeFloat(self: Edges, writer: *Writer, val: f32) void {
 pub fn build(self: Edges) void {
     if (Vapor.edges_table == null) return;
     Vapor.edges_table.?.put(self.class, self) catch |err| {
-        Vapor.println("Could not create edges {any}\n", .{err});
+        Vapor.report.err("Could not create edges {any}", .{err});
     };
 }

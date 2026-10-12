@@ -56,14 +56,14 @@ pub fn convertFromDynamicToType(comptime T: type, dyn_object: *DynamicObject) T 
                 if (ptr.size == .slice) {
                     @field(new_object, field.name) = dyn_field_value.string;
                 } else {
-                    std.log.err("Not implemented yet, TYPE: {any}", .{field.type});
+                    Vapor.report.err("Not implemented yet, TYPE: {any}", .{field.type});
                 }
             },
             .int => {
                 if (dyn_field_type == .int) {
                     @field(new_object, field.name) = @as(field.type, @intCast(dyn_field_value.int));
                 } else {
-                    std.log.err("Not implemented yet, TYPE: {any}", .{field.type});
+                    Vapor.report.err("Not implemented yet, TYPE: {any}", .{field.type});
                 }
             },
             .float => {
@@ -72,22 +72,22 @@ pub fn convertFromDynamicToType(comptime T: type, dyn_object: *DynamicObject) T 
                 } else if (dyn_field_type == .int) {
                     @field(new_object, field.name) = @as(field.type, @floatFromInt(dyn_field_value.int));
                 } else {
-                    std.log.err("Not implemented yet, TYPE: {any} {any}", .{ field.type, dyn_field_value });
-                    std.log.err("Not implemented yet, TYPE: {any} {any}", .{ field.type, dyn_field_value });
+                    Vapor.report.err("Not implemented yet, TYPE: {any} {any}", .{ field.type, dyn_field_value });
+                    Vapor.report.err("Not implemented yet, TYPE: {any} {any}", .{ field.type, dyn_field_value });
                 }
             },
             .bool => {
                 if (dyn_field_type == .bool) {
                     @field(new_object, field.name) = dyn_field_value.bool;
                 } else {
-                    std.log.err("Not implemented yet, TYPE: {any}", .{field.type});
+                    Vapor.report.err("Not implemented yet, TYPE: {any}", .{field.type});
                 }
             },
             .@"struct" => {
                 if (dyn_field_type == .object) {
                     @field(new_object, field.name) = convertFromDynamicToType(field.type, dyn_field_value.object);
                 } else {
-                    std.log.err("Not implemented yet, TYPE: {any}", .{field.type});
+                    Vapor.report.err("Not implemented yet, TYPE: {any}", .{field.type});
                 }
             },
             else => {},
@@ -231,7 +231,7 @@ pub const API = struct {
     /// Runtime export: passes a finished object to the waiting callback.
     pub fn readObject(callback_ptr: u32, object_ptr: ?*DynamicObject) callconv(.c) void {
         const node = Vapor.ctx_callback_registry.get(callback_ptr) orelse {
-            Vapor.printlnSrcErr("Callback not found\n", .{}, @src());
+            Vapor.report.err("Callback not found", .{});
             return;
         };
         node.data.dynamic_object = object_ptr;

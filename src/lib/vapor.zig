@@ -268,7 +268,7 @@ pub fn init(config: VaporConfig) void {
 
     // Init Router // This adds 1kb
     router.init(allocator) catch |err| {
-        println("Could not init Router {any}\n", .{err});
+        report.err("Could not init Router {any}", .{err});
     };
 
     // >4kb
@@ -280,7 +280,7 @@ pub fn init(config: VaporConfig) void {
     // Eveyrhtuing up to here is 35kb
 
     class_cache.init(allocator) catch |err| {
-        printlnErr("Could not init ClassCache {any}\n", .{err});
+        report.err("Could not init ClassCache {any}", .{err});
         @panic("vapor: ClassCache init failed");
     };
     class_cache.on_evict = Packer.evict;
@@ -376,7 +376,7 @@ pub const LifeCycle = struct {
     /// will reference this node as their parent
     pub fn open(elem_decl: ElementDecl) ?*UINode {
         const ui_node = current_ctx.open(elem_decl) catch |err| {
-            println("{any}\n", .{err});
+            report.err("{any}", .{err});
             return null;
         };
         return ui_node;
@@ -538,9 +538,9 @@ pub fn renderCycle(route_ptr: [*:0]u8) !void {
     }
 
     const old_route_op = router.searchRoute(route) orelse blk: {
-        printlnSrcErr("No Route found", .{}, @src());
+        report.err("No Route found", .{});
         break :blk router.searchRoute("/root/error") orelse {
-            printlnSrcErr("No Error Route found", .{}, @src());
+            report.err("No Error Route found", .{});
             status.valid_url = false;
             break :blk null;
         };
@@ -588,13 +588,13 @@ pub fn renderCycle(route_ptr: [*:0]u8) !void {
     // Create new context
     const new_ctx: *UIContext = arena(.frame).create(UIContext) catch {
         status.render_cycle = false;
-        println("Failed to allocate UIContext\n", .{});
+        report.err("Failed to allocate UIContext", .{});
         return;
     };
 
     UIContext.initContext(new_ctx) catch |err| {
         status.render_cycle = false;
-        println("Allocator ran out of space {any}\n", .{err});
+        report.err("Allocator ran out of space {any}", .{err});
         new_ctx.deinit();
         allocator_global.destroy(new_ctx);
         return;
@@ -670,22 +670,22 @@ pub fn createPage(path: []const u8, page: fn () void, page_deinit: ?fn () void) 
     const path_ctx: *UIContext = try allocator_global.create(UIContext);
     // Initial render
     UIContext.initContext(path_ctx) catch |err| {
-        println("Allocator ran out of space {any}\n", .{err});
+        report.err("Allocator ran out of space {any}", .{err});
         return;
     };
 
     current_ctx = path_ctx;
 
     router.addRoute(path, path_ctx, page, route_arena) catch |err| {
-        println("Could not put route {any}\n", .{err});
+        report.err("Could not put route {any}", .{err});
     };
     page_map.put(path, {}) catch |err| {
-        println("Could not put route {any}\n", .{err});
+        report.err("Could not put route {any}", .{err});
     };
 
     if (page_deinit) |de| {
         page_deinit_map.put(@intFromPtr(&page), de) catch |err| {
-            println("Could not put route {any}\n", .{err});
+            report.err("Could not put route {any}", .{err});
         };
     }
     return;
@@ -740,7 +740,7 @@ pub fn Page(path: Path, page: fn () void, page_deinit: ?fn () void) void {
     var buf = std.array_list.Managed(u8).init(allocator);
 
     buf.appendSlice("/root") catch |err| {
-        println("Allocator ran out of space {any}\n", .{err});
+        report.err("Allocator ran out of space {any}", .{err});
         return;
     };
 
@@ -751,12 +751,12 @@ pub fn Page(path: Path, page: fn () void, page_deinit: ?fn () void) void {
             break :blk;
         }
         buf.append('/') catch |err| {
-            println("Allocator ran out of space {any}\n", .{err});
+            report.err("Allocator ran out of space {any}", .{err});
             return;
         };
 
         buf.appendSlice(sub) catch |err| {
-            println("Allocator ran out of space {any}\n", .{err});
+            report.err("Allocator ran out of space {any}", .{err});
             return;
         };
     }
@@ -764,18 +764,18 @@ pub fn Page(path: Path, page: fn () void, page_deinit: ?fn () void) void {
     // else
     if (std.mem.startsWith(u8, file_name, "Error")) {
         buf.appendSlice("/error") catch |err| {
-            println("Allocator ran out of space {any}\n", .{err});
+            report.err("Allocator ran out of space {any}", .{err});
             return;
         };
     }
 
     const route = buf.toOwnedSlice() catch |err| {
-        println("Could not parse route {any}\n", .{err});
+        report.err("Could not parse route {any}", .{err});
         return;
     };
 
     createPage(route, page, page_deinit) catch |err| {
-        println("Could not add page {any}\n", .{err});
+        report.err("Could not add page {any}", .{err});
         return;
     };
 }
@@ -805,12 +805,12 @@ pub fn registerLayout(path: []const u8, layout: LayoutFn, options: LayoutOptions
     if (std.mem.eql(u8, path, "/root")) return error.CannotRegisterRootPath;
     if (std.mem.eql(u8, path, "/")) {
         layout_map.put(hashKey("/root"), .{ .call_fn = layout, .reset = options.reset }) catch |err| {
-            printlnSrcErr("Could not add layout to registry {}", .{err}, @src());
+            report.err("Could not add layout to registry {}", .{err});
         };
     } else {
         const layout_route = std.fmt.allocPrint(Vapor.arena(.persist), "/root{s}", .{path}) catch return;
         layout_map.put(hashKey(layout_route), .{ .call_fn = layout, .reset = options.reset }) catch |err| {
-            printlnSrcErr("Could not add layout to registry {}", .{err}, @src());
+            report.err("Could not add layout to registry {}", .{err});
         };
     }
 }
@@ -904,7 +904,7 @@ pub fn elementEventListener(
 ) ?usize {
     if (!isWasi) return null;
     EventsModule.attachEventCallback(ui_node, event_type, cb) catch |err| {
-        println("Event Callback Error: {any}\n", .{err});
+        report.err("Event Callback Error: {any}", .{err});
         return null;
     };
     const event_type_str = std.enums.tagName(types.EventType, event_type) orelse return null;
@@ -952,7 +952,7 @@ pub inline fn registerHook(
     if (!isWasi) return null;
     const id = hooks_inst_callbacks.count();
     hooks_inst_callbacks.put(id, cb) catch |err| {
-        println("Event Callback Error: {any}\n", .{err});
+        report.err("Event Callback Error: {any}", .{err});
     };
 
     Wasm.createHookWASM(url.ptr, url.len, id, @intFromEnum(hook_type));
@@ -1063,17 +1063,32 @@ const HexModule = @import("hex.zig");
 pub const hexToRgba = HexModule.hexToRgba;
 
 const LogModule = @import("log.zig");
-pub const printlnErr = LogModule.printlnErr;
+/// vapor's own diagnostics: `report.err(...)`, `report.warn(...)`. They go
+/// through `std.log` with scope `.vapor`, so `Vapor.lib.log` (the app's
+/// `logFn`) decides where they end up.
+pub const report = struct {
+    const scoped = std.log.scoped(.vapor);
+
+    /// Reports an error. In tests, an error a test announced in
+    /// `expected_reports` is logged at debug level instead, since the test
+    /// runner fails any test that logs an error.
+    pub fn err(comptime format: []const u8, args: anytype) void {
+        if (builtin.is_test and expected_reports > 0) {
+            expected_reports -= 1;
+            return scoped.debug(format, args);
+        }
+        scoped.err(format, args);
+    }
+    pub const warn = scoped.warn;
+    pub const info = scoped.info;
+    pub const debug = scoped.debug;
+};
+
+/// Tests only: how many coming `report.err` calls the test triggers on
+/// purpose. Each one counts this down.
+pub var expected_reports: u32 = 0;
 pub const print = LogModule.print;
-pub const printErr = LogModule.printErr;
-pub const printWarn = LogModule.printWarn;
-pub const printInfo = LogModule.printInfo;
-pub const printDebug = LogModule.printDebug;
 pub const printlnSrcErr = LogModule.printlnSrcErr;
-pub const printlnWithColor = LogModule.printlnWithColor;
-pub const printlnColor = LogModule.printlnColor;
-pub const printlnAllocation = LogModule.printlnAllocation;
-pub const printlnSrc = LogModule.printlnSrc;
 pub const println = LogModule.println;
 pub const log = LogModule.log;
 pub const alert = LogModule.alert;
