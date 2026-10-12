@@ -53,13 +53,9 @@ pub fn hashStyle(style: *const Style) u32 {
     if (style.flex_wrap) |fw| hasher.update(std.mem.asBytes(&fw));
     if (style.list_style) |ls| hasher.update(std.mem.asBytes(&ls));
     if (style.appearance) |a| hasher.update(std.mem.asBytes(&a));
-    if (style.will_change) |wc| hasher.update(std.mem.asBytes(&wc));
     if (style.transform_origin) |to| hasher.update(std.mem.asBytes(&to));
 
     hasher.update(std.mem.asBytes(&style.show_scrollbar));
-    hasher.update(std.mem.asBytes(&style.btn_id));
-
-    if (style.dialog_id) |did| hasher.update(did);
 
     // ============================================================
     // Visual struct
@@ -91,22 +87,6 @@ pub fn hashStyle(style: *const Style) u32 {
     if (style.key_frames) |kfs| {
         for (kfs) |kf| {
             hashKeyFrame(&hasher, &kf);
-        }
-    }
-
-    // ============================================================
-    // CheckMark style (complex struct)
-    // ============================================================
-    if (style.checkmark_style) |cm| {
-        hashCheckMark(&hasher, &cm);
-    }
-
-    // ============================================================
-    // Child styles (slice of pointers)
-    // ============================================================
-    if (style.child_styles) |cs| {
-        for (cs) |child_style_ptr| {
-            hashChildStyle(&hasher, child_style_ptr);
         }
     }
 
@@ -298,98 +278,4 @@ fn hashKeyFrame(hasher: *std.hash.XxHash32, kf: *const types.KeyFrame) void {
     hasher.update(kf.tag);
     hashTransform(hasher, &kf.from);
     hashTransform(hasher, &kf.to);
-}
-
-fn hashCheckMark(hasher: *std.hash.XxHash32, cm: *const types.CheckMark) void {
-    if (cm.position) |p| {
-        hasher.update(std.mem.asBytes(&p.type));
-        if (p.top) |t| hasher.update(std.mem.asBytes(&t));
-        if (p.right) |r| hasher.update(std.mem.asBytes(&r));
-        if (p.bottom) |b| hasher.update(std.mem.asBytes(&b));
-        if (p.left) |l| hasher.update(std.mem.asBytes(&l));
-        if (p.z_index) |z| hasher.update(std.mem.asBytes(&z));
-    }
-    if (cm.display) |d| hasher.update(std.mem.asBytes(&d));
-    hasher.update(std.mem.asBytes(&cm.direction));
-    if (cm.width) |w| hasher.update(std.mem.asBytes(&w));
-    if (cm.height) |h| hasher.update(std.mem.asBytes(&h));
-    if (cm.font_size) |fs| hasher.update(std.mem.asBytes(&fs));
-    if (cm.letter_spacing) |ls| hasher.update(std.mem.asBytes(&ls));
-    if (cm.line_height) |lh| hasher.update(std.mem.asBytes(&lh));
-    if (cm.font_weight) |fw| hasher.update(std.mem.asBytes(&fw));
-    if (cm.border_radius) |br| hasher.update(std.mem.asBytes(&br));
-    if (cm.border_thickness) |bt| hasher.update(std.mem.asBytes(&bt));
-    if (cm.border_color) |bc| hashColor(hasher, &bc);
-    if (cm.text_color) |tc| hashColor(hasher, &tc);
-    if (cm.padding) |p| hasher.update(std.mem.asBytes(&p));
-    if (cm.child_alignment) |ca| hasher.update(std.mem.asBytes(&ca));
-    hasher.update(std.mem.asBytes(&cm.child_gap));
-    if (cm.background) |bg| hashColor(hasher, &bg);
-    hasher.update(std.mem.asBytes(&cm.shadow));
-    hashTransform(hasher, &cm.transform);
-    hasher.update(std.mem.asBytes(&cm.opacity));
-    // child_style would need recursive handling if non-null
-}
-
-fn hashChildStyle(hasher: *std.hash.XxHash32, cs: *const types.ChildStyle) void {
-    hasher.update(cs.style_id);
-    if (cs.display) |d| hasher.update(std.mem.asBytes(&d));
-
-    if (cs.position) |p| {
-        hasher.update(std.mem.asBytes(&p.type));
-        if (p.top) |t| hasher.update(std.mem.asBytes(&t));
-        if (p.right) |r| hasher.update(std.mem.asBytes(&r));
-        if (p.bottom) |b| hasher.update(std.mem.asBytes(&b));
-        if (p.left) |l| hasher.update(std.mem.asBytes(&l));
-        if (p.z_index) |z| hasher.update(std.mem.asBytes(&z));
-    }
-
-    hasher.update(std.mem.asBytes(&cs.direction));
-    if (cs.background) |bg| hashColor(hasher, &bg);
-    if (cs.width) |w| hasher.update(std.mem.asBytes(&w));
-    if (cs.height) |h| hasher.update(std.mem.asBytes(&h));
-    if (cs.font_size) |fs| hasher.update(std.mem.asBytes(&fs));
-    if (cs.letter_spacing) |ls| hasher.update(std.mem.asBytes(&ls));
-    if (cs.line_height) |lh| hasher.update(std.mem.asBytes(&lh));
-    if (cs.font_weight) |fw| hasher.update(std.mem.asBytes(&fw));
-    if (cs.border_radius) |br| hasher.update(std.mem.asBytes(&br));
-    if (cs.border_thickness) |bt| hasher.update(std.mem.asBytes(&bt));
-    if (cs.border_color) |bc| hashColor(hasher, &bc);
-    if (cs.text_color) |tc| hashColor(hasher, &tc);
-    if (cs.padding) |p| hasher.update(std.mem.asBytes(&p));
-    if (cs.margin) |m| hasher.update(std.mem.asBytes(&m));
-    if (cs.overflow) |o| hasher.update(std.mem.asBytes(&o));
-    if (cs.overflow_x) |ox| hasher.update(std.mem.asBytes(&ox));
-    if (cs.overflow_y) |oy| hasher.update(std.mem.asBytes(&oy));
-    if (cs.child_alignment) |ca| hasher.update(std.mem.asBytes(&ca));
-    hasher.update(std.mem.asBytes(&cs.child_gap));
-    if (cs.flex_shrink) |fs| hasher.update(std.mem.asBytes(&fs));
-
-    if (cs.font_family_file.len > 0) hasher.update(cs.font_family_file);
-    if (cs.font_family.len > 0) hasher.update(cs.font_family);
-
-    hasher.update(std.mem.asBytes(&cs.opacity));
-
-    if (cs.text_decoration) |td| {
-        hasher.update(std.mem.asBytes(&td.type));
-        hasher.update(std.mem.asBytes(&td.style));
-        if (td.color) |c| hashColor(hasher, &c);
-    }
-
-    if (cs.shadow) |s| hashShadow(hasher, &s);
-
-    if (cs.white_space) |ws| hasher.update(std.mem.asBytes(&ws));
-    if (cs.flex_wrap) |fw| hasher.update(std.mem.asBytes(&fw));
-    if (cs.z_index) |z| hasher.update(std.mem.asBytes(&z));
-    if (cs.list_style) |ls| hasher.update(std.mem.asBytes(&ls));
-    if (cs.blur) |b| hasher.update(std.mem.asBytes(&b));
-    if (cs.outline) |o| hasher.update(std.mem.asBytes(&o));
-
-    if (cs.transition) |t| hashTransition(hasher, &t);
-
-    hasher.update(std.mem.asBytes(&cs.show_scrollbar));
-    hasher.update(std.mem.asBytes(&cs.btn_id));
-
-    if (cs.dialog_id) |did| hasher.update(did);
-    if (cs.accent_color) |ac| hasher.update(std.mem.asBytes(&ac));
 }

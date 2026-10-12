@@ -1,6 +1,6 @@
 //! The arenas behind `Vapor.arena`: a double-buffered frame arena per route,
-//! a view arena freed when the app leaves the page on screen, and persistent
-//! and request arenas.
+//! a view arena freed when the app leaves the page on screen, and a persistent
+//! arena.
 
 const std = @import("std");
 const mem = std.mem;
@@ -118,7 +118,6 @@ persistent_arena: Arena,
 /// `.view` memory: the page on screen's. Reset by `beginView` when the app
 /// leaves that page.
 view_arena: Arena,
-request_arena: Arena,
 scratch_arena: Arena,
 // Pointer to current route's frame arena
 current_route_arena: ?*RouteFrameArena = null,
@@ -129,7 +128,6 @@ pub fn init(backing_allocator: Allocator) FrameAllocator {
     return .{
         .persistent_arena = Arena.init(backing_allocator),
         .view_arena = Arena.init(backing_allocator),
-        .request_arena = Arena.init(backing_allocator),
         .scratch_arena = Arena.init(backing_allocator),
         .backing_allocator = backing_allocator,
     };
@@ -139,7 +137,6 @@ pub fn init(backing_allocator: Allocator) FrameAllocator {
 pub fn deinit(self: *FrameAllocator) void {
     self.persistent_arena.deinit();
     self.view_arena.deinit();
-    self.request_arena.deinit();
     self.scratch_arena.deinit();
     // Note: route arenas are owned by the radix tree, not us
 }
@@ -191,11 +188,6 @@ pub fn beginView(self: *FrameAllocator) void {
 /// The backing allocator: `.persist` memory, freed individually.
 pub fn persistentAllocator(self: *FrameAllocator) Allocator {
     return self.backing_allocator;
-}
-
-/// The request arena; never reset at present.
-pub fn requestAllocator(self: *FrameAllocator) Allocator {
-    return self.request_arena.allocator();
 }
 
 /// Frees the scratch arena.

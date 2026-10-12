@@ -15,7 +15,6 @@ pub const ArenaType = enum {
     frame,
     view,
     persist,
-    request,
 };
 
 pub const Arena = ArenaType;
@@ -24,14 +23,13 @@ pub const Arena = ArenaType;
 /// `.view`: freed when the app leaves the page on screen (after the page's
 /// deinit runs), so allocate it from the page and drop pointers to it in the
 /// deinit; state that must outlive a visit belongs in `.persist`.
-/// `.persist`: freed only when you free it. `.request`: never reset.
+/// `.persist`: freed only when you free it.
 pub fn arena(arena_type: ArenaType) std.mem.Allocator {
     if (Vapor.generating) return Vapor.frame_arena.persistentAllocator();
     return switch (arena_type) {
         .frame => Vapor.frame_arena.frameAllocator(),
         .view => Vapor.frame_arena.viewAllocator(),
         .persist => Vapor.frame_arena.persistentAllocator(),
-        .request => Vapor.frame_arena.requestAllocator(),
     };
 }
 

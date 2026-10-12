@@ -20,13 +20,6 @@ pub fn Null() void {
     LifeCycle.close({});
 }
 
-/// Like `Null`, but the placeholder records `elem_type`.
-pub fn Null2(elem_type: Vapor.Types.ElementType) void {
-    _ = LifeCycle.open(.{ .elem_type = elem_type, .state_type = Self._state_type });
-    LifeCycle.configure(.{ .elem_type = .Noop, .state_type = Self._state_type });
-    LifeCycle.close({});
-}
-
 /// `<h1>`..`<h6>`: `Heading(2, "Settings").end()`.
 pub fn Heading(level: u8, text: []const u8) Self {
     const ui_node = Components.createNode(.{ .state_type = Self._state_type, .elem_type = .Heading, .text = text, .level = level });

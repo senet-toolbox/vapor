@@ -76,8 +76,6 @@ pub const ElementDecl = types.ElementDeclaration;
 const RenderCommand = types.RenderCommand;
 pub const ElementType = types.ElementType;
 pub const StateType = types.StateType;
-const Hover = types.Hover;
-const Focus = types.Focus;
 pub var has_context: bool = false;
 pub var current_ctx: *UIContext = undefined;
 pub var ctx_map: std.AutoHashMap(u32, *UIContext) = undefined;
@@ -164,7 +162,6 @@ pub var on_end_funcs: std.array_list.Managed(*const fn () void) = undefined;
 pub var on_end_ctx_funcs: std.array_list.Managed(*Node) = undefined;
 pub var route_funcs: std.AutoHashMap(u32, ArrayArena(ErasedCallback)) = undefined;
 pub var pop_state_funcs: std.array_list.Managed(*const fn () void) = undefined;
-pub var push_state_funcs: std.array_list.Managed(*const fn () void) = undefined;
 pub var on_commit_funcs: std.array_list.Managed(*const fn () void) = undefined;
 pub var on_commit_ctx_funcs: std.array_list.Managed(*Node) = undefined;
 // pub var mounted_ctx_funcs: std.AutoHashMap(u32, *Node) = undefined;
@@ -342,7 +339,6 @@ fn initCalls(persistent_allocator: std.mem.Allocator) void {
     on_end_funcs = std.array_list.Managed(*const fn () void).init(persistent_allocator);
     on_end_ctx_funcs = std.array_list.Managed(*Node).init(persistent_allocator);
     pop_state_funcs = std.array_list.Managed(*const fn () void).init(persistent_allocator);
-    push_state_funcs = std.array_list.Managed(*const fn () void).init(persistent_allocator);
     on_commit_funcs = std.array_list.Managed(*const fn () void).init(persistent_allocator);
     on_commit_ctx_funcs = std.array_list.Managed(*Node).init(persistent_allocator);
     // mounted_ctx_funcs = std.AutoHashMap(u32, *Node).init(persistent_allocator);
@@ -933,7 +929,6 @@ pub inline fn removeElementEventListener(
 
 const HooksModule = @import("hooks.zig");
 pub const onPopState = HooksModule.onPopState;
-pub const onPushState = HooksModule.onPushState;
 pub const onMount = HooksModule.onMount;
 pub const onLayout = HooksModule.onLayout;
 pub const onCommit = HooksModule.onCommit;

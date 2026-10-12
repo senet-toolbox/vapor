@@ -4,7 +4,6 @@
 const types = @import("../types.zig");
 const NewShadow = @import("../Shadow.zig");
 const Transition = @import("../transition.zig").Transition;
-const TransitionProperty = @import("../transition.zig").TransitionProperty;
 
 pub const Visual = struct {
     /// Color color as RGBA array [red, green, blue, alpha] (0-255 each)
@@ -248,23 +247,8 @@ pub const Style = struct {
     /// Interactive
     interactive: ?Interactive = null,
 
-    /// Button identifier for click handling
-    btn_id: u32 = 0,
-
-    /// Dialog identifier for modal/popup elements
-    dialog_id: ?[]const u8 = null,
-
-    /// Array of child-specific style overrides
-    child_styles: ?[]*const types.ChildStyle = null,
-
     /// Element appearance override
     appearance: ?types.Appearance = null,
-
-    /// Custom checkmark styling for checkboxes
-    checkmark_style: ?types.CheckMark = null,
-
-    /// Hint to browser about which properties will change (optimization)
-    will_change: ?TransitionProperty = null,
 
     /// Origin point for transformations
     transform_origin: ?types.TransformOrigin = null,
@@ -334,12 +318,7 @@ pub const Style = struct {
         if (override.transition != null) result.transition = override.transition;
         if (override.show_scrollbar != true) result.show_scrollbar = override.show_scrollbar;
         if (override.interactive != null) result.interactive = override.interactive;
-        if (override.btn_id != 0) result.btn_id = override.btn_id;
-        if (override.dialog_id != null) result.dialog_id = override.dialog_id;
-        if (override.child_styles != null) result.child_styles = override.child_styles;
         if (override.appearance != null) result.appearance = override.appearance;
-        if (override.checkmark_style != null) result.checkmark_style = override.checkmark_style;
-        if (override.will_change != null) result.will_change = override.will_change;
         if (override.transform_origin != null) result.transform_origin = override.transform_origin;
         if (override.backface_visibility != null) result.backface_visibility = override.backface_visibility;
         if (override.child_gap != null) result.child_gap = override.child_gap;
@@ -370,12 +349,7 @@ pub const Style = struct {
         if (target.transition != null) self.transition = target.transition;
         if (target.show_scrollbar != true) self.show_scrollbar = target.show_scrollbar;
         if (target.interactive != null) self.interactive = target.interactive;
-        if (target.btn_id != 0) self.btn_id = target.btn_id;
-        if (target.dialog_id != null) self.dialog_id = target.dialog_id;
-        if (target.child_styles != null) self.child_styles = target.child_styles;
         if (target.appearance != null) self.appearance = target.appearance;
-        if (target.checkmark_style != null) self.checkmark_style = target.checkmark_style;
-        if (target.will_change != null) self.will_change = target.will_change;
         if (target.transform_origin != null) self.transform_origin = target.transform_origin;
         if (target.backface_visibility != null) self.backface_visibility = target.backface_visibility;
         if (target.child_gap != null) self.child_gap = target.child_gap;

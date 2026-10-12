@@ -32,6 +32,12 @@ Breaking: the next release is a major version.
   a border, and a hover of `.border = .{ .color = c }` changes only the
   colour. A border with a thickness is solid unless `.style` says
   otherwise.
+- Removed APIs that did nothing: `Style.checkmark_style`,
+  `child_styles`, `will_change`, `btn_id` and `dialog_id` (merged and
+  hashed, never written as CSS), the unused `Types.Hover`, `Types.Focus`,
+  `Types.CheckMark` and `Types.ChildStyle`, `Vapor.onPushState` (its
+  callbacks were never called) and `Null2` (use `Null`). The `.request`
+  arena is gone: nothing freed it, so it was `.persist` under another name.
 - `.view` memory is now freed when the app leaves the page (see Fixed). A
   global that points into it must be reset in the page's deinit or
   reallocated on the next visit.

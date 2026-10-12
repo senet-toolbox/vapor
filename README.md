@@ -225,14 +225,13 @@ _ = Vapor.registerHook("/docs", beforeNavigate, .before);
 
 ### Memory
 
-Vapor never asks you for an allocator. It exposes four arenas with different
+Vapor never asks you for an allocator. It exposes three arenas with different
 lifetimes, and you choose which one a value belongs to:
 
 | Arena      | Lives for                                     |
 | ---------- | --------------------------------------------- |
-| `.frame`   | one render pass — the default for UI strings   |
+| `.frame`   | two renders — the default for UI strings       |
 | `.view`    | the page on screen; freed when you leave it    |
-| `.request` | never freed at present (reserved)              |
 | `.persist` | the life of the application                    |
 
 ```zig

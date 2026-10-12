@@ -431,7 +431,6 @@ pub const ComponentBuilder = struct {
 
     const ElementConstructors = @import("builder/elements.zig");
     pub const Null = ElementConstructors.Null;
-    pub const Null2 = ElementConstructors.Null2;
     pub const Heading = ElementConstructors.Heading;
     pub const Video = ElementConstructors.Video;
     pub const Box = ElementConstructors.Box;

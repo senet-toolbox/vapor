@@ -218,6 +218,8 @@ const Rename = struct {
 /// they cannot match a longer name.
 const renames = [_]Rename{
     .{ .from = "Vapor.printErr(", .to = "Vapor.print(.err, " },
+    // The request arena was never freed: it was the persistent one.
+    .{ .from = "arena(.request)", .to = "arena(.persist)" },
     // onEndCtx became onLayout: once, after the render reaches the page.
     .{ .from = "Vapor.onEndCtx(", .to = "Vapor.onLayout(" },
     // Vapor.init sets up what Kit.init did (the fetch registry).
@@ -274,6 +276,13 @@ const hints = [_]Hint{
     .{ .from = "Vapor.Kit.Fetch", .msg = "fetch moved: Vapor.fetch(url, .{}).handle(handler, .{ctx}); see Vapor.Fetch" },
     .{ .from = "Vapor.Kit.ErrResponse", .msg = "ErrResponse is gone; a failed request's Vapor.Fetch.Response has the status and body" },
     .{ .from = "Vapor.printlnSrc(", .msg = "printlnSrc printed nothing and is gone; delete the call or use Vapor.println" },
+    .{ .from = "Vapor.onPushState(", .msg = "onPushState is gone; its callbacks were never called" },
+    .{ .from = "Null2(", .msg = "Null2 is gone; use Vapor.Null()" },
+    .{ .from = ".checkmark_style", .msg = "Style.checkmark_style is gone; it never reached the CSS" },
+    .{ .from = ".child_styles", .msg = "Style.child_styles is gone; it never reached the CSS" },
+    .{ .from = ".will_change", .msg = "Style.will_change is gone; it never reached the CSS" },
+    .{ .from = ".btn_id", .msg = "Style.btn_id is gone; it did nothing" },
+    .{ .from = ".dialog_id", .msg = "Style.dialog_id is gone; it did nothing" },
     .{
         .from = "&IconTokens{",
         .msg = "Icon() takes an IconTokens value: tokens declared as &IconTokens{...} work with Icon(.name) once the & is dropped (and *const IconTokens in your own types becomes IconTokens)",

@@ -1158,7 +1158,6 @@ test "README examples type-check against the real API" {
         // "Memory" — the four arenas the table documents.
         _ = Vapor.Arena.frame;
         _ = Vapor.Arena.view;
-        _ = Vapor.Arena.request;
         _ = Vapor.Arena.persist;
         _ = Vapor.frame.fmt;
         _ = Vapor.dupe;

@@ -31,14 +31,6 @@ pub fn onPopState(callback: *const fn () void) void {
     };
 }
 
-/// Registers `callback` for history pushes. Nothing calls these callbacks at
-/// present.
-pub fn onPushState(callback: *const fn () void) void {
-    Vapor.push_state_funcs.append(callback) catch |err| {
-        Vapor.printlnErr("Button Function Registry {any}\n", .{err});
-    };
-}
-
 /// onMount should be called inside the UI
 pub fn onMount(callback: anytype, args: anytype) void {
     if (@typeInfo(@TypeOf(callback)) != .@"fn") {

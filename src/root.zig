@@ -91,7 +91,6 @@ pub const Divider = PureComponent.Divider;
 pub const TextField = text_field.TextFieldBuilder.TextField;
 pub const TextArea = text_field.TextFieldBuilder.TextArea;
 pub const Null = PureComponent.Null;
-pub const Null2 = PureComponent.Null2;
 
 /// The type every element builder above returns (`Box()`, `Text(...)`, ...).
 /// Name it to write helpers that take or return a builder.
