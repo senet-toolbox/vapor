@@ -37,12 +37,16 @@ pub fn onMount(callback: anytype, args: anytype) void {
         @compileError("onMount callback must be a function, got " ++ @typeName(@TypeOf(callback)));
     }
 
-    const callback_id: u32 = @truncate(@intFromPtr(&callback));
-
     const ui_node = Vapor.current_ctx.currentNode() orelse {
         std.log.err("No current node found", .{});
         return;
     };
+
+    // Keyed by the element too: two elements mounting the same function
+    // shared one entry, so both ran with the last one's `args`.
+    var callback_id: u32 = @truncate(@intFromPtr(&callback));
+    callback_id +%= Vapor.hashKey(ui_node.uuid);
+    callback_id +%= Vapor.hashKey(Vapor.on_mount_hash);
 
     if (ui_node.on_callbacks[0] != 0) {
         std.log.err("onMount callback already exists on Element: {s}\n Using first created callback", .{ui_node.uuid});

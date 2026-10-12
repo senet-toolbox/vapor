@@ -365,13 +365,6 @@ export function resetTimers() {
   tRegistry = 0;
 }
 
-function invokeCallbacks(uinode) {
-  for (const item of uinode.onCallbacks) {
-    if (item === 0) continue;
-    wasmInstance.invokeErasedCallback(item);
-  }
-}
-
 function invokeCallback(callback_hash) {
   if (callback_hash === 0) return;
   wasmInstance.invokeHooksErasedCallback(callback_hash);

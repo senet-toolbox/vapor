@@ -28,6 +28,12 @@ export async function animateExit(el, index = -1, skipAnimation = false) {
   if (!el || el.dataset.removing === "true") return;
   el.dataset.removing = "true";
 
+  // Destroy hooks run now, while the closures wasm registered for them are
+  // still alive; after an exit animation, later renders may have dropped them.
+  for (const id of collectDescendantIds(el)) {
+    runDestroyHook(id);
+  }
+
   // Run exit animation on the ROOT element only
   if (!skipAnimation && index > -1) {
     const animPtr = wasmInstance.getRemovalAnimationPtr(index);
@@ -69,6 +75,13 @@ function collectDescendantIds(el) {
   return ids;
 }
 
+function runDestroyHook(id) {
+  const entry = domNodeRegistry.get(id);
+  if (entry?.destroy_hash > 0) {
+    wasmInstance.invokeHooksErasedCallback(entry.destroy_hash);
+  }
+}
+
 function cleanupRegistryEntry(id) {
   const entry = domNodeRegistry.get(id);
   if (entry?.domNode) {
@@ -80,10 +93,6 @@ function cleanupRegistryEntry(id) {
       }
       eventHandlers.delete(id);
     }
-  }
-
-  if (entry?.destroy_hash > 0) {
-    wasmInstance.invokeHooksErasedCallback(entry.destroy_hash);
   }
 
   domNodeRegistry.delete(id);

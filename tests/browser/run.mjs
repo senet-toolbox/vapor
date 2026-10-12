@@ -356,6 +356,21 @@ const tests = {
     await p.waitFor(`${width} === "107px"`, "width 107");
   },
 
+  async "document listeners for one event are removed one at a time"(p) {
+    await p.goto("/listeners");
+    await p.waitForText("key-count", "0/0");
+    await p.click("add-listeners");
+    const key = `document.dispatchEvent(new KeyboardEvent("keydown", { key: "k" }))`;
+    await p.evaluate(key);
+    await p.click("listeners-refresh");
+    await p.waitForText("key-count", "1/1");
+    // Removing A used to remove whichever keydown handler was stored last.
+    await p.click("remove-a");
+    await p.evaluate(key);
+    await p.click("listeners-refresh");
+    await p.waitForText("key-count", "1/2");
+  },
+
   async "typing reaches Zig state"(p) {
     await p.goto("/input");
     await p.waitForText("greeting", "Hello, !");

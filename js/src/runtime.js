@@ -853,25 +853,6 @@ export async function render() {
   }
 }
 
-export function callDestroyFncs() {
-  // Remove any nodes that aren't active in this render
-  domNodeRegistry.forEach((node, nodeId) => {
-    if (!activeNodeIds.has(nodeId)) {
-      if (node.destroy_hash === undefined) {
-        debug("destroy_hash", nodeId, node);
-      }
-      try {
-        if (node.destroy_hash > 0) {
-          debug("destroy_hash", node.destroy_hash);
-          wasmInstance.invokeErasedCallback(node.destroy_hash);
-        }
-      } catch (e) {
-        console.error("Error calling destroy callback", e, nodeId, node);
-      }
-    }
-  });
-}
-
 function removeAnimatedNodeTree(el) {
   for (const child of el.children) {
     toRemove = removeByIdSwap(toRemove, child.id);

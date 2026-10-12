@@ -297,9 +297,10 @@ pub const Element = struct {
         };
     }
 
-    /// Calls `cb` with the event whenever `event_type` fires on the element.
-    /// Returns an id for `removeListener`.
-    pub fn addListener(self: *Element, event_type: types.EventType, cb: *const fn (event: *Event) void) ?usize {
+    /// Calls `cb` with the event whenever `event_type` fires on the element,
+    /// until the element's next render. Prefer the builder's `.onEvent`,
+    /// which every render re-attaches. Returns an id for `removeListener`.
+    pub fn addListener(self: *Element, event_type: types.EventType, cb: fn (event: *Event) void) ?usize {
         const ui_node = self._node_ptr orelse {
             Vapor.printlnSrc("Node is null", .{}, @src());
             return null;

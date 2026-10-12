@@ -7,99 +7,50 @@ import { domNodeRegistry, eventHandlers, eventStorage } from "../maps.js";
 import { WasmObjectBuilder } from "../struct_bridge.js";
 import { allocStringFrame, readWasmString } from "../runtime.js";
 
+/**
+ * Document listeners by the id wasm gave them. Keyed by id, not event type,
+ * so two listeners for the same event can be added and removed separately.
+ */
+const documentListeners = new Map();
+
+function addDocumentListener(ptr, len, onid) {
+  if (!requireWasm()) return;
+  const callback_id = onid >>> 0;
+  const event_type = readWasmString(ptr, len);
+
+  const handler = (event) => {
+    try {
+      eventStorage[callback_id] = event;
+      wasmInstance.dispatchEvent(EventType[event_type], callback_id);
+    } catch (e) {
+      if (e instanceof WebAssembly.RuntimeError) {
+        const parsed = parseWasmError(e);
+        const stringified = JSON.stringify(parsed);
+        const errorPtr = allocStringFrame(stringified);
+        wasmInstance.recordState(errorPtr, null);
+      }
+      throw e;
+    }
+  };
+
+  documentListeners.get(callback_id)?.remove();
+  document.addEventListener(event_type, handler);
+  documentListeners.set(callback_id, {
+    remove: () => document.removeEventListener(event_type, handler),
+  });
+}
+
 export const eventsBindings = {
   // Event Handling - Document Level
-  createEventListenerGlobal: (ptr, len, onid) => {
+  createEventListenerGlobal: addDocumentListener,
+  createEventListener: addDocumentListener,
+  createEventListenerCtx: addDocumentListener,
+  removeEventListener: (_ptr, _len, onid) => {
     if (!requireWasm()) return;
     const callback_id = onid >>> 0;
-    const event_type = readWasmString(ptr, len);
-    let eventData = eventHandlers.get("vapor-document");
-
-    const handler = (event) => {
-      try {
-        eventStorage[callback_id] = event;
-        eventStorage[callback_id] = event;
-        wasmInstance.dispatchEvent(EventType[event_type], callback_id);
-      } catch (e) {
-        if (e instanceof WebAssembly.RuntimeError) {
-          const parsed = parseWasmError(e);
-          const stringified = JSON.stringify(parsed);
-          const errorPtr = allocStringFrame(stringified);
-          wasmInstance.recordState(errorPtr, null);
-        }
-        throw e;
-      }
-    };
-
-    if (eventData === undefined) {
-      eventData = {};
-    }
-    eventData[event_type] = handler;
-    document.addEventListener(event_type, handler);
-    eventHandlers.set("vapor-document", eventData);
-  },
-  createEventListener: (ptr, len, onid) => {
-    if (!requireWasm()) return;
-    const event_id = onid >>> 0;
-    const event_type = readWasmString(ptr, len);
-    let eventData = eventHandlers.get("vapor-document");
-
-    const handler = (event) => {
-      eventStorage[event_id] = event;
-      try {
-        wasmInstance.eventCallback(event_id);
-      } catch (e) {
-        if (e instanceof WebAssembly.RuntimeError) {
-          const parsed = parseWasmError(e);
-          const stringified = JSON.stringify(parsed);
-          const errorPtr = allocStringFrame(stringified);
-          wasmInstance.recordState(errorPtr, null);
-        }
-        throw e;
-      }
-    };
-
-    if (eventData === undefined) {
-      eventData = {};
-    }
-    eventData[event_type] = handler;
-    document.addEventListener(event_type, handler);
-    eventHandlers.set("vapor-document", eventData);
-  },
-  createEventListenerCtx: (ptr, len, onid) => {
-    if (!requireWasm()) return;
-    const event_id = onid >>> 0;
-    const event_type = readWasmString(ptr, len);
-    let eventData = eventHandlers.get("vapor-document");
-
-    const handler = (event) => {
-      eventStorage[event_id] = event;
-      wasmInstance.eventInstCallback(event_id);
-    };
-
-    if (eventData === undefined) {
-      eventData = {};
-    }
-    eventData[event_type] = handler;
-
-    document.addEventListener(event_type, handler);
-    eventHandlers.set("vapor-document", eventData);
-  },
-  removeEventListener: (ptr, len, onid) => {
-    if (!requireWasm()) return;
-    const eventType = readWasmString(ptr, len);
-    const eventData = eventHandlers.get("vapor-document");
-    if (!eventData) return;
-
-    const handler = eventData[eventType];
-    if (handler) {
-      document.removeEventListener(eventType, handler);
-      delete eventData[eventType];
-
-      if (Object.keys(eventData).length === 0) {
-        eventHandlers.delete("vapor-document");
-      }
-    }
+    documentListeners.get(callback_id)?.remove();
+    documentListeners.delete(callback_id);
+    delete eventStorage[callback_id];
   },
   setPointerCaptureWasm: (idPtr, idLen, onid) => {
     if (!requireWasm()) return;

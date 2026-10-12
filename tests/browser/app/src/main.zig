@@ -32,6 +32,7 @@ pub export fn init() void {
     Vapor.Page(.{ .route = "/focus" }, focusPage, null);
     Vapor.Page(.{ .route = "/hooks" }, hooksPage, null);
     Vapor.Page(.{ .route = "/styles" }, stylesPage, null);
+    Vapor.Page(.{ .route = "/listeners" }, listenersPage, null);
     Vapor.Page(.{ .route = "/error" }, notFound, null);
 }
 
@@ -164,6 +165,56 @@ fn stylesPage() void {
             .responsive(.desktop, .{ .child_gap = 8 })
             .end();
     });
+}
+
+// ── /listeners : document listeners are added and removed one by one ──────
+
+var key_a: u32 = 0;
+var key_b: u32 = 0;
+var listener_a: ?u32 = null;
+var listener_b: ?u32 = null;
+
+fn keyA(_: *Vapor.Event) void {
+    key_a += 1;
+}
+
+fn keyB(_: *Vapor.Event) void {
+    key_b += 1;
+}
+
+fn addListeners() void {
+    listener_a = Vapor.addGlobalListener(.keydown, keyA);
+    listener_b = Vapor.addGlobalListener(.keydown, keyB);
+}
+
+fn removeListenerA() void {
+    if (listener_a) |id| _ = Vapor.removeGlobalListener(.keydown, id);
+    listener_a = null;
+}
+
+var listener_element: Vapor.Element = .{};
+
+fn listenersPage() void {
+    Box().id("listeners-page").children({
+        Button(addListeners, .{}).id("add-listeners").children({
+            Text("Add").end();
+        });
+        Button(removeListenerA, .{}).id("remove-a").children({
+            Text("Remove A").end();
+        });
+        Button(rerenderOnly, .{}).id("listeners-refresh").children({
+            Text("Refresh").end();
+        });
+        TextFmt("{d}/{d}", .{ key_a, key_b }).id("key-count").end();
+    });
+}
+
+// Compiled for wasm, never called: `addListener` has no page of its own.
+fn compileElementListener() void {
+    _ = listener_element.addListener(.click, keyA);
+}
+comptime {
+    _ = &compileElementListener;
 }
 
 // ── /focus : onFocus and onBlur on ordinary elements ───────────────────────

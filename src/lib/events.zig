@@ -45,12 +45,18 @@ pub fn ArgsTuple(comptime Fn: type) type {
 pub const ErasedEventCallback = struct {
     ctx: *anyopaque,
     callFn: *const fn (*anyopaque, *Event) void,
+    destroyFn: *const fn (std.mem.Allocator, *anyopaque) void,
     event_type: Vapor.EventType,
     dynamic_object: ?*DynamicObject = null,
 
     /// Runs the callback with `evt`.
     pub fn call(self: *const ErasedEventCallback, evt: *Event) void {
         self.callFn(self.ctx, evt);
+    }
+
+    /// Frees the closure, which `make` allocated with `allocator`.
+    pub fn destroy(self: *const ErasedEventCallback, allocator: std.mem.Allocator) void {
+        self.destroyFn(allocator, self.ctx);
     }
 
     /// Wraps `cb` and `args` as an event callback; the event is passed last.
@@ -65,6 +71,10 @@ pub const ErasedEventCallback = struct {
                 // cb is comptime-captured, append evt to the args
                 @call(.auto, cb, self.arguments ++ .{evt});
             }
+
+            fn destroy(gpa: std.mem.Allocator, ptr: *anyopaque) void {
+                gpa.destroy(@as(*@This(), @ptrCast(@alignCast(ptr))));
+            }
         };
 
         const closure = try allocator.create(Closure);
@@ -73,6 +83,7 @@ pub const ErasedEventCallback = struct {
         return .{
             .ctx = @ptrCast(closure),
             .callFn = Closure.run,
+            .destroyFn = Closure.destroy,
             .event_type = event_type,
         };
     }
@@ -154,10 +165,6 @@ pub fn attachEventCtxCallback(ui_node: *UINode, event_type: Vapor.EventType, cb:
 
     try ui_node.event_handlers.?.handlers.append(Vapor.arena(.frame), erased);
 
-    var type_onid = Vapor.hashKey(ui_node.uuid);
-    type_onid +%= @intFromEnum(event_type);
-    try Vapor.erased_event_registry.put(type_onid, erased);
-
     const onid = Vapor.hashKey(ui_node.uuid);
     try Vapor.nodes_with_events.put(onid, ui_node);
 }
@@ -177,11 +184,13 @@ pub fn addGlobalListener(event_type: Vapor.EventType, cb: fn (*Event) void) ?u32
         return null;
     };
 
-    const id = Vapor.erased_event_registry.count() + 1;
+    const id = Vapor.next_global_listener_id;
     Vapor.erased_event_registry.put(id, erased) catch |err| {
         Vapor.printlnErr("addGlobalListener: could not register, listener not attached: {any}", .{err});
         return null;
     };
+
+    Vapor.next_global_listener_id += 1;
 
     const event_type_str: []const u8 = std.enums.tagName(types.EventType, event_type) orelse return null;
     if (Vapor.isWasi) {
@@ -199,11 +208,13 @@ pub fn addGlobalListenerCtx(event_type: Vapor.EventType, cb: anytype, args: anyt
         return null;
     };
 
-    const id = Vapor.erased_event_registry.count() + 1;
+    const id = Vapor.next_global_listener_id;
     Vapor.erased_event_registry.put(id, erased) catch |err| {
         Vapor.printlnErr("addGlobalListenerCtx: could not register, listener not attached: {any}", .{err});
         return null;
     };
+
+    Vapor.next_global_listener_id += 1;
 
     const event_type_str: []const u8 = std.enums.tagName(types.EventType, event_type) orelse return null;
     if (Vapor.isWasi) {
@@ -215,7 +226,13 @@ pub fn addGlobalListenerCtx(event_type: Vapor.EventType, cb: anytype, args: anyt
 /// Removes the document listener `cb_idx` that `addGlobalListener` returned.
 pub fn removeGlobalListener(event_type: Vapor.EventType, cb_idx: u32) ?bool {
     const event_type_str = std.enums.tagName(types.EventType, event_type) orelse return null;
-    Wasm.removeEventListener(event_type_str.ptr, event_type_str.len, cb_idx);
+    // A listener may remove itself while it runs: `dispatchEvent` has
+    // already copied the arguments out of the closure by then.
+    const kv = Vapor.erased_event_registry.fetchRemove(cb_idx) orelse return false;
+    kv.value.destroy(Vapor.arena(.persist));
+    if (Vapor.isWasi) {
+        Wasm.removeEventListener(event_type_str.ptr, event_type_str.len, cb_idx);
+    }
     return true;
 }
 
@@ -279,7 +296,7 @@ pub fn assignUserId(node: *UINode, new_id: []const u8) void {
     node.uuid = new_id;
     node.hash = Vapor.hashKey(new_id);
     if (old_hash == node.hash) return;
-    moveEntry(&Vapor.erased_registry, old_hash, node.hash);
+    moveEntry(&Vapor.button_callbacks, old_hash, node.hash);
     moveEntry(&Vapor.element_registry, old_hash, node.hash);
 }
 
@@ -293,7 +310,7 @@ pub fn moveEntry(map: anytype, from: u32, to: u32) void {
 
 // The JS/WASM side calls back with the id:
 pub export fn invokeErasedCallback(id: u32) void {
-    var erased = Vapor.erased_registry.get(id) orelse {
+    var erased = Vapor.button_callbacks.get(id) orelse Vapor.erased_registry.get(id) orelse {
         std.log.err("Erased Callback not found {d}", .{id});
         return;
     };

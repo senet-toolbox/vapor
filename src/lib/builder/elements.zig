@@ -179,8 +179,7 @@ pub fn Button(cb: anytype, args: anytype) Self {
     };
 
     const callback_id = hashKey(ui_node.uuid);
-    // Store just the ErasedCallback instead of *Node
-    Vapor.erased_registry.put(callback_id, erased) catch |err| {
+    Vapor.button_callbacks.put(callback_id, erased) catch |err| {
         println("Registry error {any}\n", .{err});
         @panic("vapor: Registry error");
     };

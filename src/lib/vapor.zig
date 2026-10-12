@@ -155,10 +155,7 @@ pub const assignUserId = EventsModule.assignUserId;
 pub var callback_registry: std.AutoHashMap(u32, *const fn () void) = undefined;
 pub var ctx_callback_registry: std.AutoHashMap(u32, *Node) = undefined;
 
-pub const EventNode = struct { cb: *const fn (*Event) void, ui_node: ?*UINode = null, evt_type: EventType };
-pub var events_callbacks: std.AutoHashMap(u32, EventNode) = undefined;
 pub var nodes_with_events: std.AutoHashMap(u32, *UINode) = undefined;
-pub var cached_event_handlers: std.AutoHashMap(u32, EventHandlers) = undefined;
 pub var hooks_inst_callbacks: std.AutoHashMap(u32, *const fn (HookContext) void) = undefined;
 pub var on_end_funcs: std.array_list.Managed(*const fn () void) = undefined;
 pub var on_end_ctx_funcs: std.array_list.Managed(*Node) = undefined;
@@ -166,9 +163,6 @@ pub var route_funcs: std.AutoHashMap(u32, ArrayArena(ErasedCallback)) = undefine
 pub var pop_state_funcs: std.array_list.Managed(*const fn () void) = undefined;
 pub var on_commit_funcs: std.array_list.Managed(*const fn () void) = undefined;
 pub var on_commit_ctx_funcs: std.array_list.Managed(*Node) = undefined;
-// pub var mounted_ctx_funcs: std.AutoHashMap(u32, *Node) = undefined;
-pub var on_create_node_funcs: std.AutoHashMap(u32, *Node) = undefined;
-pub var hooks_funcs: std.AutoHashMap(u32, *const fn () void) = undefined;
 
 pub var string_table: StringTable = undefined;
 pub var storage_table: StorageTable = undefined;
@@ -327,28 +321,33 @@ fn initRegistries(persistent_allocator: std.mem.Allocator) void {
     ctx_callback_registry = std.AutoHashMap(u32, *Node).init(persistent_allocator);
 }
 
+/// Callbacks that outlive a render: intervals, timeouts, view transitions.
 pub var erased_registry: std.AutoHashMap(u32, ErasedCallback) = undefined;
-pub var erased_hooks_registry: std.AutoHashMap(u32, ErasedCallback) = undefined;
+/// `Button(cb, args)` click callbacks, per element.
+pub var button_callbacks: NodeTable(ErasedCallback) = undefined;
+/// Mount, update and destroy hooks, per element.
+pub var erased_hooks_registry: NodeTable(ErasedCallback) = undefined;
+/// Document listeners from `addGlobalListener`, by the id it returned.
 pub var erased_event_registry: std.AutoHashMap(u32, ErasedEventCallback) = undefined;
-pub var resize_callbacks: std.AutoHashMap(u32, Kit.ResizeCallback) = undefined;
+/// The id the next `addGlobalListener` returns.
+pub var next_global_listener_id: u32 = 1;
+/// `.onResize` callbacks, per element.
+pub var resize_callbacks: NodeTable(Kit.ResizeCallback) = undefined;
 fn initCalls(persistent_allocator: std.mem.Allocator) void {
-    events_callbacks = std.AutoHashMap(u32, EventNode).init(persistent_allocator);
     nodes_with_events = std.AutoHashMap(u32, *UINode).init(persistent_allocator);
-    cached_event_handlers = std.AutoHashMap(u32, EventHandlers).init(persistent_allocator);
     hooks_inst_callbacks = std.AutoHashMap(u32, *const fn (HookContext) void).init(persistent_allocator);
     on_end_funcs = std.array_list.Managed(*const fn () void).init(persistent_allocator);
     on_end_ctx_funcs = std.array_list.Managed(*Node).init(persistent_allocator);
     pop_state_funcs = std.array_list.Managed(*const fn () void).init(persistent_allocator);
     on_commit_funcs = std.array_list.Managed(*const fn () void).init(persistent_allocator);
     on_commit_ctx_funcs = std.array_list.Managed(*Node).init(persistent_allocator);
-    // mounted_ctx_funcs = std.AutoHashMap(u32, *Node).init(persistent_allocator);
-    on_create_node_funcs = std.AutoHashMap(u32, *Node).init(persistent_allocator);
-    hooks_funcs = std.AutoHashMap(u32, *const fn () void).init(persistent_allocator);
     route_funcs = std.AutoHashMap(u32, ArrayArena(ErasedCallback)).init(persistent_allocator);
     erased_registry = std.AutoHashMap(u32, ErasedCallback).init(persistent_allocator);
-    erased_hooks_registry = std.AutoHashMap(u32, ErasedCallback).init(persistent_allocator);
+    button_callbacks = .init(persistent_allocator);
+    erased_hooks_registry = .init(persistent_allocator);
     erased_event_registry = std.AutoHashMap(u32, ErasedEventCallback).init(persistent_allocator);
-    resize_callbacks = std.AutoHashMap(u32, Kit.ResizeCallback).init(persistent_allocator);
+    next_global_listener_id = 1;
+    resize_callbacks = .init(persistent_allocator);
 }
 
 fn initContextData(persistent_allocator: std.mem.Allocator) void {
@@ -652,6 +651,9 @@ pub fn renderCycle(route_ptr: [*:0]u8) !void {
     Accessibility.a11y_map.prune(null);
     Components.text_string_table.prune(Components.dropText);
     element_registry.prune(null);
+    button_callbacks.prune(null);
+    erased_hooks_registry.prune(null);
+    resize_callbacks.prune(null);
     if (old_route_op) |old_route| _ = router.updateRouteTree(old_route.path, new_ctx);
     previous_route = current_route;
 }
@@ -844,7 +846,6 @@ pub inline fn destroyElementEventListener(
 ) ?bool {
     const event_type_str = std.enums.tagName(types.EventType, event_type) orelse return null;
     Wasm.removeElementEventListener(element_uuid.ptr, element_uuid.len, event_type_str.ptr, event_type_str.len, @intCast(cb_id));
-    Vapor.printlnSrc("Callback id {}", .{cb_id}, @src());
     return false;
 }
 
@@ -894,32 +895,22 @@ pub inline fn focused(element_uuid: []const u8) bool {
 
 const serializeArgs = utils.serializeArgs;
 
-/// This function creates an eventListener on the element.
-/// Takes a callback function to be called when an event is received;
-/// # Parameters:
-/// - `element_id`: []const u8,
-/// - `event_type`: *EventType,
-/// - `cb`: *const fn (event: *Event) void,
-///
-/// # Returns:
-/// !void
-pub inline fn elementEventListener(
+/// Internal: calls `cb` with the event whenever `event_type` fires on
+/// `ui_node`. Returns the listener's id, or `null` outside the browser.
+pub fn elementEventListener(
     ui_node: *UINode,
     event_type: types.EventType,
-    cb: *const fn (event: *Event) void,
+    cb: fn (event: *Event) void,
 ) ?usize {
-    if (isWasi) {
-        var onid = hashKey(ui_node.uuid);
-        onid +%= @intFromEnum(event_type);
-        events_callbacks.put(onid, .{ .cb = cb, .ui_node = ui_node, .evt_type = event_type }) catch |err| {
-            println("Event Callback Error: {any}\n", .{err});
-        };
-
-        const event_type_str = std.enums.tagName(types.EventType, event_type) orelse return null;
-        Wasm.createElementEventListener(ui_node.uuid.ptr, ui_node.uuid.len, event_type_str.ptr, event_type_str.len, onid);
-        return onid;
-    }
-    return null;
+    if (!isWasi) return null;
+    EventsModule.attachEventCallback(ui_node, event_type, cb) catch |err| {
+        println("Event Callback Error: {any}\n", .{err});
+        return null;
+    };
+    const event_type_str = std.enums.tagName(types.EventType, event_type) orelse return null;
+    const onid = hashKey(ui_node.uuid) +% @intFromEnum(event_type);
+    Wasm.createElementEventListener(ui_node.uuid.ptr, ui_node.uuid.len, event_type_str.ptr, event_type_str.len, onid);
+    return onid;
 }
 
 /// Internal: removes a listener `elementEventListener` added.
@@ -968,30 +959,10 @@ pub inline fn registerHook(
     return id;
 }
 
-/// This function creates an eventListener on the document.
-/// Takes a callback function to be called when an event is received;
-/// # Parameters:
-/// - `event_type`: *EventType,
-/// - `cb`: *const fn (event: *Event) void,
-///
-/// # Returns:
-/// !void
-pub inline fn eventListener(
-    event_type: types.EventType,
-    cb: *const fn (event: *Event) void,
-) ?u32 {
-    var id: u32 = events_callbacks.count() + 1;
-    id +%= @intFromEnum(event_type);
-    events_callbacks.put(id, .{ .cb = cb, .ui_node = null, .evt_type = event_type }) catch |err| {
-        println("Event Callback Error: {any}\n", .{err});
-        return null;
-    };
-
-    const event_type_str: []const u8 = std.enums.tagName(types.EventType, event_type) orelse return null;
-    if (isWasi) {
-        Wasm.createEventListener(event_type_str.ptr, event_type_str.len, id);
-    }
-    return id;
+/// Calls `cb` with the event whenever `event_type` fires on the document.
+/// Same as `addGlobalListener`.
+pub fn eventListener(event_type: types.EventType, cb: fn (*Event) void) ?u32 {
+    return EventsModule.addGlobalListener(event_type, cb);
 }
 
 // The first node needs to be marked as false always

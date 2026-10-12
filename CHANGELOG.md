@@ -165,6 +165,24 @@ noted.
 - Every render leaked the route string and its split segments. When a route
   had no page, its string was instead freed while vapor still compared the
   next route against it.
+- The same per-element growth in the callback tables: `Button` click
+  callbacks, `onMount`/`onUpdate`/`onDestroy` hooks and `.onResize`
+  callbacks are now dropped with their element. Their closures live in
+  frame memory, so a stale entry also pointed at recycled memory.
+- Destroy hooks ran after the element's exit animation, by when later
+  renders could have recycled the hook's closure. They now run as the
+  element starts leaving, while it is still in the DOM.
+- `Vapor.onMount` called from two elements with the same function ran both
+  with the last element's arguments.
+- Two document listeners for the same event (`addGlobalListener`) could not
+  be removed separately: removing one removed whichever was added last and
+  left the other attached. `removeGlobalListener` now also frees the
+  listener.
+- `Element.addListener` and `Vapor.lib.eventListener` registered callbacks
+  nothing ever called. `addListener` now attaches like `.onEvent` (until
+  the element's next render; prefer `.onEvent`) and `eventListener` is
+  `addGlobalListener`. `addListener` takes `fn (*Event) void`, no longer a
+  runtime function pointer.
 - A border's line style was left out of its class hash, so changing only
   the style kept the old rule.
 - A responsive style with two breakpoints wrote its first `@media` rule
