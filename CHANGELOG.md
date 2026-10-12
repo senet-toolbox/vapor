@@ -74,6 +74,13 @@ Kept as aliases until the next major version:
 
 ### Added
 
+- `zig build migrate -- <app src> [--write]` rewrites an app for the
+  renames and removals below and lists what it cannot change itself (see
+  `tools/migrate.zig`). It also covers older removals: `Vapor.onEnd(f)` →
+  `Vapor.onLayout(f, .{})`, `onEndCtx` → `onLayout`,
+  `.inlineStyleStr("css")` → `.inlineStyle("css", .{})`, and drops
+  `Vapor.Kit.init()`; `Kit.Fetch`, `Kit.ErrResponse` and `HooksCtx` are
+  reported.
 - `.padX(n)` / `.padY(n)` on elements and text fields: padding on one
   axis, keeping the other.
 - Text fields get the margin shorthands elements had: `.mt`, `.mb`, `.ml`,
