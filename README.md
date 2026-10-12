@@ -343,6 +343,25 @@ component libraries dominate. Build with `-Doptimize=ReleaseSmall` for the
 smallest output, and measure your own binary rather than trusting a headline
 number.
 
+## Upgrading
+
+`zig build migrate` rewrites an app's source for renamed and removed APIs.
+Run it from a vapor checkout; it lists what it would change, and `--write`
+applies it:
+
+```sh
+zig build migrate -- ../my-app/src            # dry run
+zig build migrate -- ../my-app/src --write
+zig fmt ../my-app/src
+```
+
+It renames (`Binded` → `Element`, `.square_px(` → `.squarePx(`, …), turns
+side constructors into literals (`.padding(.tb(8, 4))` →
+`.padding(.{ .top = 8, .bottom = 4 })`), merges a `Visual`'s old
+`border_*` fields into `.border`, and lists anything it cannot rewrite
+safely, with a hint, as "fix by hand". Strings and comments are left alone.
+See `CHANGELOG.md` for every change.
+
 ## Development
 
 ```bash

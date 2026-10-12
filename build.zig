@@ -153,6 +153,23 @@ pub fn build(b: *std.Build) void {
     test_step.dependOn(&run_abi.step);
     test_step.dependOn(&b.addRunArtifact(b.addTest(.{ .root_module = abi_tool_mod })).step);
 
+    // Rewrites an app's source for renamed and removed APIs:
+    //   zig build migrate -- ../my-app/src            (lists the changes)
+    //   zig build migrate -- ../my-app/src --write    (applies them)
+    // See tools/migrate.zig.
+    const migrate_mod = b.createModule(.{
+        .root_source_file = b.path("tools/migrate.zig"),
+        .target = b.graph.host,
+        .optimize = .Debug,
+    });
+    const migrate_tool = b.addExecutable(.{ .name = "vapor-migrate", .root_module = migrate_mod });
+    const run_migrate = b.addRunArtifact(migrate_tool);
+    if (b.args) |args| run_migrate.addArgs(args);
+    run_migrate.has_side_effects = true;
+    const migrate_step = b.step("migrate", "Rewrite an app's source for renamed vapor APIs (zig build migrate -- <dir> [--write])");
+    migrate_step.dependOn(&run_migrate.step);
+    test_step.dependOn(&b.addRunArtifact(b.addTest(.{ .root_module = migrate_mod })).step);
+
     // End-to-end tests in headless Chrome: builds tests/browser/app against
     // this checkout, then drives it (tests/browser/run.mjs). Needs Node >= 22
     // and Chrome, so it is its own step rather than part of `test`.
