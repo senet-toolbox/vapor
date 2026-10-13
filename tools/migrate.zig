@@ -314,6 +314,11 @@ const renames = [_]Rename{
     .{ .from = "KeyStone.Config", .to = "KeyStone.ClientConfig", .whole = true },
     .{ .from = "Vapor.lib.eventListener(", .to = "Vapor.addGlobalListener(" },
     .{ .from = "Vapor.KeyStone", .to = "@import(\"keystone\")", .whole = true },
+    // Kit's wrappers around std.mem.
+    .{ .from = "Vapor.Kit.startsWith(", .to = "std.mem.startsWith(u8, " },
+    .{ .from = "Vapor.Kit.split(", .to = "std.mem.splitSequence(u8, " },
+    .{ .from = "Kit.startsWith(", .to = "std.mem.startsWith(u8, ", .bare = true },
+    .{ .from = "Kit.split(", .to = "std.mem.splitSequence(u8, ", .bare = true },
     .{ .from = "Vapor.lib.getCookie(", .to = "Vapor.getCookie(" },
     .{ .from = "Vapor.lib.setCookie(", .to = "Vapor.setCookie(" },
     // The HTTP types moved to Vapor.Fetch in 2.2.0.
@@ -360,6 +365,9 @@ const hints = [_]Hint{
         .msg = "KeyStone is its own module now: add exe.root_module.addImport(\"keystone\", vapor_dep.module(\"keystone\")) in build.zig",
         .once = true,
     },
+    .{ .from = "Kit.contains(", .msg = "Kit.contains is gone; use std.mem.indexOf(u8, str, needle) != null" },
+    .{ .from = "Kit.String", .msg = "Kit.String is gone; use std.ArrayList(u8) or std.Io.Writer.Allocating" },
+    .{ .from = "Kit.fastJson(", .msg = "Kit.fastJson is gone; use std.json.Stringify" },
     .{ .from = ".toplr(", .msg = "BorderRadius.toplr is gone; use .{ .top_left = a, .top_right = b }" },
     .{ .from = "Sizing.at(", .msg = "Sizing.at is gone; use .mobileDesktopPercent" },
     .{
@@ -838,6 +846,7 @@ test "renames calls and types, not strings or comments" {
         \\const r = Vapor.Fetch.Fetch.fetch(url, .{});
         \\fn done(a: Vapor.Kit.Response, b: Kit.Response, c: Kit.HttpReq) void {}
         \\const KeyStone = Vapor.KeyStone;
+        \\if (Vapor.Kit.startsWith(path, "/a") and Kit.startsWith(path, "/")) {}
     ,
         \\const e: *Vapor.Element = x; // Vapor.Binded
         \\Vapor.print(.err, "{d} .square_px(", .{1});
@@ -858,6 +867,7 @@ test "renames calls and types, not strings or comments" {
         \\const r = Vapor.Fetch.Request.fetch(url, .{});
         \\fn done(a: Vapor.Fetch.Result, b: Vapor.Fetch.Result, c: Vapor.Fetch.Options) void {}
         \\const KeyStone = @import("keystone");
+        \\if (std.mem.startsWith(u8, path, "/a") and std.mem.startsWith(u8, path, "/")) {}
     );
 }
 

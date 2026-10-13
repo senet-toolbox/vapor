@@ -57,6 +57,10 @@ section); the compiler points at anything it leaves.
   `exe.root_module.addImport("keystone", vapor_dep.module("keystone"))`
   and `@import("keystone")`; the rest never compile it. Its log messages
   use the scope `.keystone`.
+- Kit drops what `std` already does or nothing used: `Kit.split`,
+  `contains` and `startsWith` (use `std.mem`), `Kit.String` and `fastJson`
+  (use `std.ArrayList(u8)` / `std.json`), and the unused `StructSchema`,
+  `FieldDescriptor` and `FieldType`.
 - `.view` memory is now freed when the app leaves the page (see Fixed). A
   global that points into it must be reset in the page's deinit or
   reallocated on the next visit.
