@@ -295,21 +295,6 @@ pub const Testing = if (builtin.is_test) struct {
     pub const Components = @import("lib/components.zig");
 } else struct {};
 
-// ── Deprecated names, removed in the next major version ────────────────────
-
-/// Deprecated: use `Element`.
-pub const Binded = Element;
-/// Deprecated: use `PureComponent`.
-pub const PureComponentClose = PureComponent;
-/// Deprecated: use `Builder`.
-pub const BuilderClose = Builder;
-/// Deprecated: use `TextFieldBuilder`.
-pub const TextAreaBuilder = TextFieldBuilder;
-/// Deprecated: use `Types.Color.transparentize`.
-pub const transparentizeHex = types.Color.transparentize;
-/// Deprecated: use `IconTokens`.
-pub const IconType = IconTokens;
-
 // A test binary only collects test blocks from its own root module, so the
 // ones inside src/lib run from the `vapor-lib-tests` step, which is rooted
 // here. Each file with tests has to be referenced from this block.

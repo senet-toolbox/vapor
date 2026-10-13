@@ -91,21 +91,6 @@ pub const Size = packed struct {
             .height = .percent(height),
         };
     }
-
-    // Deprecated names, removed in the next major version.
-
-    /// Deprecated: use `squarePx`.
-    pub const square_px = squarePx;
-    /// Deprecated: use `squarePercent`.
-    pub const square_percent = squarePercent;
-    /// Deprecated: use `hwPx`.
-    pub const hw_px = hwPx;
-    /// Deprecated: use `hwPercent`.
-    pub const hw_percent = hwPercent;
-    /// Deprecated: use `squarePx`.
-    pub const px = squarePx;
-    /// Deprecated: use `squarePercent`.
-    pub const percent = squarePercent;
 };
 
 pub const Sizing = packed struct {
@@ -190,17 +175,6 @@ pub const Sizing = packed struct {
             .percent => return .{ .type = .clamp_percent, .size = .{ .min = min, .max = max, .preferred = preferred } },
         }
     }
-
-    // Deprecated names, removed in the next major version.
-
-    /// Deprecated: use `minMaxVp`.
-    pub const min_max_vp = minMaxVp;
-    /// Deprecated: use `mobileDesktopPercent`.
-    pub const mobile_desktop_percent = mobileDesktopPercent;
-    /// Deprecated: use `mobileDesktop`.
-    pub const mobile_desktop = mobileDesktop;
-    /// Deprecated: use `mobileDesktopPercent`.
-    pub const at = mobileDesktopPercent;
 };
 
 pub const PosType = enum(u8) {
@@ -241,13 +215,6 @@ pub const Pos = packed struct {
             return desktop;
         }
     }
-
-    // Deprecated names, removed in the next major version.
-
-    /// Deprecated: use `mobileDesktopPercent`.
-    pub const mobile_desktop_percent = mobileDesktopPercent;
-    /// Deprecated: use `mobileDesktop`.
-    pub const mobile_desktop = mobileDesktop;
 };
 
 pub const SizeType = enum(u8) {

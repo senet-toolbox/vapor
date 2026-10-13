@@ -154,11 +154,6 @@ pub const Color = union(enum) {
             else => return color,
         }
     }
-
-    // Deprecated names, removed in the next major version.
-
-    /// Deprecated: use `transparentize`.
-    pub const transparentizeHex = transparentize;
 };
 
 pub const ColorProp = enum(u8) {

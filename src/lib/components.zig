@@ -616,27 +616,6 @@ pub const ComponentBuilder = struct {
     pub const close = TreeMethods.close;
     pub const end = TreeMethods.end;
     pub const getUUID = TreeMethods.getUUID;
-
-    // Deprecated names, removed in the next major version.
-
-    /// Deprecated: use `textColor`.
-    pub const fontColor = textColor;
-    /// Deprecated: use `fontWeight`.
-    pub const weight = fontWeight;
-    /// Deprecated: use `style`.
-    pub const baseStyle = style;
-    /// Deprecated: use `placement`.
-    pub const anchorPlacement = placement;
-    /// Deprecated: use `onMount`.
-    pub const onMountCtx = onMount;
-    /// Deprecated: use `hidden`.
-    pub const hide = hidden;
-    /// Deprecated: use `SubmitButton`.
-    pub const FormButton = SubmitButton;
-    /// Deprecated: use `background`.
-    pub const gradient = background;
-    /// Deprecated: use `onEvent`.
-    pub const onEventCtx = onEvent;
 };
 
 /// Kept for source compatibility; every state type gets the same builder.

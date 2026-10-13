@@ -456,8 +456,8 @@ pub const Element = struct {
     }
 
     fn setOwnedString(self: *Element, slot: *?[]const u8, new_value: []const u8) !void {
-        if (slot.*) |old| Vapor.persist.allocator().free(old);
-        slot.* = try Vapor.persist.allocator().dupe(u8, new_value);
+        if (slot.*) |old| Vapor.persist.arena().free(old);
+        slot.* = try Vapor.persist.arena().dupe(u8, new_value);
         // Push attribute-style props (id/class/src/alt/href) to DOM immediately if you want;
         // they don't participate in the style coalescing.
         // For style sources, just mark dirty:
@@ -467,7 +467,7 @@ pub const Element = struct {
     /// Internal: merges `mutateAttribute` styles with the builder's inline style.
     pub fn coalesceAttributesAndInline(self: *Element, inline_style: ?[]const u8) ![]const u8 {
         const attributes = self.attributes orelse return error.AttributesIsNull;
-        var aw: std.Io.Writer.Allocating = .init(Vapor.persist.allocator());
+        var aw: std.Io.Writer.Allocating = .init(Vapor.persist.arena());
         defer aw.deinit();
         const w = &aw.writer;
 
@@ -497,7 +497,7 @@ pub const Element = struct {
             Vapor.report.err("Attributes not set", .{});
             return;
         };
-        var aw: std.Io.Writer.Allocating = .init(Vapor.persist.allocator());
+        var aw: std.Io.Writer.Allocating = .init(Vapor.persist.arena());
         defer aw.deinit();
         const w = &aw.writer;
 

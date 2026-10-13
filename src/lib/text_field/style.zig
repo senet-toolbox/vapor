@@ -112,7 +112,6 @@ pub fn whiteSpace(self: *const Self, value: types.WhiteSpace) Self {
 
 /// This function takes a const pointer to a Style Struct, and returns the body function callback
 /// This function is static, so any styles added via chaining methods will not be applied
-/// Use baseStyle to keep all chained additions
 pub fn style(self: *const Self, style_ptr: *const Vapor.Style) Self {
     var new_self: Self = self.*;
     new_self._style = style_ptr;

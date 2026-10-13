@@ -226,13 +226,6 @@ pub const persist = struct {
     pub fn startsWith(str: []const u8, prefix: []const u8) bool {
         return utils.startsWith(str, prefix);
     }
-
-    // Deprecated names, removed in the next major version.
-
-    /// Deprecated: use `arena`.
-    pub const allocator = persist.arena;
-    /// Deprecated: use `array`.
-    pub const Array = persist.array;
 };
 
 pub const view = struct {
@@ -294,11 +287,6 @@ pub const view = struct {
     pub fn startsWith(str: []const u8, prefix: []const u8) bool {
         return utils.startsWith(str, prefix);
     }
-
-    // Deprecated names, removed in the next major version.
-
-    /// Deprecated: use `array`.
-    pub const Array = view.array;
 };
 
 pub const frame = struct {
@@ -404,9 +392,4 @@ pub const frame = struct {
     pub fn startsWith(str: []const u8, prefix: []const u8) bool {
         return utils.startsWith(str, prefix);
     }
-
-    // Deprecated names, removed in the next major version.
-
-    /// Deprecated: use `array`.
-    pub const Array = frame.array;
 };

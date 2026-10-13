@@ -212,12 +212,21 @@ const Rename = struct {
     /// Only a decl literal (`.border(.simple(c))`), not a call on some other
     /// value (`ToolTip.simple(...)`), for names apps also use.
     literal_only: bool = false,
+    /// Only a method call on a value (`Box().hide(true)`, possibly on the
+    /// next line), not a decl literal (`.background(.gradient(...))`).
+    method_only: bool = false,
 };
 
 /// Every `from` is matched in code only. Entries ending in `(` are calls, so
 /// they cannot match a longer name.
 const renames = [_]Rename{
     .{ .from = "Vapor.printErr(", .to = "Vapor.print(.err, " },
+    .{ .from = "Vapor.lib.printErr(", .to = "Vapor.print(.err, " },
+    .{ .from = "Vapor.printlnErr(", .to = "Vapor.print(.err, " },
+    .{ .from = "Vapor.lib.printlnErr(", .to = "Vapor.print(.err, " },
+    .{ .from = "Vapor.lib.printWarn(", .to = "Vapor.print(.warn, " },
+    .{ .from = "Vapor.lib.printInfo(", .to = "Vapor.print(.info, " },
+    .{ .from = "Vapor.lib.printDebug(", .to = "Vapor.print(.debug, " },
     // The request arena was never freed: it was the persistent one.
     .{ .from = "arena(.request)", .to = "arena(.persist)" },
     // onEndCtx became onLayout: once, after the render reaches the page.
@@ -261,6 +270,45 @@ const renames = [_]Rename{
     .{ .from = ".onEventCtx(", .to = ".onEvent(" },
     .{ .from = ".anchorPlacement(", .to = ".placement(" },
     .{ .from = ".simple(", .to = ".thin(", .literal_only = true },
+    .{ .from = ".hide(", .to = ".hidden(", .method_only = true },
+    .{ .from = ".gradient(", .to = ".background(", .method_only = true },
+    .{ .from = ".weight(", .to = ".fontWeight(", .method_only = true },
+    .{ .from = ".whitespace(", .to = ".whiteSpace(", .method_only = true },
+    .{ .from = ".childGap(", .to = ".spacing(", .method_only = true },
+    .{ .from = "FormButton(", .to = "SubmitButton(" },
+    .{ .from = ".size(.px(", .to = ".size(.squarePx(" },
+    .{ .from = ".size(.percent(", .to = ".size(.squarePercent(" },
+    .{ .from = ".size = .px(", .to = ".size = .squarePx(" },
+    .{ .from = ".size = .percent(", .to = ".size = .squarePercent(" },
+    .{ .from = "Size.px(", .to = "Size.squarePx(" },
+    .{ .from = "Size.percent(", .to = "Size.squarePercent(" },
+    // A border's one-letter sides took the same arguments as the long ones;
+    // tb/lr drew 1 pixel.
+    .{ .from = ".border(.t(", .to = ".border(.top(" },
+    .{ .from = ".border(.b(", .to = ".border(.bottom(" },
+    .{ .from = ".border(.l(", .to = ".border(.left(" },
+    .{ .from = ".border(.r(", .to = ".border(.right(" },
+    .{ .from = ".border(.tb(", .to = ".border(.vertical(1, " },
+    .{ .from = ".border(.lr(", .to = ".border(.horizontal(1, " },
+    .{ .from = ".border = .t(", .to = ".border = .top(" },
+    .{ .from = ".border = .b(", .to = ".border = .bottom(" },
+    .{ .from = ".border = .l(", .to = ".border = .left(" },
+    .{ .from = ".border = .r(", .to = ".border = .right(" },
+    .{ .from = ".border = .tb(", .to = ".border = .vertical(1, " },
+    .{ .from = ".border = .lr(", .to = ".border = .horizontal(1, " },
+    // BorderThickness.solid was 1 pixel on every side.
+    .{ .from = ".sharp(.solid,", .to = ".sharp(.all(1)," },
+    .{ .from = ".thickness = .solid", .to = ".thickness = .all(1)", .whole = true },
+    .{ .from = "persist.allocator()", .to = "persist.arena()" },
+    .{ .from = "persist.Array(", .to = "persist.array(" },
+    .{ .from = "view.Array(", .to = "view.array(" },
+    .{ .from = "frame.Array(", .to = "frame.array(" },
+    .{ .from = "Fetch.Fetch", .to = "Fetch.Request", .whole = true },
+    .{ .from = "Vapor.clearPersitantStorage(", .to = "Vapor.clearPersistentStorage(" },
+    .{ .from = "Vapor.batch(", .to = "Vapor.cycle(" },
+    .{ .from = "Pool.initGlobalPool(", .to = "Pool.init(" },
+    .{ .from = "KeyStone.signout(", .to = "KeyStone.signOut(" },
+    .{ .from = "KeyStone.Config", .to = "KeyStone.ClientConfig", .whole = true },
 };
 
 const Hint = struct {
@@ -275,6 +323,10 @@ const hints = [_]Hint{
     .{ .from = "Vapor.HooksCtx(", .msg = "HooksCtx is gone; use Vapor.Hooks" },
     .{ .from = "Vapor.Kit.Fetch", .msg = "fetch moved: Vapor.fetch(url, .{}).handle(handler, .{ctx}); see Vapor.Fetch" },
     .{ .from = "Vapor.Kit.ErrResponse", .msg = "ErrResponse is gone; a failed request's Vapor.Fetch.Response has the status and body" },
+    .{ .from = "Vapor.lib.printlnColor(", .msg = "printlnColor printed nothing and is gone; delete the call or use Vapor.println" },
+    .{ .from = "Vapor.lib.printlnWithColor(", .msg = "printlnWithColor printed nothing and is gone; delete the call or use Vapor.println" },
+    .{ .from = "Vapor.lib.printlnAllocation(", .msg = "printlnAllocation printed nothing and is gone; delete the call" },
+    .{ .from = "Vapor.lib.printlnSrc(", .msg = "printlnSrc printed nothing and is gone; delete the call or use Vapor.println" },
     .{ .from = "Vapor.printlnSrc(", .msg = "printlnSrc printed nothing and is gone; delete the call or use Vapor.println" },
     .{ .from = "Vapor.onPushState(", .msg = "onPushState is gone; its callbacks were never called" },
     .{ .from = "Null2(", .msg = "Null2 is gone; use Vapor.Null()" },
@@ -283,6 +335,8 @@ const hints = [_]Hint{
     .{ .from = ".will_change", .msg = "Style.will_change is gone; it never reached the CSS" },
     .{ .from = ".btn_id", .msg = "Style.btn_id is gone; it did nothing" },
     .{ .from = ".dialog_id", .msg = "Style.dialog_id is gone; it did nothing" },
+    .{ .from = ".toplr(", .msg = "BorderRadius.toplr is gone; use .{ .top_left = a, .top_right = b }" },
+    .{ .from = "Sizing.at(", .msg = "Sizing.at is gone; use .mobileDesktopPercent" },
     .{
         .from = "&IconTokens{",
         .msg = "Icon() takes an IconTokens value: tokens declared as &IconTokens{...} work with Icon(.name) once the & is dropped (and *const IconTokens in your own types becomes IconTokens)",
@@ -309,6 +363,7 @@ fn applyRenames(arena: Allocator, text: []const u8, report: *Report) ![]const u8
                 // A name starting the pattern must not continue an identifier.
                 if (isIdent(r.from[0]) and i > 0 and isIdent(text[i - 1])) continue;
                 if (r.literal_only and i > 0 and (isIdent(text[i - 1]) or text[i - 1] == ')' or text[i - 1] == ']')) continue;
+                if (r.method_only and !afterValue(text, i)) continue;
                 const end = i + r.from.len;
                 if (r.whole and end < text.len and isIdent(text[end])) continue;
                 try out.appendSlice(arena, r.to);
@@ -356,6 +411,21 @@ fn applyRenames(arena: Allocator, text: []const u8, report: *Report) ![]const u8
     return out.items;
 }
 
+/// Whether the code before `i`, skipping whitespace, ends a value, so a
+/// `.name(` at `i` is a method call.
+fn afterValue(text: []const u8, i: usize) bool {
+    var j = i;
+    while (j > 0) {
+        j -= 1;
+        switch (text[j]) {
+            ' ', '\t', '\r', '\n' => continue,
+            ')', ']' => return true,
+            else => return isIdent(text[j]),
+        }
+    }
+    return false;
+}
+
 // ── Sides ───────────────────────────────────────────────────────────────────
 
 const SideContext = enum { spacing, thickness };
@@ -394,6 +464,36 @@ fn applySideLiterals(arena: Allocator, text: []const u8, report: *Report) ![]con
             i = end;
             continue :outer;
         };
+        // Elsewhere (a switch prong, a return), a removed side constructor is
+        // still a decl literal whose type the arguments give away.
+        if (mask[i] and text[i] == '.' and i + 1 < text.len and isIdent(text[i + 1]) and
+            (i == 0 or !(isIdent(text[i - 1]) or text[i - 1] == ')' or text[i - 1] == ']')))
+        {
+            var name_end = i + 1;
+            while (name_end < text.len and isIdent(text[name_end])) name_end += 1;
+            if (name_end < text.len and text[name_end] == '(' and isLetterSide(text[i + 1 .. name_end])) {
+                if (try callArgs(arena, text, mask, name_end)) |call| {
+                    const name = text[i + 1 .. name_end];
+                    const original = text[i .. call.close + 1];
+                    const result: SideResult = if (call.args.len == 2 and longSide(name) != null)
+                        .{ .replace = try std.fmt.allocPrint(arena, ".{s}({s}, {s})", .{ longSide(name).?, call.args[0], call.args[1] }) }
+                    else if (call.args.len == 1 and (std.mem.eql(u8, name, "tb") or std.mem.eql(u8, name, "lr")))
+                        .manual
+                    else
+                        try sideReplacement(arena, name, call.args, .spacing);
+                    switch (result) {
+                        .keep => {},
+                        .replace => |replacement| {
+                            try out.appendSlice(arena, replacement);
+                            try report.add(arena, text, i, false, "{s} -> {s}", .{ original, replacement });
+                            i = call.close + 1;
+                            continue :outer;
+                        },
+                        .manual => try report.add(arena, text, i, true, "{s}: write the sides as a literal, or use Border.vertical/horizontal(1, color)", .{original}),
+                    }
+                }
+            }
+        }
         try out.append(arena, text[i]);
         i += 1;
     }
@@ -442,6 +542,25 @@ fn rewriteSpan(arena: Allocator, text: []const u8, mask: []const bool, start: us
 }
 
 const SideResult = union(enum) { keep, replace: []const u8, manual };
+
+/// The removed short side constructors. `top`, `left`, ... still exist on
+/// `Border` and `BorderRadius`, so they are only rewritten in a context.
+fn isLetterSide(name: []const u8) bool {
+    for ([_][]const u8{ "t", "b", "l", "r", "tb", "lr", "tblr", "tl", "tr", "bl", "br", "top_left", "top_right", "bottom_left", "bottom_right" }) |n| {
+        if (std.mem.eql(u8, name, n)) return true;
+    }
+    return false;
+}
+
+/// `Border`'s one-letter sides took a thickness and a colour, like the long
+/// ones.
+fn longSide(name: []const u8) ?[]const u8 {
+    if (std.mem.eql(u8, name, "t")) return "top";
+    if (std.mem.eql(u8, name, "b")) return "bottom";
+    if (std.mem.eql(u8, name, "l")) return "left";
+    if (std.mem.eql(u8, name, "r")) return "right";
+    return null;
+}
 
 /// The literal for a deprecated or removed side constructor, or `.keep` when
 /// `name` is not one.
@@ -683,6 +802,14 @@ test "renames calls and types, not strings or comments" {
         \\Box().inlineStyleStr("view-transition-name: a").end();
         \\Vapor.onEnd(reinit);
         \\Vapor.onEndCtx(scrollTo, .{id});
+        \\_ = Box().hide(true).gradient(.white)
+        \\    .hide(false).end();
+        \\Box().background(.gradient(.linear, .right, &cs)).end();
+        \\.border = .tb(.white),
+        \\.border = .sharp(.solid, .black),
+        \\Box().border(.l(1, .black)).size(.px(4)).end();
+        \\var list = Vapor.persist.Array(u8).init(Vapor.persist.allocator());
+        \\const r = Vapor.Fetch.Fetch.fetch(url, .{});
     ,
         \\const e: *Vapor.Element = x; // Vapor.Binded
         \\Vapor.print(.err, "{d} .square_px(", .{1});
@@ -693,6 +820,14 @@ test "renames calls and types, not strings or comments" {
         \\Box().inlineStyle("view-transition-name: a", .{}).end();
         \\Vapor.onLayout(reinit, .{});
         \\Vapor.onLayout(scrollTo, .{id});
+        \\_ = Box().hidden(true).background(.white)
+        \\    .hidden(false).end();
+        \\Box().background(.gradient(.linear, .right, &cs)).end();
+        \\.border = .vertical(1, .white),
+        \\.border = .sharp(.all(1), .black),
+        \\Box().border(.left(1, .black)).size(.squarePx(4)).end();
+        \\var list = Vapor.persist.array(u8).init(Vapor.persist.arena());
+        \\const r = Vapor.Fetch.Request.fetch(url, .{});
     );
 }
 
@@ -708,6 +843,9 @@ test "side constructors become literals in padding, margin and thickness" {
         \\.border = .sharp(.left(1), .black),
         \\.radius = .top(8),
         \\.padding = .all(8),
+        \\.top => .b(2),
+        \\return .l(1, .black);
+        \\_ = Box().pl(4).l(3);
     ,
         \\.padding = .{ .left = 12 },
         \\.padding = if (deep) .{ .left = 16 } else .all(0),
@@ -719,6 +857,9 @@ test "side constructors become literals in padding, margin and thickness" {
         \\.border = .sharp(.{ .left = 1 }, .black),
         \\.radius = .top(8),
         \\.padding = .all(8),
+        \\.top => .{ .bottom = 2 },
+        \\return .left(1, .black);
+        \\_ = Box().pl(4).l(3);
     );
 }
 

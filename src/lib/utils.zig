@@ -439,7 +439,3 @@ test "hashToBase62 encodes zero as \"0\"" {
     var out: [6]u8 = undefined;
     try std.testing.expectEqualStrings("0", out[0..hashToBufferBase62(0, &out)]);
 }
-
-// Deprecated names, removed in the next major version.
-/// Deprecated: use `hashKey`.
-pub const hash = hashKey;

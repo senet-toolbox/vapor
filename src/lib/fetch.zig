@@ -366,10 +366,6 @@ pub fn fetch(url: []const u8, options: Options) *Request {
     return Request.fetch(url, options);
 }
 
-/// Deprecated: `Vapor.Fetch.Fetch` is now `Vapor.Fetch.Request`, and requests
-/// start with `Vapor.fetch(url, .{})`. Kept so existing code compiles.
-pub const Fetch = Request;
-
 // =============================================================================
 // Module-level state
 // =============================================================================

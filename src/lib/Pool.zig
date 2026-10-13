@@ -382,7 +382,3 @@ test "string pool" {
 
     try std.testing.expectEqual(pool.free_count_32, 10);
 }
-
-// Deprecated names, removed in the next major version.
-/// Deprecated: use `init`.
-pub const initGlobalPool = init;

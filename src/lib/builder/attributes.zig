@@ -134,7 +134,7 @@ pub fn src(self: *const Self, source_location: std.builtin.SourceLocation) Self 
 }
 
 /// Makes this element the CSS anchor named `name`, for elements positioned
-/// with `anchorPlacement`.
+/// with `placement`.
 pub fn anchorSource(self: *const Self, name: []const u8) Self {
     var n = self.*;
     n._anchor = name;

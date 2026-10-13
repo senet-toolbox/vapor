@@ -291,9 +291,3 @@ pub const Draggable = struct {
         Vapor.arena(.persist).destroy(self);
     }
 };
-
-// Extension method for Vapor.Element
-
-// Deprecated names, removed in the next major version.
-/// Deprecated: use `Draggable.init`.
-pub const draggable = Draggable.init;

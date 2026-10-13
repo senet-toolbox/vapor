@@ -282,8 +282,7 @@ _ = Vapor.fetch("/api/sync", .{
 ```
 
 `Vapor.Fetch` holds the types: `Request`, `Result`, `Response`,
-`ErrorResponse`, `Options`, `Headers`, `Method`, `State`. The old spelling,
-`Vapor.Fetch.Fetch.fetch`, still compiles but is deprecated.
+`ErrorResponse`, `Options`, `Headers`, `Method`, `State`.
 
 ### Browser APIs
 

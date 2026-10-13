@@ -155,11 +155,6 @@ pub const String = struct {
             self.len = required_len;
         }
     }
-
-    // Deprecated names, removed in the next major version.
-
-    /// Deprecated: use `appendStr`.
-    pub const append_str = appendStr;
 };
 
 /// Writes `data` (a struct) as JSON into `writer`.
@@ -1098,7 +1093,7 @@ pub fn useWss(wss_options: WssOptions) !Wss {
     if (!isWasi) return error.WasiOnly;
     if (wss_callbacks == null) {
         wss_callbacks = std.AutoHashMap(u32, WssOptions).init(Vapor.arena(.persist));
-        const key = utils.hash(wss_options.key);
+        const key = utils.hashKey(wss_options.key);
         wss_callbacks.?.put(key, wss_options) catch |err| {
             Vapor.report.err("Error adding wss options {any}", .{err});
             return error.CouldNotAddWssOptions;
@@ -1108,7 +1103,7 @@ pub fn useWss(wss_options: WssOptions) !Wss {
             .id = key,
         };
     } else if (wss_callbacks) |*callbacks| {
-        const key = utils.hash(wss_options.key);
+        const key = utils.hashKey(wss_options.key);
         callbacks.put(key, wss_options) catch |err| {
             Vapor.report.err("Error adding wss options {any}", .{err});
             return error.CouldNotAddWssOptions;

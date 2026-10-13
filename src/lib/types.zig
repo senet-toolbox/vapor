@@ -238,8 +238,6 @@ pub const BorderRadius = BoxModule.BorderRadius;
 pub const Border = BoxModule.Border;
 pub const BorderThickness = BoxModule.BorderThickness;
 pub const BorderStyle = BoxModule.BorderStyle;
-/// Deprecated: renamed `Border`.
-pub const BorderGrouped = BoxModule.BorderGrouped;
 pub const Overflow = BoxModule.Overflow;
 pub const Scroll = BoxModule.Scroll;
 pub const Outline = BoxModule.Outline;
@@ -490,17 +488,6 @@ pub const Transform = struct {
     pub fn rotateXYZ(x: f16, y: f16, z: f16) Transform {
         return .{ .x = x, .y = y, .z = z, .type = &.{.rotateXYZ}, .size_type = .deg };
     }
-
-    // Deprecated names, removed in the next major version.
-
-    /// Deprecated: use `directionScale`.
-    pub const direction_scale = directionScale;
-    /// Deprecated: use `leftPercent`.
-    pub const left_percent = leftPercent;
-    /// Deprecated: use `topPercent`.
-    pub const top_percent = topPercent;
-    /// Deprecated: use `directionScale`.
-    pub const distAndScale = directionScale;
 };
 
 pub const Dim = struct {
@@ -772,13 +759,6 @@ const FontParams = struct {
             ._color = font_color,
         };
     }
-
-    // Deprecated names, removed in the next major version.
-
-    /// Deprecated: use `sizeWeight`.
-    pub const size_weight = sizeWeight;
-    /// Deprecated: use `sizeColor`.
-    pub const size_color = sizeColor;
 };
 
 pub const FontStyle = enum(u8) { default, normal, italic };

@@ -273,19 +273,6 @@ pub const TextFieldBuilder = struct {
         }
         return self._ui_node.?.uuid;
     }
-
-    // Deprecated names, removed in the next major version.
-
-    /// Deprecated: use `textColor`.
-    pub const fontColor = textColor;
-    /// Deprecated: use `whiteSpace`.
-    pub const whitespace = whiteSpace;
-    /// Deprecated: use `spacing`.
-    pub const childGap = spacing;
-    /// Deprecated: use `style`.
-    pub const baseStyle = style;
-    /// Deprecated: use `onEvent`.
-    pub const onEventCtx = onEvent;
 };
 
 /// Kept for source compatibility; every state type gets the same builder.

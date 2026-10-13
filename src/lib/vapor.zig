@@ -110,8 +110,6 @@ pub const Transition = @import("transition.zig");
 
 const StorageModule = @import("storage.zig");
 pub const clearPersistentStorage = StorageModule.clearPersistentStorage;
-/// Deprecated: misspelled; use `clearPersistentStorage`.
-pub const clearPersitantStorage = clearPersistentStorage;
 pub const store = StorageModule.store;
 pub const getStore = StorageModule.getStore;
 pub const setCookie = StorageModule.setCookie;
@@ -1154,7 +1152,3 @@ pub const std_options = std.Options{
 };
 
 pub const ArrayArena = @import("array.zig").Array;
-
-// Deprecated names, removed in the next major version.
-/// Deprecated: use `cycle`.
-pub const batch = cycle;

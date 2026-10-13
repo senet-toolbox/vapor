@@ -134,7 +134,7 @@ fn writeAnimTransformValue(p: Animation.PropValue, writer: *Writer) void {
             // Or just call writeRgba directly if it's a raw Color struct
 
             // Assuming `col` is your standard Color struct:
-            shadow.toCss(writer) catch {};
+            shadow.writeCss(writer) catch {};
         },
     }
 
@@ -172,7 +172,7 @@ fn writeAnimStandardValue(p: Animation.PropValue, writer: *Writer) void {
             // Or just call writeRgba directly if it's a raw Color struct
 
             // Assuming `col` is your standard Color struct:
-            shadow.toCss(writer) catch {};
+            shadow.writeCss(writer) catch {};
         },
     }
 }

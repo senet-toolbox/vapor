@@ -48,9 +48,6 @@ pub const ClientConfig = struct {
     scope: ?[]const u8 = null,
 };
 
-/// Backward-compatible alias.
-pub const Config = ClientConfig;
-
 pub const Clients = struct {
     google: ?ClientConfig = null,
     github: ?ClientConfig = null,
@@ -361,11 +358,6 @@ pub fn signOutWithOptions(options: SignOutOptions) void {
         .headers = .{ .content_type = "application/x-www-form-urlencoded" },
         .body_type = .string,
     }).handle(handleAuthSessionResponse, .{});
-}
-
-/// Backward-compatible alias.
-pub fn signout() void {
-    signOut();
 }
 
 /// Asks the backend whether the session for `provider` is still valid; calls
@@ -845,11 +837,3 @@ fn getClient(self: *const KeyStone, provider: Provider) ?ClientConfig {
         .azure => self.clients.azure,
     };
 }
-
-// Deprecated names, removed in the next major version.
-/// Deprecated: use `signInWithOauth`.
-pub const signIn = signInWithOauth;
-/// Deprecated: use `bootstrap`.
-pub const restoreSession = bootstrap;
-/// Deprecated: use `getAccessToken`.
-pub const getSession = getAccessToken;

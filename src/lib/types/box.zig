@@ -42,65 +42,6 @@ fn Sides(comptime T: type, comptime tag: @EnumLiteral()) type {
         pub fn horizontal(size: T) Self {
             return .{ .left = size, .right = size };
         }
-
-        // Deprecated names, removed in the next major version. Each one is a
-        // literal: `.tb(8, 4)` is `.{ .top = 8, .bottom = 4 }`.
-
-        /// Deprecated: use `.{ .top = .., .bottom = .., .left = .., .right = .. }`.
-        pub fn tblr(top: T, bottom: T, left: T, right: T) Self {
-            return .{ .top = top, .bottom = bottom, .left = left, .right = right };
-        }
-        /// Deprecated: use `.{ .top = .., .bottom = .. }`.
-        pub fn tb(top: T, bottom: T) Self {
-            return .{ .top = top, .bottom = bottom };
-        }
-        /// Deprecated: use `.{ .left = .., .right = .. }`.
-        pub fn lr(left: T, right: T) Self {
-            return .{ .left = left, .right = right };
-        }
-        /// Deprecated: use `.{ .top = .. }`.
-        pub fn t(top: T) Self {
-            return .{ .top = top };
-        }
-        /// Deprecated: use `.{ .bottom = .. }`.
-        pub fn b(bottom: T) Self {
-            return .{ .bottom = bottom };
-        }
-        /// Deprecated: use `.{ .left = .. }`.
-        pub fn l(left: T) Self {
-            return .{ .left = left };
-        }
-        /// Deprecated: use `.{ .right = .. }`.
-        pub fn r(right: T) Self {
-            return .{ .right = right };
-        }
-        /// Deprecated: use `.{ .top = .., .left = .. }`.
-        pub fn tl(top: T, left: T) Self {
-            return .{ .top = top, .left = left };
-        }
-        /// Deprecated: use `.{ .top = .., .right = .. }`.
-        pub fn tr(top: T, right: T) Self {
-            return .{ .top = top, .right = right };
-        }
-        /// Deprecated: use `.{ .bottom = .., .left = .. }`.
-        pub fn bl(bottom: T, left: T) Self {
-            return .{ .bottom = bottom, .left = left };
-        }
-        /// Deprecated: use `.{ .bottom = .., .right = .. }`.
-        pub fn br(bottom: T, right: T) Self {
-            return .{ .bottom = bottom, .right = right };
-        }
-        /// Deprecated: use `.{ .top = .., .left = .. }`.
-        pub const top_left = tl;
-        /// Deprecated: use `.{ .top = .., .right = .. }`.
-        pub const top_right = tr;
-        /// Deprecated: use `.{ .bottom = .., .left = .. }`.
-        pub const bottom_left = bl;
-        /// Deprecated: use `.{ .bottom = .., .right = .. }`.
-        pub const bottom_right = br;
-        /// Deprecated: 1 pixel on every side (it was `Border.solid`); use
-        /// `.all(1)`.
-        pub const solid: Self = .all(1);
     };
 }
 
@@ -153,17 +94,6 @@ pub const Scroll = packed struct {
     pub fn scrollY() Scroll {
         return .{ .y = .scroll };
     }
-
-    // Deprecated names, removed in the next major version.
-
-    /// Deprecated: use `noneX`.
-    pub const none_x = noneX;
-    /// Deprecated: use `noneY`.
-    pub const none_y = noneY;
-    /// Deprecated: use `scrollX`.
-    pub const scroll_x = scrollX;
-    /// Deprecated: use `scrollY`.
-    pub const scroll_y = scrollY;
 };
 
 pub const BorderRadius = packed struct {
@@ -211,18 +141,6 @@ pub const BorderRadius = packed struct {
     pub fn leftRight(left_radius: u16, right_radius: u16) BorderRadius {
         return .{ .top_left = left_radius, .bottom_left = left_radius, .top_right = right_radius, .bottom_right = right_radius };
     }
-
-    // Deprecated names, removed in the next major version.
-
-    /// Deprecated: use `topBottom`.
-    pub const top_bottom = topBottom;
-    /// Deprecated: the top-left and top-right corners; use `specific` or a
-    /// literal.
-    pub fn toplr(top_left: u16, top_right: u16) BorderRadius {
-        return .{ .top_left = top_left, .top_right = top_right };
-    }
-    /// Deprecated: use `leftRight`.
-    pub const left_right = leftRight;
 };
 
 pub const Outline = enum(u8) {
@@ -326,28 +244,4 @@ pub const Border = struct {
     pub fn horizontal(thickness: u8, color: types.Color) Border {
         return .{ .thickness = .horizontal(thickness), .color = color };
     }
-
-    // Deprecated names, removed in the next major version.
-
-    /// Deprecated: use `thin`.
-    pub const simple = thin;
-    /// Deprecated: use `left`.
-    pub const l = left;
-    /// Deprecated: use `right`.
-    pub const r = right;
-    /// Deprecated: use `bottom`.
-    pub const b = bottom;
-    /// Deprecated: use `top`.
-    pub const t = top;
-    /// Deprecated: 1 pixel on the top and bottom; use `vertical(1, color)`.
-    pub fn tb(color: types.Color) Border {
-        return vertical(1, color);
-    }
-    /// Deprecated: 1 pixel on the left and right; use `horizontal(1, color)`.
-    pub fn lr(color: types.Color) Border {
-        return horizontal(1, color);
-    }
 };
-
-/// Deprecated: renamed `Border`.
-pub const BorderGrouped = Border;

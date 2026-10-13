@@ -20,8 +20,6 @@ test "public API surface used by docs examples compiles" {
         _ = Vapor.arena;
         _ = Vapor.Fetch.Request;
         _ = Vapor.fetch;
-        // Deprecated spelling, kept for existing apps.
-        _ = Vapor.Fetch.Fetch;
         _ = Vapor.Kit.HttpReq;
         _ = Vapor.TextField;
         _ = Vapor.TextArea;
@@ -1187,7 +1185,7 @@ test "README examples type-check against the real API" {
         _ = Vapor.Fetch.Options;
 
         // "Authentication"
-        _ = Vapor.KeyStone.signIn;
+        _ = Vapor.KeyStone.signInWithOauth;
         _ = Vapor.KeyStone.isAuthenticated;
         _ = Vapor.KeyStone.getAccessToken;
 
@@ -1514,24 +1512,6 @@ test "Padding, Margin and BorderThickness build the same way" {
     try std.testing.expectEqual(T.BorderThickness{ .bottom = 2 }, border.thickness);
     try std.testing.expectEqual(T.BorderThickness{ .top = 1, .bottom = 1 }, T.Border.vertical(1, .white).thickness);
     try std.testing.expectEqual(T.BorderRadius{ .top_left = 4, .bottom_left = 4 }, T.BorderRadius.left(4));
-}
-
-// Old names stay as aliases until the next major version.
-test "deprecated names still resolve" {
-    const T = Vapor.Types;
-    const border: T.BorderGrouped = .simple(.white);
-    try std.testing.expectEqual(T.Border.thin(.white).thickness, border.thickness);
-    try std.testing.expectEqual(T.Border.vertical(1, .white).thickness, T.Border.tb(.white).thickness);
-    try std.testing.expectEqual(T.BorderThickness.all(1), T.BorderThickness.solid);
-    try std.testing.expectEqual(T.Padding{ .top = 1, .left = 2 }, T.Padding.top_left(1, 2));
-    try std.testing.expectEqual(T.Padding{ .top = 3, .bottom = 1 }, T.Padding.tb(3, 1));
-    try std.testing.expectEqual(T.Margin{ .bottom = 5 }, T.Margin.b(5));
-    try std.testing.expectEqual(T.BorderRadius.leftRight(1, 2), T.BorderRadius.left_right(1, 2));
-    try std.testing.expectEqual(T.Scroll.scrollY(), T.Scroll.scroll_y());
-    try std.testing.expectEqual(T.Size.squarePx(4), T.Size.square_px(4));
-    try std.testing.expectEqual(T.Sizing.minMaxVp(1, 2), T.Sizing.min_max_vp(1, 2));
-    try std.testing.expectEqual(T.Pos.mobileDesktop(.px(1), .px(2)), T.Pos.mobile_desktop(.px(1), .px(2)));
-    try std.testing.expectEqual(T.Transform.leftPercent(5), T.Transform.left_percent(5));
 }
 
 fn visualCss(visual: Vapor.Types.Visual, buf: []u8) ![]const u8 {

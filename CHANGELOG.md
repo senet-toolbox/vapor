@@ -10,10 +10,12 @@ Breaking: the next release is a major version.
 
 ### Breaking
 
-- `Vapor.printErr` and `Vapor.printlnSrc` are removed; both printed
-  nothing. `printSrcErr` (a second name for `printErrSrc`) is removed.
-  Use `Vapor.print(.err, ...)`, `printErrSrc`, or `std.log` routed through
-  `Vapor.lib.log`.
+- The print helpers that printed nothing are removed: `printErr`,
+  `printlnErr`, `printlnSrc`, `printWarn`, `printInfo`, `printDebug`,
+  `printlnColor`, `printlnWithColor` and `printlnAllocation`, as is
+  `printSrcErr` (a second name for `printlnSrcErr`). Use
+  `Vapor.print(.err, ...)` (or `.warn`, `.info`, `.debug`),
+  `Vapor.println`, or `std.log` routed through `Vapor.lib.log`.
 - `Padding`, `Margin` and `BorderThickness` (was `Border`) share one shape:
   plain `top`/`bottom`/`left`/`right` fields, set with a literal
   (`.padding(.{ .left = 12, .top = 4 })`), plus `all`, `xy`, `vertical`
@@ -42,9 +44,10 @@ Breaking: the next release is a major version.
   global that points into it must be reset in the page's deinit or
   reallocated on the next visit.
 
-### Deprecated
+### Renamed
 
-Kept as aliases until the next major version:
+The old names are gone. `zig build migrate` rewrites nearly all of them,
+and the compiler points at the rest:
 
 - `BorderGrouped` → `Border`; `Border.simple` → `thin`, `.t/.b/.l/.r` →
   `.top/.bottom/.left/.right`, `.tb(color)`/`.lr(color)` →
@@ -68,7 +71,13 @@ Kept as aliases until the next major version:
   `Shadow.toCss` → `writeCss`, `persist.allocator` → `persist.arena`,
   `{persist,view,frame}.Array` → `array`, `KeyStone.signIn` →
   `signInWithOauth`, `restoreSession` → `bootstrap`, `getSession` →
-  `getAccessToken`, `draggable` → `Draggable.init`.
+  `getAccessToken`, `signout` → `signOut`, `KeyStone.Config` →
+  `ClientConfig`, `draggable` → `Draggable.init`, `Vapor.batch` →
+  `cycle`, `Pool.initGlobalPool` → `Pool.init`, `utils.hash` →
+  `hashKey`, `Vapor.Fetch.Fetch` → `Vapor.Fetch.Request`,
+  `clearPersitantStorage` → `clearPersistentStorage`.
+- `BorderThickness.solid` → `.all(1)`; `BorderRadius.toplr(a, b)` →
+  `.{ .top_left = a, .top_right = b }`.
 - `.hide(bool)` → `.hidden(bool)`. `.hide` set the DOM attribute after the
   fact and did nothing on the first render; `.hidden` always applies.
 - snake_case functions → camelCase: `square_px` → `squarePx`,
@@ -86,7 +95,8 @@ Kept as aliases until the next major version:
   `Vapor.onLayout(f, .{})`, `onEndCtx` → `onLayout`,
   `.inlineStyleStr("css")` → `.inlineStyle("css", .{})`, and drops
   `Vapor.Kit.init()`; `Kit.Fetch`, `Kit.ErrResponse` and `HooksCtx` are
-  reported.
+  reported. Removed side constructors are rewritten wherever they appear
+  (`.top => .b(2)` in a switch becomes `.top => .{ .bottom = 2 }`).
 - `.padX(n)` / `.padY(n)` on elements and text fields: padding on one
   axis, keeping the other.
 - Text fields get the margin shorthands elements had: `.mt`, `.mb`, `.ml`,
@@ -200,9 +210,8 @@ noted.
 - A responsive style with two breakpoints wrote its first `@media` rule
   twice, and after the first render the runtime overwrote it with a plain
   rule, so the mobile style applied at every width.
-- `clearPersitantStorage` is spelled `clearPersistentStorage` (the old name
-  remains as a deprecated alias); `error.SeperatorNotFound` is
-  `error.SeparatorNotFound`.
+- `clearPersitantStorage` is spelled `clearPersistentStorage`;
+  `error.SeperatorNotFound` is `error.SeparatorNotFound`.
 
 ### Documentation
 
