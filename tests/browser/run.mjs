@@ -380,6 +380,19 @@ const tests = {
     await p.waitForText("key-count", "1/2");
   },
 
+  async "events after renders that change nothing reach the current node"(p) {
+    await p.goto("/stale");
+    await p.waitForText("stale-hovers", "hovers=0");
+    // These renders change nothing, so the DOM is not walked; the runtime
+    // must still point its registry at the nodes of the latest render.
+    for (let i = 0; i < 3; i++) {
+      await p.click("stale-refresh");
+      await sleep(50);
+    }
+    await p.evaluate(`document.getElementById("stale-target").dispatchEvent(new MouseEvent("mouseover", { bubbles: true }))`);
+    await p.waitFor(`/^hovers=[1-9]/.test(document.getElementById("stale-hovers").textContent)`, "the hover handler to run");
+  },
+
   async "Element.listen outlives renders, does not rerender, and leaves with its element"(p) {
     await p.goto("/listen");
     await p.waitForText("listen-state", "hits=0 listeners=0");

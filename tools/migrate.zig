@@ -548,7 +548,10 @@ fn applySideLiterals(arena: Allocator, text: []const u8, report: *Report) ![]con
                 if (try callArgs(arena, text, mask, name_end)) |call| {
                     const name = text[i + 1 .. name_end];
                     const original = text[i .. call.close + 1];
-                    const result: SideResult = if (call.args.len == 2 and longSide(name) != null)
+                    const result: SideResult = if (call.args.len == 3 and isPositionCorner(name))
+                        // Position.tl/tr/bl/br(a, b, kind) are still there.
+                        .keep
+                    else if (call.args.len == 2 and longSide(name) != null)
                         .{ .replace = try std.fmt.allocPrint(arena, ".{s}({s}, {s})", .{ longSide(name).?, call.args[0], call.args[1] }) }
                     else if (call.args.len == 1 and (std.mem.eql(u8, name, "tb") or std.mem.eql(u8, name, "lr")))
                         .manual
@@ -620,6 +623,14 @@ const SideResult = union(enum) { keep, replace: []const u8, manual };
 /// `Border` and `BorderRadius`, so they are only rewritten in a context.
 fn isLetterSide(name: []const u8) bool {
     for ([_][]const u8{ "t", "b", "l", "r", "tb", "lr", "tblr", "tl", "tr", "bl", "br", "top_left", "top_right", "bottom_left", "bottom_right" }) |n| {
+        if (std.mem.eql(u8, name, n)) return true;
+    }
+    return false;
+}
+
+/// `Position`'s corner constructors, which share names with removed sides.
+fn isPositionCorner(name: []const u8) bool {
+    for ([_][]const u8{ "tl", "tr", "bl", "br" }) |n| {
         if (std.mem.eql(u8, name, n)) return true;
     }
     return false;
@@ -988,4 +999,17 @@ test "a visual with both border and border_radius is left for a person" {
     try std.testing.expectEqualStrings(input, result);
     try std.testing.expectEqual(@as(usize, 1), report.notes.items.len);
     try std.testing.expect(report.notes.items[0].manual);
+}
+
+test "a position corner is not a removed side constructor" {
+    const input =
+        \\.position = .tr(.px(0), .px(0), .absolute),
+        \\return .bl(.px(4), .px(4), .fixed);
+    ;
+    var arena_state = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena_state.deinit();
+    var report: Report = .{};
+    const result = try migrate(arena_state.allocator(), input, &report);
+    try std.testing.expectEqualStrings(input, result);
+    try std.testing.expectEqual(@as(usize, 0), report.notes.items.len);
 }

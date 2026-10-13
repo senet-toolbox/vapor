@@ -4,6 +4,19 @@ All notable changes to this project are documented here. This project follows
 [Semantic Versioning](https://semver.org/): breaking changes bump the major
 version and are listed with a migration note.
 
+## [Unreleased]
+
+### Fixed
+
+- An event on load could crash with "memory access out of bounds" in
+  `dispatchNodeEvent`. Every render builds its nodes in a fresh frame arena,
+  but the runtime only refreshed its element-to-node pointers on renders that
+  changed the DOM; after two renders that changed nothing (a fetch
+  completing, say), a `mouseover` or other event handed wasm a node from a
+  freed arena. The runtime now repoints them on every render.
+- `zig build migrate` no longer flags `Position.tl/tr/bl/br(a, b, kind)` as
+  removed side constructors.
+
 ## [3.0.0] — 2026-10-13
 
 A major version: the names deprecated during the API cleanup are removed,

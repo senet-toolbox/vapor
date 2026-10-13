@@ -550,6 +550,24 @@ export function traverseUINodes(parent, parentUINode) {
   }
 }
 
+// Every render builds new UINodes in a fresh frame arena, and the arena two
+// renders back is reused. A render with nothing dirty skips traverseUINodes,
+// so walk the tree anyway and point each registry entry at its current node;
+// otherwise an event (a mouseover on load, say) hands wasm a freed node.
+export function refreshNodePointers(parentUINode) {
+  let childPtr = wasmInstance.getUINodeFirstChild(parentUINode);
+  while (childPtr) {
+    const uinode = readUINode(childPtr);
+    const node_info = domNodeRegistry.get(uinode.id);
+    if (node_info !== undefined) {
+      node_info.node_ptr = uinode.offset;
+      node_info.destroy_hash = uinode.onCallbacks[2];
+    }
+    refreshNodePointers(childPtr);
+    childPtr = wasmInstance.getUINodeNextSibling(childPtr);
+  }
+}
+
 export function traverseRemove(parent, tree_node, layout) {
   debug("traverseRemove", parent, tree_node, layout);
   if (!parent) return;

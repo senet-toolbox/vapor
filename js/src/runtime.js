@@ -20,6 +20,7 @@ import {
 import {
   COMPONENT_TYPES,
   traverseUINodes,
+  refreshNodePointers,
   animateExit,
   resetTimers,
 } from "./traversal.js";
@@ -830,6 +831,8 @@ export async function render() {
             });
           }
         });
+      } else {
+        refreshNodePointers(wasmInstance.getRenderUINodeRootPtr());
       }
     } else {
       debug("Grain Rerender");

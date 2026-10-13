@@ -1,0 +1,259 @@
+//! Reads structs the JS runtime builds (form data, file info, resize entries)
+//! from wasm memory, and describes Zig structs' layout to JS.
+
+const std = @import("std");
+const Vapor = @import("vapor.zig");
+const utils = @import("utils.zig");
+const getUnderlyingType = utils.getUnderlyingType;
+
+// Zig Side
+const FieldType = enum {
+    string,
+    int,
+    float,
+    bool,
+};
+
+pub const Field = struct {
+    name: []const u8,
+    type: FieldType,
+    value: union(enum) {
+        string: []const u8,
+        int: i32,
+        float: f32,
+        bool: bool,
+    },
+};
+
+pub const DynamicObject = struct {
+    fields: std.array_list.Managed(Field),
+    allocator: std.mem.Allocator,
+
+    /// An object with no fields.
+    pub fn init(allocator: std.mem.Allocator) DynamicObject {
+        return .{
+            .fields = std.array_list.Managed(Field).init(allocator),
+            .allocator = allocator,
+        };
+    }
+
+    /// Frees the field list.
+    pub fn deinit(self: *DynamicObject) void {
+        self.fields.deinit();
+    }
+};
+
+/// Fills a `T` from the object's fields, matched by position: the i-th field
+/// of `T` takes the i-th field of the object.
+pub fn convertFromDynamicToType(comptime T: type, dyn_object: *DynamicObject) T {
+    var new_object: T = undefined;
+    const fields = @typeInfo(T).@"struct".fields;
+    inline for (fields, 0..) |field, i| {
+        const dyn_field_value = dyn_object.fields.items[i].value;
+        const dyn_field_type = dyn_object.fields.items[i].type;
+        switch (@typeInfo(field.type)) {
+            .pointer => |ptr| {
+                if (ptr.size == .slice) {
+                    @field(new_object, field.name) = dyn_field_value.string;
+                } else {
+                    Vapor.report.err("Not implemented yet, TYPE: {any}", .{field.type});
+                }
+            },
+            .int => {
+                if (dyn_field_type == .int) {
+                    @field(new_object, field.name) = @as(field.type, @intCast(dyn_field_value.int));
+                } else {
+                    Vapor.report.err("Not implemented yet, TYPE: {any}", .{field.type});
+                }
+            },
+            .float => {
+                if (dyn_field_type == .float) {
+                    @field(new_object, field.name) = @as(field.type, @floatCast(dyn_field_value.float));
+                } else if (dyn_field_type == .int) {
+                    @field(new_object, field.name) = @as(field.type, @floatFromInt(dyn_field_value.int));
+                } else {
+                    Vapor.report.err("Not implemented yet, TYPE: {any} {any}", .{ field.type, dyn_field_value });
+                    Vapor.report.err("Not implemented yet, TYPE: {any} {any}", .{ field.type, dyn_field_value });
+                }
+            },
+            .bool => {
+                if (dyn_field_type == .bool) {
+                    @field(new_object, field.name) = dyn_field_value.bool;
+                } else {
+                    Vapor.report.err("Not implemented yet, TYPE: {any}", .{field.type});
+                }
+            },
+            .@"struct" => {
+                if (dyn_field_type == .object) {
+                    @field(new_object, field.name) = convertFromDynamicToType(field.type, dyn_field_value.object);
+                } else {
+                    Vapor.report.err("Not implemented yet, TYPE: {any}", .{field.type});
+                }
+            },
+            else => {},
+        }
+    }
+    return new_object;
+}
+
+var current_object: ?*DynamicObject = null;
+// Similar for float and bool fields...
+/// The object behind a handle the runtime returned.
+pub fn finalizeObject(handle: u32) *DynamicObject {
+    const obj = @as(*DynamicObject, @ptrFromInt(@as(usize, @intCast(handle))));
+    return obj;
+}
+
+// Zig Side - Automatic struct introspection
+/// The layout record for one struct field, as the runtime reads it.
+pub fn FieldDescriptor() type {
+    return extern struct {
+        name_ptr: [*]const u8,
+        name_len: u32,
+        offset: u32,
+        type_id: u8,
+        size: u32,
+        can_be_null: bool,
+    };
+}
+
+/// Describes `T`'s layout to the runtime and holds one instance to share.
+pub fn exportStruct(comptime T: type) type {
+    return struct {
+        pub var instance: T = undefined;
+        var descriptors: [@typeInfo(T).@"struct".fields.len]FieldDescriptor() = undefined;
+
+        /// Records `T`'s field layout.
+        pub fn init() void {
+            const fields = @typeInfo(T).@"struct".fields;
+            inline for (fields, 0..) |field, i| {
+                descriptors[i] = .{
+                    .name_ptr = field.name.ptr,
+                    .name_len = field.name.len,
+                    .offset = @offsetOf(T, field.name),
+                    .type_id = getTypeId(field.type),
+                    .size = @sizeOf(getUnderlyingType(field.type)),
+                    .can_be_null = @typeInfo(field.type) == .optional,
+                };
+            }
+        }
+
+        /// The shared instance's address.
+        pub fn getInstancePtr() [*]const u8 {
+            return @ptrCast(&instance);
+        }
+
+        /// Number of fields in `T`.
+        pub fn getFieldCount() u32 {
+            return @typeInfo(T).@"struct".fields.len;
+        }
+
+        /// The layout of field `index`.
+        pub fn getFieldDescriptor(index: u32) *const FieldDescriptor() {
+            return &descriptors[index];
+        }
+
+        fn getTypeId(comptime FT: type) u8 {
+            return switch (@typeInfo(getUnderlyingType(FT))) {
+                .int => |info| if (info.signedness == .unsigned) 1 else 2,
+                .float => 3,
+                .bool => 4,
+                .array => |arr| if (arr.child == u8) 5 else 6,
+                .pointer => 7,
+                .@"enum" => {
+                    return 8;
+                },
+                else => {
+                    return 0;
+                },
+            };
+        }
+    };
+}
+pub const API = struct {
+    // --- Dynamic Object Construction ---
+    /// Runtime export: starts building an object; returns its handle.
+    pub fn startObject() callconv(.c) usize {
+        current_object = Vapor.allocator_global.create(DynamicObject) catch return 0;
+        current_object.?.* = DynamicObject.init(Vapor.allocator_global);
+        return @intFromPtr(current_object.?);
+    }
+
+    /// Runtime export: adds a string field.
+    pub fn addStringField(handle: i32, key_ptr: [*:0]u8, value_ptr: [*:0]u8) callconv(.c) void {
+        const obj = @as(*DynamicObject, @ptrFromInt(@as(usize, @intCast(handle))));
+        const key = std.mem.span(key_ptr);
+        const value = std.mem.span(value_ptr);
+
+        obj.fields.append(.{
+            .name = key,
+            .type = .string,
+            .value = .{ .string = value },
+        }) catch return;
+    }
+
+    /// Runtime export: adds an integer field.
+    pub fn addIntField(handle: i32, key_ptr: [*:0]u8, value: i32) callconv(.c) void {
+        const obj = @as(*DynamicObject, @ptrFromInt(@as(usize, @intCast(handle))));
+        const key = std.mem.span(key_ptr);
+
+        obj.fields.append(.{
+            .name = key,
+            .type = .int,
+            .value = .{ .int = value },
+        }) catch return;
+    }
+
+    /// Runtime export: adds a float field.
+    pub fn addFloatField(handle: i32, key_ptr: [*:0]u8, value: f32) callconv(.c) void {
+        const obj = @as(*DynamicObject, @ptrFromInt(@as(usize, @intCast(handle))));
+        const key = std.mem.span(key_ptr);
+
+        obj.fields.append(.{
+            .name = key,
+            .type = .float,
+            .value = .{ .float = value },
+        }) catch return;
+    }
+
+    /// Runtime export: adds a bool field.
+    pub fn addBoolField(handle: i32, key_ptr: [*:0]u8, value: bool) callconv(.c) void {
+        const obj = @as(*DynamicObject, @ptrFromInt(@as(usize, @intCast(handle))));
+        const key = std.mem.span(key_ptr);
+
+        obj.fields.append(.{
+            .name = key,
+            .type = .bool,
+            .value = .{ .bool = value },
+        }) catch return;
+    }
+
+    /// Runtime export: passes a finished object to the waiting callback.
+    pub fn readObject(callback_ptr: u32, object_ptr: ?*DynamicObject) callconv(.c) void {
+        const node = Vapor.ctx_callback_registry.get(callback_ptr) orelse {
+            Vapor.report.err("Callback not found", .{});
+            return;
+        };
+        node.data.dynamic_object = object_ptr;
+        @call(.auto, node.data.runFn, .{&node.data});
+        if (Vapor.mode == .atomic) {
+            Vapor.cycle();
+        }
+    }
+};
+
+// --- Auto-Export Magic ---
+comptime {
+    const decls = std.meta.declarations(API);
+    for (decls) |decl| {
+        // We only care about public functions inside the API struct
+        const val = @field(API, decl.name);
+        const Type = @TypeOf(val);
+
+        // Check if it is a function
+        if (@typeInfo(Type) == .@"fn") {
+            // Export it using its declared name
+            @export(&val, .{ .name = decl.name });
+        }
+    }
+}

@@ -1,0 +1,1097 @@
+//! The core runtime: initialisation, page registration and routing, the
+//! render cycle, and the global state the other modules share. Most of it is
+//! re-exported from src/root.zig.
+
+const std = @import("std");
+const builtin = @import("builtin");
+pub var isGenerated = !isWasi;
+pub const isWasi = builtin.target.cpu.arch == .wasm32;
+pub const debug = builtin.mode == .Debug;
+const types = @import("types.zig");
+const UIContext = @import("UITree.zig");
+const UINode = @import("UITree.zig").UINode;
+pub const CommandsTree = UIContext.CommandsTree;
+const TransitionState = @import("transition.zig").TransitionState;
+const Router = @import("Router.zig");
+pub const Element = @import("element.zig").Element;
+const KeyGenerator = @import("key.zig").KeyGenerator;
+const Reconciler = @import("reconciler.zig");
+pub const Wasm = @import("wasm.zig");
+const getVisualStyle = @import("style_compiler.zig").getVisualStyle;
+pub const Bridge = @import("bridge.zig");
+pub const Event = @import("Event.zig");
+const CSSGenerator = @import("CSSGenerator.zig");
+pub const hashKey = utils.hashKey;
+const Pool = @import("Pool.zig");
+const mutateDomElementStyleString = @import("element.zig").mutateDomElementStyleString;
+const HtmlGenerator = @import("html_generator.zig");
+const Fetch = @import("fetch.zig");
+const Packer = @import("packer.zig");
+const ClassCache = @import("class_cache.zig").ClassCache;
+const NodeTables = @import("node_table.zig");
+const NodeTable = NodeTables.NodeTable;
+const DynamicObject = @import("dynamic.zig").DynamicObject;
+const StringTable = @import("string_table.zig").StringTable;
+const TextFieldTable = @import("text_field_table.zig").StringTable;
+const Components = @import("components.zig");
+const Accessibility = @import("accessibility.zig");
+const Polygons = @import("Polygon.zig").Polygons;
+const StorageTable = @import("storage_table.zig").StorageTable;
+const Structures = @import("structures/structures.zig");
+
+const DebugLevel = enum(u8) { all = 0, debug = 1, info = 2, warn = 3, none = 4 };
+
+pub var build_options = struct {
+    enable_debug: bool = true,
+    debug_level: DebugLevel = .none,
+}{};
+
+pub var Timer = struct {
+    generation_time: f64 = 0,
+    reconcile_time: f64 = 0,
+    commit_time: f64 = 0,
+    total_time: f64 = 0,
+}{};
+const getStyle = @import("style_compiler.zig").getStyle;
+const StyleCompiler = @import("style_compiler.zig");
+const utils = @import("utils.zig");
+const getAriaLabel = utils.getAriaLabel;
+pub const setGlobalStyleVariables = @import("style_compiler.zig").setGlobalStyleVariables;
+
+pub const Component = fn (void) void;
+
+pub const on_change_hash = "onChange";
+pub const on_leave_hash = "onLeave";
+pub const on_hover_hash = "onHover";
+pub const on_submit_hash = "onSubmit";
+pub const on_focus_hash = "onFocus";
+pub const on_blur_hash = "onBlur";
+pub const on_mount_hash = "onMount";
+pub const on_create_hash = "onCreate";
+pub const on_update_hash = "onUpdate";
+pub const on_destroy_hash = "onDestroy";
+
+pub const EventType = types.EventType;
+const Active = types.Active;
+pub const ElementDecl = types.ElementDeclaration;
+const RenderCommand = types.RenderCommand;
+pub const ElementType = types.ElementType;
+pub const StateType = types.StateType;
+pub var has_context: bool = false;
+pub var current_ctx: *UIContext = undefined;
+pub var ctx_map: std.AutoHashMap(u32, *UIContext) = undefined;
+pub var page_map: std.StringHashMap(void) = undefined;
+const LayoutItem = struct {
+    reset: bool = false,
+    call_fn: *const fn (*const fn () void) void,
+};
+pub var layout_map: std.AutoHashMap(u32, LayoutItem) = undefined;
+/// Page deinit callbacks, keyed by the page function's address.
+pub var page_deinit_map: std.AutoHashMap(usize, *const fn () void) = undefined;
+/// The page rendered last, so its deinit can run when the route changes.
+var shown_page: ?*const fn () void = null;
+pub var global_rerender: bool = false;
+pub var has_dirty: bool = false;
+pub var rerender_everything: bool = false;
+pub var grain_rerender: bool = false;
+pub var grain_element_uuid: []const u8 = "";
+pub var current_depth_node_id: []const u8 = "";
+pub var router: Router = undefined;
+
+const Vapor = @This();
+pub const Kit = @import("kit/kit.zig");
+pub const Style = types.Style;
+pub const Types = types;
+pub const DateTime = @import("DateTime.zig");
+pub const Animation = @import("Animation.zig");
+pub const Edges = @import("Edges.zig").Edges;
+pub const Transition = @import("transition.zig");
+
+pub const Navigation = @import("navigation.zig");
+const StorageModule = @import("storage.zig");
+pub const clearPersistentStorage = StorageModule.clearPersistentStorage;
+pub const store = StorageModule.store;
+pub const getStore = StorageModule.getStore;
+pub const setCookie = StorageModule.setCookie;
+pub const getCookies = StorageModule.getCookies;
+pub const getCookie = StorageModule.getCookie;
+
+/// The page's current URL path (`location.pathname`); "" outside the browser.
+pub fn getWindowPath() []const u8 {
+    if (isWasi) {
+        return std.mem.span(Wasm.getWindowInformationWasm());
+    } else {
+        return "";
+    }
+}
+
+const EventsModule = @import("events.zig");
+comptime {
+    _ = EventsModule;
+}
+pub const invokeHooksErasedCallback = EventsModule.invokeHooksErasedCallback;
+pub const invokeErasedCallback = EventsModule.invokeErasedCallback;
+pub const dispatchNodeEvent = EventsModule.dispatchNodeEvent;
+pub const dispatchEvent = EventsModule.dispatchEvent;
+pub const ErasedEventCallback = EventsModule.ErasedEventCallback;
+pub const attachEventCtxCallback = EventsModule.attachEventCtxCallback;
+pub const attachEventCallback = EventsModule.attachEventCallback;
+pub const addGlobalListener = EventsModule.addGlobalListener;
+pub const addGlobalListenerCtx = EventsModule.addGlobalListenerCtx;
+pub const removeGlobalListener = EventsModule.removeGlobalListener;
+pub const addElementListener = EventsModule.addElementListener;
+pub const Listener = EventsModule.Listener;
+pub const EventHandler = EventsModule.EventHandler;
+pub const EventHandlers = EventsModule.EventHandlers;
+pub const Action = EventsModule.Action;
+pub const Node = EventsModule.Node;
+pub const ActionProto = EventsModule.ActionProto;
+pub const NodeProto = EventsModule.NodeProto;
+pub const ArgsProto = EventsModule.ArgsProto;
+pub const ArgsTuple = EventsModule.ArgsTuple;
+pub const ErasedCallback = EventsModule.ErasedCallback;
+pub const assignUserId = EventsModule.assignUserId;
+
+pub var callback_registry: std.AutoHashMap(u32, *const fn () void) = undefined;
+pub var ctx_callback_registry: std.AutoHashMap(u32, *Node) = undefined;
+
+pub var nodes_with_events: std.AutoHashMap(u32, *UINode) = undefined;
+pub var hooks_inst_callbacks: std.AutoHashMap(u32, *const fn (HookContext) void) = undefined;
+pub var on_end_funcs: std.array_list.Managed(*const fn () void) = undefined;
+pub var on_end_ctx_funcs: std.array_list.Managed(*Node) = undefined;
+pub var route_funcs: std.AutoHashMap(u32, ArrayArena(ErasedCallback)) = undefined;
+pub var pop_state_funcs: std.array_list.Managed(*const fn () void) = undefined;
+pub var on_commit_funcs: std.array_list.Managed(*const fn () void) = undefined;
+pub var on_commit_ctx_funcs: std.array_list.Managed(*Node) = undefined;
+
+pub var string_table: StringTable = undefined;
+pub var storage_table: StorageTable = undefined;
+pub var text_field_table: TextFieldTable = undefined;
+pub var shadows: std.AutoHashMap(u32, Vapor.Types.NewShadow) = undefined;
+pub var packed_layers: std.AutoHashMap(u32, []Vapor.Types.PackedLayer) = undefined;
+pub var packed_colors: std.AutoHashMap(u32, []Vapor.Types.PackedColor) = undefined;
+pub var packed_transitions: std.AutoHashMap(u32, []Vapor.Types.TransitionProperty) = undefined;
+pub var packed_transforms: std.AutoHashMap(u32, []Vapor.Types.TransformType) = undefined;
+pub var element_registry: NodeTable(*Element) = undefined;
+
+pub const ObserverNode = union(enum) {
+    type: ElementType,
+    uuid: []const u8,
+};
+// pub var removed_nodes: std.array_list.Managed(RemovedNode) = undefined;
+pub var observer_nodes: std.StringHashMap(std.array_list.Managed(ObserverNode)) = undefined;
+pub var added_nodes: std.array_list.Managed(*UINode) = undefined;
+pub var dirty_nodes: std.array_list.Managed(*UINode) = undefined;
+// Potential nodes is an set to chekc if the potential nodes that are either shifted or removed on in the dom currently
+// instead of an active set, we only record the nodes that are different from the current tree
+// pub var potential_nodes: std.StringHashMap(void) = undefined;
+const Class = struct {
+    element_id: []const u8,
+    style_id: []const u8,
+};
+pub var animations: ?std.StringHashMap(Animation) = null;
+pub var edges_table: ?std.StringHashMap(Edges) = null;
+pub var polygons_table: ?std.StringHashMap(Polygons) = null;
+
+pub var allocator_global: std.mem.Allocator = undefined;
+pub var browser_width: f32 = 0;
+pub var browser_height: f32 = 0;
+pub var page_node_count: u32 = 256;
+const FrameAllocator = @import("FrameAllocator.zig");
+pub var frame_arena: FrameAllocator = undefined;
+
+const MemoryModule = @import("memory.zig");
+pub const fmtln = MemoryModule.fmtln;
+pub const fmtArena = MemoryModule.fmtArena;
+pub const dupe = MemoryModule.dupe;
+pub const pin = MemoryModule.pin;
+pub const unpin = MemoryModule.unpin;
+pub const compact = MemoryModule.compact;
+pub const cloneFrame = MemoryModule.cloneFrame;
+pub const persist = MemoryModule.persist;
+pub const view = MemoryModule.view;
+pub const frame = MemoryModule.frame;
+pub const arena = MemoryModule.arena;
+pub const ArenaType = MemoryModule.ArenaType;
+pub const Arena = MemoryModule.Arena;
+pub const getFrameAllocator = MemoryModule.getFrameAllocator;
+pub const array = MemoryModule.array;
+pub const Array = MemoryModule.Array;
+
+pub const VaporConfig = struct {
+    // screen_width: f32,
+    // screen_height: f32,
+    page_node_count: u32 = 256,
+    mode: Mode = .atomic,
+};
+
+const Mode = enum {
+    immediate,
+    atomic,
+    retained,
+    static,
+};
+
+pub var pool: Pool = undefined;
+pub var mode: Mode = .atomic;
+pub var class_cache: ClassCache = undefined;
+pub var trace_arena: std.heap.ArenaAllocator = undefined;
+
+extern fn frame_arena_init(frame_arena: *FrameAllocator, backing_allocator: *std.mem.Allocator) void;
+
+// 17kb is just the exports and externs
+
+/// Starts the runtime. Call it once, first, in your app's exported `init`,
+/// before registering pages.
+pub fn init(config: VaporConfig) void {
+    switch (builtin.target.cpu.arch) {
+        .wasm32 => {
+            allocator_global = std.heap.wasm_allocator;
+        },
+        else => {
+            allocator_global = std.heap.c_allocator;
+        },
+    }
+    if (isWasi) {
+        browser_width = Wasm.windowWidth();
+        browser_height = Wasm.windowHeight();
+    }
+    page_node_count = config.page_node_count;
+    mode = config.mode;
+
+    // Reconciler.init();
+    // Init the frame allocator;
+    frame_arena = FrameAllocator.init(allocator_global);
+    trace_arena = std.heap.ArenaAllocator.init(allocator_global);
+    // The persistent allocator is used for the Initialization of the registries as these persist over the lifetime of the program.
+    const allocator = frame_arena.persistentAllocator();
+
+    // Init Router // This adds 1kb
+    router.init(allocator) catch |err| {
+        report.err("Could not init Router {any}", .{err});
+    };
+
+    // >4kb
+    Packer.init(allocator);
+    initRegistries(allocator);
+    initCalls(allocator);
+    initContextData(allocator);
+
+    // Eveyrhtuing up to here is 35kb
+
+    class_cache.init(allocator) catch |err| {
+        report.err("Could not init ClassCache {any}", .{err});
+        @panic("vapor: ClassCache init failed");
+    };
+    class_cache.on_evict = Packer.evict;
+
+    Components.text_string_table = .init(allocator);
+    Accessibility.a11y_map = .init(allocator);
+
+    string_table = StringTable.init(allocator);
+    storage_table = StorageTable.init(allocator);
+    text_field_table = TextFieldTable.init(allocator);
+    shadows = std.AutoHashMap(u32, Vapor.Types.NewShadow).init(allocator);
+    packed_layers = std.AutoHashMap(u32, []Types.PackedLayer).init(allocator);
+    packed_colors = std.AutoHashMap(u32, []Types.PackedColor).init(allocator);
+    packed_transitions = std.AutoHashMap(u32, []Types.TransitionProperty).init(allocator);
+    packed_transitions = std.AutoHashMap(u32, []Types.TransitionProperty).init(allocator);
+    packed_transforms = std.AutoHashMap(u32, []Types.TransformType).init(allocator);
+    KeyGenerator.initWriter();
+    // These subsystems keep registries in the persist arena set up above, and
+    // used to need separate init calls that only the docs site knew about.
+    // Without them the first fetch(), and the first removed node (which goes
+    // through the animation removal queue), trap on an undefined container
+    // ("RuntimeError: null function"); animations, edges and polygons were
+    // silently dropped. Calling any of these again later is harmless.
+    Fetch.Request.init();
+    @import("Animation.zig").new();
+    @import("Edges.zig").new();
+    @import("Polygon.zig").new();
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    observer_nodes = std.StringHashMap(std.array_list.Managed(ObserverNode)).init(allocator);
+    added_nodes = std.array_list.Managed(*UINode).init(allocator);
+    dirty_nodes = std.array_list.Managed(*UINode).init(allocator);
+    element_registry = .init(allocator);
+}
+
+fn initRegistries(persistent_allocator: std.mem.Allocator) void {
+    callback_registry = std.AutoHashMap(u32, *const fn () void).init(persistent_allocator);
+    ctx_callback_registry = std.AutoHashMap(u32, *Node).init(persistent_allocator);
+}
+
+/// Callbacks that outlive a render: intervals, timeouts, view transitions.
+pub var erased_registry: std.AutoHashMap(u32, ErasedCallback) = undefined;
+/// `Button(cb, args)` click callbacks, per element.
+pub var button_callbacks: NodeTable(ErasedCallback) = undefined;
+/// Mount, update and destroy hooks, per element.
+pub var erased_hooks_registry: NodeTable(ErasedCallback) = undefined;
+/// Document listeners from `addGlobalListener`, by the id it returned.
+pub var erased_event_registry: std.AutoHashMap(u32, ErasedEventCallback) = undefined;
+/// Element listeners from `Element.listen`, by id. They outlive renders.
+pub var element_listeners: std.AutoHashMap(u32, ErasedEventCallback) = undefined;
+/// The id the next `addGlobalListener` or `Element.listen` returns.
+pub var next_global_listener_id: u32 = 1;
+/// `.onResize` callbacks, per element.
+pub var resize_callbacks: NodeTable(Kit.ResizeCallback) = undefined;
+fn initCalls(persistent_allocator: std.mem.Allocator) void {
+    nodes_with_events = std.AutoHashMap(u32, *UINode).init(persistent_allocator);
+    hooks_inst_callbacks = std.AutoHashMap(u32, *const fn (HookContext) void).init(persistent_allocator);
+    on_end_funcs = std.array_list.Managed(*const fn () void).init(persistent_allocator);
+    on_end_ctx_funcs = std.array_list.Managed(*Node).init(persistent_allocator);
+    pop_state_funcs = std.array_list.Managed(*const fn () void).init(persistent_allocator);
+    on_commit_funcs = std.array_list.Managed(*const fn () void).init(persistent_allocator);
+    on_commit_ctx_funcs = std.array_list.Managed(*Node).init(persistent_allocator);
+    route_funcs = std.AutoHashMap(u32, ArrayArena(ErasedCallback)).init(persistent_allocator);
+    erased_registry = std.AutoHashMap(u32, ErasedCallback).init(persistent_allocator);
+    button_callbacks = .init(persistent_allocator);
+    erased_hooks_registry = .init(persistent_allocator);
+    erased_event_registry = std.AutoHashMap(u32, ErasedEventCallback).init(persistent_allocator);
+    element_listeners = std.AutoHashMap(u32, ErasedEventCallback).init(persistent_allocator);
+    next_global_listener_id = 1;
+    resize_callbacks = .init(persistent_allocator);
+}
+
+fn initContextData(persistent_allocator: std.mem.Allocator) void {
+    ctx_map = std.AutoHashMap(u32, *UIContext).init(persistent_allocator);
+    page_map = std.StringHashMap(void).init(persistent_allocator);
+    layout_map = std.AutoHashMap(u32, LayoutItem).init(persistent_allocator);
+    page_deinit_map = std.AutoHashMap(usize, *const fn () void).init(persistent_allocator);
+    shown_page = null;
+    wrote_initial_css = false;
+}
+
+/// Internal: the node the builders are currently filling in.
+pub fn getCurrentNode() ?*UINode {
+    const stack = current_ctx.stack.?;
+    // Parent node
+    return stack.ptr;
+}
+
+/// The LifeCycle struct
+/// allows control over ui node in the tree
+/// exposes open, configure, and close, must be called in this order to attach the node to the tree
+pub const LifeCycle = struct {
+    /// open takes an element decl and return a *UINode
+    /// this opens the element to allow for children
+    /// within the dom tree, node this current opened node is the current top stack node, ie any children
+    /// will reference this node as their parent
+    pub fn open(elem_decl: ElementDecl) ?*UINode {
+        const ui_node = current_ctx.open(elem_decl) catch |err| {
+            report.err("{any}", .{err});
+            return null;
+        };
+        return ui_node;
+    }
+    /// close, closes the current UINode
+    pub fn close(_: void) void {
+        _ = current_ctx.close();
+        return;
+    }
+    /// configure is used internally to configure the UINode, used for adding text props, or hover props ect
+    /// within configure, we check if the node has a id if so we use that, otherwise later we generate one
+    /// we also set various props, such as text, style, is an SVG or not
+    /// Any mainpulation of the node after this point is considered undefined behaviour be cautious;
+    pub fn configure(elem_decl: ElementDecl) void {
+        _ = current_ctx.configure(elem_decl);
+    }
+};
+
+/// Requests a rerender. In the default `.atomic` mode, event handlers,
+/// `timeout` callbacks and fetch results trigger one by themselves; call this
+/// after changing state anywhere else.
+pub fn cycle() void {
+    if (isWasi) {
+        Vapor.global_rerender = true;
+        // render_phase = .generating;
+        Wasm.requestRerenderWasm();
+    }
+}
+
+/// Force rerender forces the entire dom tree to check props and rerender the entire ui
+/// since Vapor is built with zig and wasm, checking all props of 10000s of nodes and ui components is cheap
+/// feel free to abuse force, its essentially a global signal
+pub fn forceEverything() void {
+    if (isWasi) {
+        Vapor.rerender_everything = true;
+        Vapor.global_rerender = true;
+        Wasm.requestRerenderWasm();
+    }
+}
+
+/// This function adds the route to the tether radix tree.
+/// Deinitializes the tether instance recursively calls routes deinit routes from radix tree
+/// # Parameters:
+pub var route_segments: [][]const u8 = undefined;
+var deepest_reset_layout: ?LayoutItem = null;
+var deepest_reset_layout_path: []const u8 = "";
+var target_min_layout_path: []const u8 = "";
+
+/// Internal: finds the deepest layout registered with `.reset = true`.
+pub fn findResetLayout() void {
+    var potential_path: []const u8 = "";
+    for (route_segments, 0..) |segment, i| {
+        potential_path = std.fmt.allocPrint(Vapor.arena(.frame), "{s}/{s}", .{ potential_path, segment }) catch return;
+        const target_layout = layout_map.get(hashKey(potential_path)) orelse continue;
+        if (target_layout.reset) {
+            deepest_reset_layout = target_layout;
+            deepest_reset_layout_path = potential_path;
+            route_segments = route_segments[i + 1 ..];
+        }
+    }
+    if (deepest_reset_layout) |_| {
+        target_min_layout_path = deepest_reset_layout_path;
+    } else {
+        target_min_layout_path = current_route;
+    }
+}
+
+pub var next_layout_path_to_check: []const u8 = "";
+/// Internal: renders the current page inside its layouts, outermost first.
+pub fn callNestedLayouts() void {
+    if (route_segments.len == 0) {
+        if (deepest_reset_layout) |layout| {
+            const layout_fn = layout.call_fn;
+            deepest_reset_layout = null;
+            deepest_reset_layout_path = "";
+            layout_fn(render_page);
+        } else {
+            // TODO: This is taking a lot of time we need to create a better hashmap system, currently the hashmap compare
+            // with the node is long and slow
+            // const time = nowMs();
+            render_page();
+            // Vapor.println("Render time {any}", .{nowMs() - time});
+        }
+        return;
+    }
+
+    // Get the current layout
+    next_layout_path_to_check = fmtln("{s}/{s}", .{ next_layout_path_to_check, route_segments[0] });
+    if (layout_map.get(hashKey(next_layout_path_to_check))) |entry| {
+        const layout_path = next_layout_path_to_check; // "/root" or "/root/docs"
+        const layout_fn = entry.call_fn;
+        // We check if the layout path and current path are the same
+        // Here we need to check if the layout_path starts with the target_min_layout_path
+        // if the target path is /root/docs and the layout_path is /root
+        if (std.mem.startsWith(u8, target_min_layout_path, layout_path)) {
+            route_segments = route_segments[1..];
+            layout_fn(callNestedLayouts);
+        }
+    } else {
+        if (route_segments.len == 0) {
+            return;
+        }
+        // No layout found, continue with remaining segments
+        route_segments = route_segments[1..];
+        callNestedLayouts();
+    }
+}
+
+pub var clean_up_ctx: *UIContext = undefined;
+pub var current_route: []const u8 = "";
+/// The runtime's buffer for the last rendered route, owned by vapor.
+var route_buffer: ?[:0]u8 = null;
+var previous_route: []const u8 = "";
+pub var render_page: *const fn () void = undefined;
+pub var generator: CSSGenerator = undefined;
+
+const Status = struct {
+    render_cycle: bool = true,
+    valid_url: bool = true,
+};
+
+pub var status: Status = .{};
+
+/// Status of the last render: whether it ran, and whether the URL matched a
+/// page.
+pub fn getStatus() Status {
+    return status;
+}
+
+/// Internal: clears the render status.
+pub fn resetStatus() void {
+    status = .{};
+}
+
+/// The empty page rendered when no route matches, not even `/error`.
+pub fn DefaultPage() void {
+    Components.Builder(.pure).Stack().children({});
+}
+
+pub var old_ctx_op: ?*UIContext = null;
+
+// pub var render_phase: RenderPhase = .idle;
+pub var changed_route: bool = false;
+/// Internal: renders the route at `route_ptr` (a "/root/..." path), runs its
+/// layouts and page, and diffs the result against the previous tree. The JS
+/// runtime calls this.
+pub fn renderCycle(route_ptr: [*:0]u8) !void {
+    UIContext.cache_count = 0;
+    status = .{};
+    class_cache.beginRender(if (isWasi) performance_now() else 0);
+    NodeTables.beginRender();
+
+    const route = std.mem.span(route_ptr);
+    // `current_route` points into this buffer until the next render is done
+    // comparing against it.
+    defer {
+        if (route_buffer) |previous| allocator_global.free(previous);
+        route_buffer = route;
+    }
+
+    const old_route_op = router.searchRoute(route) orelse blk: {
+        report.err("No Route found", .{});
+        break :blk router.searchRoute("/root/error") orelse {
+            report.err("No Error Route found", .{});
+            status.valid_url = false;
+            break :blk null;
+        };
+    };
+
+    if (old_route_op) |old_route| {
+        render_page = old_route.page;
+        route_params = old_route.params;
+        frame_arena.setCurrentRoute(old_route.route_arena);
+    } else {
+        render_page = DefaultPage;
+        route_params = &.{};
+    }
+
+    frame_arena.beginFrame(); // For double-buffered approach
+    frame_arena.resetScratchArena();
+
+    if (!std.mem.eql(u8, current_route, route)) {
+        changed_route = true;
+        // Leaving the page: its deinit runs while its `.view` memory is
+        // intact, then that memory is freed. Before the first page there is
+        // nothing to leave, so `.view` memory allocated during app init
+        // belongs to the first page shown.
+        if (shown_page) |page| {
+            if (page_deinit_map.get(@intFromPtr(page))) |deinit| deinit();
+            frame_arena.beginView();
+        }
+    }
+    shown_page = render_page;
+
+    current_route = route;
+    added_nodes.clearRetainingCapacity();
+    dirty_nodes.clearRetainingCapacity();
+    nodes_with_events.clearRetainingCapacity();
+
+    packed_layers.clearRetainingCapacity();
+    packed_colors.clearRetainingCapacity();
+    packed_transitions.clearRetainingCapacity();
+    packed_transforms.clearRetainingCapacity();
+    shadows.clearRetainingCapacity();
+    route_funcs.clearRetainingCapacity();
+
+    const old_ctx = current_ctx;
+    old_ctx_op = old_ctx;
+    // Create new context
+    const new_ctx: *UIContext = arena(.frame).create(UIContext) catch {
+        status.render_cycle = false;
+        report.err("Failed to allocate UIContext", .{});
+        return;
+    };
+
+    UIContext.initContext(new_ctx) catch |err| {
+        status.render_cycle = false;
+        report.err("Allocator ran out of space {any}", .{err});
+        new_ctx.deinit();
+        allocator_global.destroy(new_ctx);
+        return;
+    };
+
+    new_ctx.root.?.uuid = old_ctx.root.?.uuid;
+
+    current_ctx = new_ctx;
+    var route_itr = std.mem.tokenizeScalar(u8, route, '/');
+    var count: usize = 0;
+    while (route_itr.next()) |_| {
+        count += 1;
+    }
+    route_segments = arena(.frame).alloc([]const u8, count) catch return;
+    count = 0;
+    route_itr.reset();
+    while (route_itr.next()) |route_token| {
+        route_segments[count] = route_token;
+        count += 1;
+    }
+
+    // Init the generator
+    generator.init();
+    next_layout_path_to_check = "";
+
+    findResetLayout();
+    // This calls the render tree, with render_page as the root function call
+    // First it traverses the layouts calling them in order, and then it calls the render_page
+    callNestedLayouts(); // 4.5ms
+
+    // Indexed: a callback may register another one, which reallocates items.
+    const commit_count = on_commit_funcs.items.len;
+    for (0..commit_count) |i| on_commit_funcs.items[i]();
+    onCommitCtxCallback();
+
+    on_commit_funcs.clearRetainingCapacity();
+    on_commit_ctx_funcs.clearRetainingCapacity();
+
+    Reconciler.reconcile(old_ctx, new_ctx); // 3kb
+    // We generate the render commands tree
+    endPage(new_ctx);
+    if (!std.mem.eql(u8, previous_route, current_route)) {
+        Vapor.has_dirty = true;
+    }
+
+    if (build_options.enable_debug and build_options.debug_level == .all) {
+        frame_arena.printStats();
+    }
+
+    // Replace old context with new context in the map
+    clean_up_ctx = old_ctx;
+    changed_route = false;
+    class_cache.batchRemove();
+    Accessibility.a11y_map.prune(null);
+    Components.text_string_table.prune(Components.dropText);
+    element_registry.prune(null);
+    button_callbacks.prune(null);
+    erased_hooks_registry.prune(null);
+    resize_callbacks.prune(null);
+    if (old_route_op) |old_route| _ = router.updateRouteTree(old_route.path, new_ctx);
+    previous_route = current_route;
+}
+
+/// Internal: registers `page` under the full route `path`. Use `Page`.
+pub fn createPage(path: []const u8, page: fn () void, page_deinit: ?fn () void) !void {
+    if (isWasi) {
+        has_context = true;
+    }
+
+    const route_arena = frame_arena.createRouteArena();
+    frame_arena.setCurrentRoute(route_arena);
+
+    const path_ctx: *UIContext = try allocator_global.create(UIContext);
+    // Initial render
+    UIContext.initContext(path_ctx) catch |err| {
+        report.err("Allocator ran out of space {any}", .{err});
+        return;
+    };
+
+    current_ctx = path_ctx;
+
+    router.addRoute(path, path_ctx, page, route_arena) catch |err| {
+        report.err("Could not put route {any}", .{err});
+    };
+    page_map.put(path, {}) catch |err| {
+        report.err("Could not put route {any}", .{err});
+    };
+
+    if (page_deinit) |de| {
+        page_deinit_map.put(@intFromPtr(&page), de) catch |err| {
+            report.err("Could not put route {any}", .{err});
+        };
+    }
+    return;
+}
+pub extern fn performance_now() f64; // imported from JS, for example
+
+const TimersModule = @import("timers.zig");
+comptime {
+    _ = TimersModule;
+}
+pub const callAnimationFrameCallback = TimersModule.callAnimationFrameCallback;
+pub const loopInterval = TimersModule.loopInterval;
+pub const timeout = TimersModule.timeout;
+pub const cancelTimeout = TimersModule.cancelTimeout;
+pub const registerTimeout = TimersModule.registerTimeout;
+pub const runOnAnimationFrame = TimersModule.runOnAnimationFrame;
+pub const nowMs = TimersModule.nowMs;
+pub const startViewTransition = TimersModule.startViewTransition;
+
+var wrote_initial_css = false;
+
+/// Internal: writes the whole stylesheet after the first render, which the
+/// runtime installs at startup (`getCSS`). Later renders add their rules one
+/// class at a time as the runtime meets them.
+pub fn endPage(_: *UIContext) void {
+    if (wrote_initial_css) return;
+    generator.writeAllStyles();
+    wrote_initial_css = true;
+}
+
+// Okay so we need to change the node in the tree depending on the page route
+// for example we add the commads tree to the router tree
+const Path = union(enum) {
+    route: []const u8,
+    src: std.builtin.SourceLocation,
+};
+/// Registers a page. `.route = "/users/:id"` gives the URL; `:name` segments
+/// match anything and are read with `routeParam`. `.src = @src()` derives the
+/// route from the file's path under `src/routes/` instead. `page_deinit`, if not
+/// null, runs when the app navigates away from the page.
+pub fn Page(path: Path, page: fn () void, page_deinit: ?fn () void) void {
+    const allocator = Vapor.frame_arena.persistentAllocator();
+    var full_route: []const u8 = "";
+    var itr: std.mem.TokenIterator(u8, std.mem.DelimiterType.scalar) = undefined;
+    if (path == .src) {
+        full_route = path.src.file[0..path.src.file.len];
+        itr = std.mem.tokenizeScalar(u8, full_route[7..], '/');
+    } else {
+        full_route = path.route;
+        itr = std.mem.tokenizeScalar(u8, full_route, '/');
+    }
+    var buf = std.array_list.Managed(u8).init(allocator);
+
+    buf.appendSlice("/root") catch |err| {
+        report.err("Allocator ran out of space {any}", .{err});
+        return;
+    };
+
+    var file_name: []const u8 = "";
+    blk: while (itr.next()) |sub| {
+        if (itr.peek() == null and path == .src) {
+            file_name = sub;
+            break :blk;
+        }
+        buf.append('/') catch |err| {
+            report.err("Allocator ran out of space {any}", .{err});
+            return;
+        };
+
+        buf.appendSlice(sub) catch |err| {
+            report.err("Allocator ran out of space {any}", .{err});
+            return;
+        };
+    }
+
+    // else
+    if (std.mem.startsWith(u8, file_name, "Error")) {
+        buf.appendSlice("/error") catch |err| {
+            report.err("Allocator ran out of space {any}", .{err});
+            return;
+        };
+    }
+
+    const route = buf.toOwnedSlice() catch |err| {
+        report.err("Could not parse route {any}", .{err});
+        return;
+    };
+
+    createPage(route, page, page_deinit) catch |err| {
+        report.err("Could not add page {any}", .{err});
+        return;
+    };
+}
+const LayoutOptions = struct {
+    reset: bool = false,
+};
+
+pub const PageFn = *const fn () void;
+pub const LayoutFn = fn (*const fn () void) void;
+/// Dynamic segment values of the route being rendered.
+pub var route_params: []const Router.Param = &.{};
+
+/// The value of a dynamic segment of the current route, e.g. for a page
+/// registered as `/users/:id`, `routeParam("id")` is "42" on /users/42.
+/// Valid during render; copy it (Vapor.dupe) to keep it longer.
+pub fn routeParam(name: []const u8) ?[]const u8 {
+    for (route_params) |param| {
+        if (std.mem.eql(u8, param.name, name)) return param.value;
+    }
+    return null;
+}
+
+/// Wraps every page under `path` in `layout`, which gets the page's render
+/// function and calls it where the content goes. Layouts nest outermost first;
+/// `.reset = true` drops the layouts above this one. "/root" is reserved.
+pub fn registerLayout(path: []const u8, layout: LayoutFn, options: LayoutOptions) !void {
+    if (std.mem.eql(u8, path, "/root")) return error.CannotRegisterRootPath;
+    if (std.mem.eql(u8, path, "/")) {
+        layout_map.put(hashKey("/root"), .{ .call_fn = layout, .reset = options.reset }) catch |err| {
+            report.err("Could not add layout to registry {}", .{err});
+        };
+    } else {
+        const layout_route = std.fmt.allocPrint(Vapor.arena(.persist), "/root{s}", .{path}) catch return;
+        layout_map.put(hashKey(layout_route), .{ .call_fn = layout, .reset = options.reset }) catch |err| {
+            report.err("Could not add layout to registry {}", .{err});
+        };
+    }
+}
+pub const HooksFuncs = struct {
+    created: ?*const fn () void = null,
+    mounted: ?*const fn () void = null,
+    destroy: ?*const fn () void = null,
+    updated: ?*const fn () void = null,
+};
+
+pub const HooksCtxFuncs = enum(u8) { mounted, destroy };
+
+/// Switches between the light and dark theme.
+pub fn toggleTheme() void {
+    if (isWasi) {
+        Wasm.toggleThemeWasm();
+    }
+}
+
+/// This function creates an focuses on the element.
+/// # Parameters:
+/// - `element_id`: []const u8,
+///
+/// # Returns:
+/// void
+pub inline fn focus(element_uuid: []const u8) void {
+    if (Vapor.isWasi) {
+        Wasm.elementFocusWasm(element_uuid.ptr, element_uuid.len);
+    }
+}
+
+/// This function creates an focuses on the element.
+/// # Parameters:
+/// - `element_id`: []const u8,
+///
+/// # Returns:
+/// void
+pub inline fn focused(element_uuid: []const u8) bool {
+    if (Vapor.isWasi) {
+        return Wasm.elementFocusedWasm(element_uuid.ptr, element_uuid.len);
+    }
+    return false;
+}
+
+const serializeArgs = utils.serializeArgs;
+
+/// Internal: removes the element listener for `event_type` on `ui_node`.
+pub inline fn removeElementEventListener(
+    ui_node: *UINode,
+    event_type: types.EventType,
+) ?usize {
+    if (isWasi) {
+        var onid = hashKey(ui_node.uuid);
+        onid +%= @intFromEnum(event_type);
+        const event_type_str = std.enums.tagName(types.EventType, event_type) orelse return null;
+        Wasm.removeElementEventListener(ui_node.uuid.ptr, ui_node.uuid.len, event_type_str.ptr, event_type_str.len, onid);
+        return onid;
+    }
+    return null;
+}
+
+const HooksModule = @import("hooks.zig");
+pub const onPopState = HooksModule.onPopState;
+pub const onMount = HooksModule.onMount;
+pub const onLayout = HooksModule.onLayout;
+pub const onCommit = HooksModule.onCommit;
+pub const onCommitCtx = HooksModule.onCommitCtx;
+pub const onCommitCtxCallback = HooksModule.onCommitCtxCallback;
+pub const HookInst = HooksModule.HookInst;
+pub const HookInstProto = HooksModule.HookInstProto;
+pub const HookInstNode = HooksModule.HookInstNode;
+pub const HookContext = HooksModule.HookContext;
+pub const HookType = HooksModule.HookType;
+
+pub const HookInstNodeProto = *const fn (*HookInstNode) void;
+
+/// cb(Self)
+pub inline fn registerHook(
+    url: []const u8,
+    cb: anytype,
+    hook_type: HookType,
+) ?usize {
+    if (!isWasi) return null;
+    const id = hooks_inst_callbacks.count();
+    hooks_inst_callbacks.put(id, cb) catch |err| {
+        report.err("Event Callback Error: {any}", .{err});
+    };
+
+    Wasm.createHookWASM(url.ptr, url.len, id, @intFromEnum(hook_type));
+    return id;
+}
+
+// The first node needs to be marked as false always
+/// Internal: marks the node's children for re-diffing.
+pub fn markChildrenDirty(node: *UINode) void {
+    if (node.parent != null) {
+        node.dirty = true;
+    }
+    var children = node.children();
+    while (children.next()) |child| {
+        markChildrenDirty(child);
+    }
+}
+// The first node needs to be marked as false always
+/// Internal: clears the node's children's dirty flags.
+pub fn markChildrenNotDirty(node: *UINode) void {
+    if (node.parent != null) {
+        node.dirty = false;
+    }
+    var children = node.children();
+    while (children.next()) |child| {
+        markChildrenNotDirty(child);
+    }
+}
+
+pub var buffer: [5_000_000]u8 = undefined;
+pub var writer: std.Io.Writer = undefined;
+pub var generated_file: std.Io.File = undefined;
+pub var generating: bool = false;
+const StaticGeneratorModule = @import("static_generator.zig");
+pub const generate = StaticGeneratorModule.generate;
+pub const generateHtml = StaticGeneratorModule.generateHtml;
+
+const QueryModule = @import("query.zig");
+pub const printUIRouteTree = QueryModule.printUIRouteTree;
+pub const printUITree = QueryModule.printUITree;
+pub const escapeForJson = QueryModule.escapeForJson;
+pub const replaceDash = QueryModule.replaceDash;
+pub const queryComponentIds = QueryModule.queryComponentIds;
+pub const queryByUUID = QueryModule.queryByUUID;
+pub const mutateById = QueryModule.mutateById;
+pub const MutationType = QueryModule.MutationType;
+pub const mutateElementById = QueryModule.mutateElementById;
+pub const Bounds = QueryModule.Bounds;
+pub const Offsets = QueryModule.Offsets;
+pub const getComponentOffsets = QueryModule.getComponentOffsets;
+pub const getComponentBounds = QueryModule.getComponentBounds;
+pub const iterateTreeChildren = QueryModule.iterateTreeChildren;
+
+pub var ui_node_layout_info = packed struct {
+    ui_node_size: u32,
+
+    // Offsets within UINode
+    elem_type_offset: u32,
+    text_ptr_offset: u32,
+    href_ptr_offset: u32,
+    id_ptr_offset: u32,
+    index_offset: u32,
+    classname_ptr_offset: u32,
+
+    hash_offset: u32,
+    style_changed_offset: u32,
+    props_changed_offset: u32,
+    dirty_offset: u32,
+    hooks_offset: u32,
+    style_hash_offset: u32,
+    accessibility_offset: u32,
+    on_callbacks_offset: u32,
+    hooks_changed_offset: u32,
+    morph_offset: u32,
+    layer_offset: u32,
+}{
+    .ui_node_size = @sizeOf(UINode),
+
+    // --- Direct fields of RenderCommand ---
+    .elem_type_offset = @offsetOf(UINode, "type"),
+    .text_ptr_offset = @offsetOf(UINode, "text"),
+    .href_ptr_offset = @offsetOf(UINode, "href"),
+    .id_ptr_offset = @offsetOf(UINode, "uuid"),
+    .index_offset = @offsetOf(UINode, "index"),
+    .classname_ptr_offset = @offsetOf(UINode, "class"),
+
+    // --- Nested struct sizes and offsets ---
+    .hash_offset = @offsetOf(UINode, "hash"),
+    .style_changed_offset = @offsetOf(UINode, "style_changed"),
+    .props_changed_offset = @offsetOf(UINode, "props_changed"),
+    .dirty_offset = @offsetOf(UINode, "dirty"),
+    .hooks_offset = @offsetOf(UINode, "hooks"),
+    .style_hash_offset = @offsetOf(UINode, "style_hash"),
+    .accessibility_offset = @offsetOf(UINode, "accessibility"),
+    .on_callbacks_offset = @offsetOf(UINode, "on_callbacks"),
+    .hooks_changed_offset = @offsetOf(UINode, "hooks_changed"),
+    .morph_offset = @offsetOf(UINode, "morph"),
+    .layer_offset = @offsetOf(UINode, "layer"),
+};
+
+const HexModule = @import("hex.zig");
+pub const hexToRgba = HexModule.hexToRgba;
+
+const LogModule = @import("log.zig");
+/// vapor's own diagnostics: `report.err(...)`, `report.warn(...)`. They go
+/// through `std.log` with scope `.vapor`, so `Vapor.lib.log` (the app's
+/// `logFn`) decides where they end up.
+pub const report = struct {
+    const scoped = std.log.scoped(.vapor);
+
+    /// Reports an error. In tests, an error a test announced in
+    /// `expected_reports` is logged at debug level instead, since the test
+    /// runner fails any test that logs an error.
+    pub fn err(comptime format: []const u8, args: anytype) void {
+        if (builtin.is_test and expected_reports > 0) {
+            expected_reports -= 1;
+            return scoped.debug(format, args);
+        }
+        scoped.err(format, args);
+    }
+    pub const warn = scoped.warn;
+    pub const info = scoped.info;
+    pub const debug = scoped.debug;
+};
+
+/// Tests only: how many coming `report.err` calls the test triggers on
+/// purpose. Each one counts this down.
+pub var expected_reports: u32 = 0;
+pub const print = LogModule.print;
+pub const printlnSrcErr = LogModule.printlnSrcErr;
+pub const println = LogModule.println;
+pub const log = LogModule.log;
+pub const alert = LogModule.alert;
+
+pub extern "env" fn consoleLogWasm(
+    level: u32,
+    msg_ptr: [*]const u8,
+    msg_len: usize,
+    style_ptr: [*]const u8,
+    style_len: usize,
+) callconv(.c) void;
+
+pub const Clipboard = struct {
+    /// Copies `text` to the system clipboard.
+    pub fn copy(text: []const u8) void {
+        if (isWasi) {
+            Wasm.copyTextWasm(text.ptr, text.len);
+        }
+    }
+    fn paste(_: []const u8) void {}
+};
+
+const ExportsModule = @import("exports.zig");
+comptime {
+    _ = ExportsModule;
+}
+pub const recordState = ExportsModule.recordState;
+pub const getDirtyValue = ExportsModule.getDirtyValue;
+pub const setRouteRenderTree = ExportsModule.setRouteRenderTree;
+pub const resetRerender = ExportsModule.resetRerender;
+pub const hasDirty = ExportsModule.hasDirty;
+pub const rerenderEverything = ExportsModule.rerenderEverything;
+pub const forceRerender = ExportsModule.forceRerender;
+pub const shouldRerender = ExportsModule.shouldRerender;
+pub const getTreeNodeChild = ExportsModule.getTreeNodeChild;
+pub const getTreeNodeChildrenCount = ExportsModule.getTreeNodeChildrenCount;
+pub const getRenderCommandPtr = ExportsModule.getRenderCommandPtr;
+pub const getCSSLen = ExportsModule.getCSSLen;
+pub const getCSS = ExportsModule.getCSS;
+pub const allocateU32 = ExportsModule.allocateU32;
+pub const allocate = ExportsModule.allocate;
+pub const allocUint8Frame = ExportsModule.allocUint8Frame;
+pub const allocUint8 = ExportsModule.allocUint8;
+pub const allocateUINodeLayoutInfo = ExportsModule.allocateUINodeLayoutInfo;
+pub const markCurrentTreeNotDirty = ExportsModule.markCurrentTreeNotDirty;
+pub const getUINodeNextSibling = ExportsModule.getUINodeNextSibling;
+pub const getUINodeFirstChild = ExportsModule.getUINodeFirstChild;
+pub const getUINodeChild = ExportsModule.getUINodeChild;
+pub const getUINodeChildrenCount = ExportsModule.getUINodeChildrenCount;
+pub const getRenderUINodeRootPtr = ExportsModule.getRenderUINodeRootPtr;
+pub const getRenderTreePtr = ExportsModule.getRenderTreePtr;
+pub const renderUI = ExportsModule.renderUI;
+pub const resizeCallback = ExportsModule.resizeCallback;
+pub const callbackCtx = ExportsModule.callbackCtx;
+pub const onPopStateCallback = ExportsModule.onPopStateCallback;
+pub const getVideo = ExportsModule.getVideo;
+pub const onLayoutCallback = ExportsModule.onLayoutCallback;
+pub const hasLayoutFunctions = ExportsModule.hasLayoutFunctions;
+
+pub const std_options = std.Options{
+    .log_level = .debug,
+    .logFn = log,
+};
+
+pub const ArrayArena = @import("array.zig").Array;

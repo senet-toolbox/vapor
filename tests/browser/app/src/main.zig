@@ -34,6 +34,7 @@ pub export fn init() void {
     Vapor.Page(.{ .route = "/styles" }, stylesPage, null);
     Vapor.Page(.{ .route = "/listeners" }, listenersPage, null);
     Vapor.Page(.{ .route = "/listen" }, listenPage, null);
+    Vapor.Page(.{ .route = "/stale" }, stalePage, null);
     Vapor.Page(.{ .route = "/error" }, notFound, null);
 }
 
@@ -448,6 +449,40 @@ fn urls() void {
         });
         Link(.{ .url = "/a" }).id("internal").children({
             Text("internal").end();
+        });
+    });
+}
+
+// ── /stale : renders that change nothing keep event targets current ─────
+
+var stale_hovers: u32 = 0;
+
+fn staleHovered(_: *Vapor.Event) void {
+    stale_hovers += 1;
+}
+
+// Each render builds its nodes in a fresh frame arena, and resetting the
+// arena from two renders back hands its buffers back to the allocator. In an
+// app, other allocations (fetched data, say) soon reuse them; here every
+// size class is filled with junk, so a node pointer kept from an older render
+// reads garbage rather than a look-alike node.
+fn staleRefresh() void {
+    var size: usize = 1024;
+    while (size <= 1024 * 1024) : (size *= 2) {
+        const junk = Vapor.lib.allocator_global.alloc(u8, size) catch return;
+        @memset(junk, 0xAA);
+        Vapor.lib.allocator_global.free(junk);
+    }
+}
+
+fn stalePage() void {
+    Box().id("stale-page").children({
+        Box().id("stale-target").onEvent(.mouseover, staleHovered, .{}).children({
+            Text("Hover me").end();
+        });
+        TextFmt("hovers={d}", .{stale_hovers}).id("stale-hovers").end();
+        Button(staleRefresh, .{}).id("stale-refresh").children({
+            Text("Refresh").end();
         });
     });
 }
