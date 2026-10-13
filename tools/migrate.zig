@@ -215,6 +215,8 @@ const Rename = struct {
     /// Only a method call on a value (`Box().hide(true)`, possibly on the
     /// next line), not a decl literal (`.background(.gradient(...))`).
     method_only: bool = false,
+    /// Not a field of some other value: `Kit.Response`, not `x.Kit.Response`.
+    bare: bool = false,
 };
 
 /// Every `from` is matched in code only. Entries ending in `(` are calls, so
@@ -310,6 +312,17 @@ const renames = [_]Rename{
     .{ .from = "KeyStone.signout(", .to = "KeyStone.signOut(" },
     .{ .from = "KeyStone.Config", .to = "KeyStone.ClientConfig", .whole = true },
     .{ .from = "Vapor.lib.eventListener(", .to = "Vapor.addGlobalListener(" },
+    // The HTTP types moved to Vapor.Fetch in 2.2.0.
+    .{ .from = "Vapor.Kit.Response", .to = "Vapor.Fetch.Result", .whole = true },
+    .{ .from = "Vapor.Kit.HttpReq", .to = "Vapor.Fetch.Options", .whole = true },
+    .{ .from = "Vapor.Kit.Headers", .to = "Vapor.Fetch.Headers", .whole = true },
+    .{ .from = "Vapor.Kit.HttpHeader", .to = "Vapor.Fetch.Header", .whole = true },
+    .{ .from = "Vapor.Kit.Methods", .to = "Vapor.Fetch.Method", .whole = true },
+    .{ .from = "Kit.Response", .to = "Vapor.Fetch.Result", .whole = true, .bare = true },
+    .{ .from = "Kit.HttpReq", .to = "Vapor.Fetch.Options", .whole = true, .bare = true },
+    .{ .from = "Kit.Headers", .to = "Vapor.Fetch.Headers", .whole = true, .bare = true },
+    .{ .from = "Kit.HttpHeader", .to = "Vapor.Fetch.Header", .whole = true, .bare = true },
+    .{ .from = "Kit.Methods", .to = "Vapor.Fetch.Method", .whole = true, .bare = true },
 };
 
 const Hint = struct {
@@ -367,6 +380,7 @@ fn applyRenames(arena: Allocator, text: []const u8, report: *Report) ![]const u8
                 if (isIdent(r.from[0]) and i > 0 and isIdent(text[i - 1])) continue;
                 if (r.literal_only and i > 0 and (isIdent(text[i - 1]) or text[i - 1] == ')' or text[i - 1] == ']')) continue;
                 if (r.method_only and !afterValue(text, i)) continue;
+                if (r.bare and i > 0 and text[i - 1] == '.') continue;
                 const end = i + r.from.len;
                 if (r.whole and end < text.len and isIdent(text[end])) continue;
                 try out.appendSlice(arena, r.to);
@@ -813,6 +827,7 @@ test "renames calls and types, not strings or comments" {
         \\Box().border(.l(1, .black)).size(.px(4)).end();
         \\var list = Vapor.persist.Array(u8).init(Vapor.persist.allocator());
         \\const r = Vapor.Fetch.Fetch.fetch(url, .{});
+        \\fn done(a: Vapor.Kit.Response, b: Kit.Response, c: Kit.HttpReq) void {}
     ,
         \\const e: *Vapor.Element = x; // Vapor.Binded
         \\Vapor.print(.err, "{d} .square_px(", .{1});
@@ -831,6 +846,7 @@ test "renames calls and types, not strings or comments" {
         \\Box().border(.left(1, .black)).size(.squarePx(4)).end();
         \\var list = Vapor.persist.array(u8).init(Vapor.persist.arena());
         \\const r = Vapor.Fetch.Request.fetch(url, .{});
+        \\fn done(a: Vapor.Fetch.Result, b: Vapor.Fetch.Result, c: Vapor.Fetch.Options) void {}
     );
 }
 

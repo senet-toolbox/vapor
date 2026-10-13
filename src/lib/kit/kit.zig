@@ -12,16 +12,6 @@ const getUnderlyingValue = utils.getUnderlyingValue;
 const DynamicObject = @import("../dynamic.zig");
 pub const Json = @import("json.zig");
 
-// The HTTP layer moved into fetch.zig; these keep `Kit.Fetch` / `Kit.Response`
-// working for callers such as KeyStone.
-// HTTP types moved to fetch.zig; these names are kept so existing code builds.
-const FetchModule = @import("../fetch.zig");
-pub const Response = FetchModule.Result;
-pub const HttpReq = FetchModule.Options;
-pub const Headers = FetchModule.Headers;
-pub const HttpHeader = FetchModule.Header;
-pub const Methods = FetchModule.Method;
-
 pub const Kit = @This();
 
 /// Current time in seconds since the Unix epoch.

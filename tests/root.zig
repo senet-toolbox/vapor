@@ -20,7 +20,6 @@ test "public API surface used by docs examples compiles" {
         _ = Vapor.arena;
         _ = Vapor.Fetch.Request;
         _ = Vapor.fetch;
-        _ = Vapor.Kit.HttpReq;
         _ = Vapor.TextField;
         _ = Vapor.TextArea;
         _ = Vapor.Style;

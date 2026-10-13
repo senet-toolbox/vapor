@@ -137,7 +137,7 @@ const provider_tags = std.meta.tags(Provider);
 const provider_count = provider_tags.len;
 
 const KeyStone = @This();
-var on_auth_change: ?*const fn (Kit.Response) void = null;
+var on_auth_change: ?*const fn (Fetch.Result) void = null;
 var on_auth_state_change: ?*const fn (AuthSnapshot) void = null;
 var configured_provider_cache: [provider_count]Provider = undefined;
 var configured_provider_count: usize = 0;
@@ -193,7 +193,7 @@ pub fn init(cfg: InitConfig) void {
 }
 
 /// Calls `cb` with each auth response from the backend.
-pub fn onAuthChange(cb: *const fn (Kit.Response) void) void {
+pub fn onAuthChange(cb: *const fn (Fetch.Result) void) void {
     on_auth_change = cb;
 }
 
@@ -362,7 +362,7 @@ pub fn signOutWithOptions(options: SignOutOptions) void {
 
 /// Asks the backend whether the session for `provider` is still valid; calls
 /// `cb` with the response.
-pub fn validateSession(provider: Provider, cb: fn (Kit.Response) void) void {
+pub fn validateSession(provider: Provider, cb: fn (Fetch.Result) void) void {
     const token = getAccessToken() orelse return;
     const url = Vapor.frame.fmt("{s}/auth/validate/{s}/session", .{ keystone.backend_url, @tagName(provider) });
     const auth_header = Vapor.frame.fmt("Bearer {s}", .{token});
@@ -375,25 +375,25 @@ pub fn validateSession(provider: Provider, cb: fn (Kit.Response) void) void {
 
 /// `Vapor.fetch` with the access token as a bearer header. On a 401 it refreshes
 /// the session once and retries.
-pub fn authFetch(url: []const u8, http_req: Kit.HttpReq, cb: fn (Kit.Response) void) void {
+pub fn authFetch(url: []const u8, http_req: Fetch.Options, cb: fn (Fetch.Result) void) void {
     authFetchWithOptions(url, http_req, .{}, cb);
 }
 
 /// Like `authFetch`, with options (e.g. turning the 401 retry off).
 pub fn authFetchWithOptions(
     url: []const u8,
-    http_req: Kit.HttpReq,
+    http_req: Fetch.Options,
     options: AuthFetchOptions,
-    cb: fn (Kit.Response) void,
+    cb: fn (Fetch.Result) void,
 ) void {
     const callback = cb;
     const Ctx = struct {
         url: []const u8,
-        req: Kit.HttpReq,
+        req: Fetch.Options,
         options: AuthFetchOptions,
     };
     const Handlers = struct {
-        fn onRequest(resp: Kit.Response, ctx: Ctx) void {
+        fn onRequest(resp: Fetch.Result, ctx: Ctx) void {
             if (resp == .err and resp.err.code == 401 and ctx.options.retry_on_401) {
                 const refresh_url = Vapor.frame.fmt("{s}/auth/session/refresh", .{keystone.backend_url});
                 Fetch.fetch(refresh_url, .{
@@ -405,7 +405,7 @@ pub fn authFetchWithOptions(
             callback(resp);
         }
 
-        fn onRefresh(resp: Kit.Response, ctx: Ctx) void {
+        fn onRefresh(resp: Fetch.Result, ctx: Ctx) void {
             handleAuthSessionResponse(resp);
             if (resp == .ok and auth_snapshot.state == .signed_in and getAccessToken() != null) {
                 const retried_req = withAuthHeader(ctx.req, getAccessToken());
@@ -425,7 +425,7 @@ pub fn authFetchWithOptions(
     Fetch.fetch(url, req_with_auth).handle(Handlers.onRequest, .{ctx});
 }
 
-fn withAuthHeader(http_req: Kit.HttpReq, token: ?[]const u8) Kit.HttpReq {
+fn withAuthHeader(http_req: Fetch.Options, token: ?[]const u8) Fetch.Options {
     if (token == null) return http_req;
     const auth_header = Vapor.frame.fmt("Bearer {s}", .{token.?});
     var auth_req = http_req;
@@ -622,7 +622,7 @@ fn exchangeCode(provider: Provider, code: []const u8) void {
     }).handle(handleTokenExchangeResponse, .{});
 }
 
-fn handleTokenExchangeResponse(resp: Kit.Response) void {
+fn handleTokenExchangeResponse(resp: Fetch.Result) void {
     emitRawAuthResponse(resp);
 
     switch (resp) {
@@ -669,7 +669,7 @@ fn handleTokenExchangeResponse(resp: Kit.Response) void {
     }
 }
 
-fn handleAuthSessionResponse(resp: Kit.Response) void {
+fn handleAuthSessionResponse(resp: Fetch.Result) void {
     emitRawAuthResponse(resp);
 
     switch (resp) {
@@ -808,7 +808,7 @@ fn cloneSnapshot(snapshot: AuthSnapshot) AuthSnapshot {
     return out;
 }
 
-fn emitRawAuthResponse(resp: Kit.Response) void {
+fn emitRawAuthResponse(resp: Fetch.Result) void {
     if (on_auth_change) |cb| cb(resp);
 }
 
