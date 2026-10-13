@@ -52,6 +52,11 @@ section); the compiler points at anything it leaves.
   the new `Element.listen` (see Added). `Vapor.lib.eventListener` (whose
   callback was never called either) is gone too: `Vapor.addGlobalListener`
   does the same.
+- `Vapor.KeyStone` is its own module, `keystone`, in the same package.
+  Apps that sign users in add
+  `exe.root_module.addImport("keystone", vapor_dep.module("keystone"))`
+  and `@import("keystone")`; the rest never compile it. Its log messages
+  use the scope `.keystone`.
 - `.view` memory is now freed when the app leaves the page (see Fixed). A
   global that points into it must be reset in the page's deinit or
   reallocated on the next visit.
@@ -113,6 +118,8 @@ and the compiler points at the rest:
   `Vapor.Kit.init()`; `Kit.Fetch`, `Kit.ErrResponse` and `HooksCtx` are
   reported. Removed side constructors are rewritten wherever they appear
   (`.top => .b(2)` in a switch becomes `.top => .{ .bottom = 2 }`).
+- `Vapor.setCookie`, `Vapor.getCookie` and `Vapor.clearPersistentStorage`
+  at the root; they were only reachable through `Vapor.lib`.
 - `Element.listen(event, cb, args)` attaches a listener that is not part of
   the render, for frequent events such as `scroll` or `pointermove`: it stays
   across renders until `.remove()` on the returned `Vapor.Listener` or until

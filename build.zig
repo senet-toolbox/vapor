@@ -20,11 +20,23 @@ pub fn build(b: *std.Build) void {
     const build_options_module = build_options.createModule();
     vapor_imports.append(.{ .name = "build_options", .module = build_options_module }) catch @panic("OOM");
 
-    _ = b.addModule("vapor", .{
+    const vapor_module = b.addModule("vapor", .{
         .root_source_file = b.path("src/root.zig"),
         .target = target,
         .optimize = optimize,
         .imports = vapor_imports.items,
+    });
+
+    // KeyStone, sign-in against a KeyStone backend, is a module of its own so
+    // apps that do not authenticate never see it. Apps that do add it as the
+    // import "keystone":
+    //
+    //   exe.root_module.addImport("keystone", vapor_dep.module("keystone"));
+    _ = b.addModule("keystone", .{
+        .root_source_file = b.path("keystone/KeyStone.zig"),
+        .target = target,
+        .optimize = optimize,
+        .imports = &.{.{ .name = "vapor", .module = vapor_module }},
     });
 
     // The JS runtime the wasm talks to. It ships prebuilt in js/dist so apps
@@ -89,12 +101,20 @@ pub fn build(b: *std.Build) void {
     test_vapor_module.addImport("config", test_config_module);
     test_vapor_module.addImport("theme", test_theme_module);
 
+    const test_keystone_module = b.createModule(.{
+        .root_source_file = b.path("keystone/KeyStone.zig"),
+        .target = target,
+        .optimize = optimize,
+        .imports = &.{.{ .name = "vapor", .module = test_vapor_module }},
+    });
+
     const tests_mod = b.createModule(.{
         .root_source_file = b.path("tests/root.zig"),
         .target = target,
         .optimize = optimize,
         .imports = &.{
             .{ .name = "vapor", .module = test_vapor_module },
+            .{ .name = "keystone", .module = test_keystone_module },
             .{ .name = "config", .module = test_config_module },
             .{ .name = "theme", .module = test_theme_module },
         },
@@ -124,6 +144,9 @@ pub fn build(b: *std.Build) void {
     });
     const run_pool_tests = b.addRunArtifact(pool_tests);
 
+    const keystone_tests = b.addTest(.{ .name = "keystone-tests", .root_module = test_keystone_module });
+    const run_keystone_tests = b.addRunArtifact(keystone_tests);
+
     // Test blocks inside src/lib: see the `test` block in src/root.zig.
     const lib_tests = b.addTest(.{ .name = "vapor-lib-tests", .root_module = test_vapor_module });
     const run_lib_tests = b.addRunArtifact(lib_tests);
@@ -131,6 +154,7 @@ pub fn build(b: *std.Build) void {
     const test_step = b.step("test", "Run Vapor unit tests");
     test_step.dependOn(&run_lib_tests.step);
     test_step.dependOn(&run_unit_tests.step);
+    test_step.dependOn(&run_keystone_tests.step);
     test_step.dependOn(&run_string_table_tests.step);
     test_step.dependOn(&run_pool_tests.step);
 
@@ -294,6 +318,47 @@ fn addCheckStep(
         });
 
         check_step.dependOn(&check_obj.step);
+
+        // keystone/ lives outside src/ and imports "vapor" as a module, so it
+        // gets its own gate against a vapor module rooted at src/root.zig.
+        const ks_theme = b.createModule(.{
+            .root_source_file = b.path("tests/support/theme.zig"),
+            .target = target,
+            .optimize = optimize,
+        });
+        const ks_vapor = b.createModule(.{
+            .root_source_file = b.path("src/root.zig"),
+            .target = target,
+            .optimize = optimize,
+            .imports = &.{
+                .{ .name = "build_options", .module = build_options_module },
+                .{ .name = "config", .module = config_module },
+                .{ .name = "theme", .module = ks_theme },
+            },
+            .link_libc = if (check_target.native_host) true else null,
+            .pic = if (check_target.native_host) true else null,
+        });
+        ks_theme.addImport("vapor", ks_vapor);
+        const ks_check = b.addObject(.{
+            .name = b.fmt("keystone-check-{s}", .{name["vapor-check-".len..]}),
+            .root_module = b.createModule(.{
+                .root_source_file = b.path("keystone/check.zig"),
+                .target = target,
+                .optimize = optimize,
+                .imports = &.{
+                    .{ .name = "vapor", .module = ks_vapor },
+                    .{ .name = "keystone", .module = b.createModule(.{
+                        .root_source_file = b.path("keystone/KeyStone.zig"),
+                        .target = target,
+                        .optimize = optimize,
+                        .imports = &.{.{ .name = "vapor", .module = ks_vapor }},
+                    }) },
+                },
+                .link_libc = if (check_target.native_host) true else null,
+                .pic = if (check_target.native_host) true else null,
+            }),
+        });
+        check_step.dependOn(&ks_check.step);
     }
 
     return check_step;

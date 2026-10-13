@@ -307,11 +307,15 @@ const renames = [_]Rename{
     .{ .from = "frame.Array(", .to = "frame.array(" },
     .{ .from = "Fetch.Fetch", .to = "Fetch.Request", .whole = true },
     .{ .from = "Vapor.clearPersitantStorage(", .to = "Vapor.clearPersistentStorage(" },
+    .{ .from = "Vapor.lib.clearPersitantStorage(", .to = "Vapor.clearPersistentStorage(" },
     .{ .from = "Vapor.batch(", .to = "Vapor.cycle(" },
     .{ .from = "Pool.initGlobalPool(", .to = "Pool.init(" },
     .{ .from = "KeyStone.signout(", .to = "KeyStone.signOut(" },
     .{ .from = "KeyStone.Config", .to = "KeyStone.ClientConfig", .whole = true },
     .{ .from = "Vapor.lib.eventListener(", .to = "Vapor.addGlobalListener(" },
+    .{ .from = "Vapor.KeyStone", .to = "@import(\"keystone\")", .whole = true },
+    .{ .from = "Vapor.lib.getCookie(", .to = "Vapor.getCookie(" },
+    .{ .from = "Vapor.lib.setCookie(", .to = "Vapor.setCookie(" },
     // The HTTP types moved to Vapor.Fetch in 2.2.0.
     .{ .from = "Vapor.Kit.Response", .to = "Vapor.Fetch.Result", .whole = true },
     .{ .from = "Vapor.Kit.HttpReq", .to = "Vapor.Fetch.Options", .whole = true },
@@ -351,6 +355,11 @@ const hints = [_]Hint{
     .{ .from = ".dialog_id", .msg = "Style.dialog_id is gone; it did nothing" },
     .{ .from = ".addListener(", .msg = "Element.addListener is gone (it lasted until the element's next render); attach the handler with .onEvent(event, cb) where the element is built, or use Vapor.addGlobalListener for the document" },
     .{ .from = ".removeListener(", .msg = "Element.removeListener is gone; render the element without its .onEvent to remove the handler" },
+    .{
+        .from = "Vapor.KeyStone",
+        .msg = "KeyStone is its own module now: add exe.root_module.addImport(\"keystone\", vapor_dep.module(\"keystone\")) in build.zig",
+        .once = true,
+    },
     .{ .from = ".toplr(", .msg = "BorderRadius.toplr is gone; use .{ .top_left = a, .top_right = b }" },
     .{ .from = "Sizing.at(", .msg = "Sizing.at is gone; use .mobileDesktopPercent" },
     .{
@@ -828,6 +837,7 @@ test "renames calls and types, not strings or comments" {
         \\var list = Vapor.persist.Array(u8).init(Vapor.persist.allocator());
         \\const r = Vapor.Fetch.Fetch.fetch(url, .{});
         \\fn done(a: Vapor.Kit.Response, b: Kit.Response, c: Kit.HttpReq) void {}
+        \\const KeyStone = Vapor.KeyStone;
     ,
         \\const e: *Vapor.Element = x; // Vapor.Binded
         \\Vapor.print(.err, "{d} .square_px(", .{1});
@@ -847,6 +857,7 @@ test "renames calls and types, not strings or comments" {
         \\var list = Vapor.persist.array(u8).init(Vapor.persist.arena());
         \\const r = Vapor.Fetch.Request.fetch(url, .{});
         \\fn done(a: Vapor.Fetch.Result, b: Vapor.Fetch.Result, c: Vapor.Fetch.Options) void {}
+        \\const KeyStone = @import("keystone");
     );
 }
 

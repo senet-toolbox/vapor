@@ -1,7 +1,7 @@
 //! JSON Web Token decoding and signature verification.
 
 const std = @import("std");
-const Vapor = @import("../vapor.zig");
+const Vapor = @import("vapor");
 const print = Vapor.println;
 
 pub const JWT2 = struct {
@@ -98,9 +98,9 @@ pub fn decodev2(token: []const u8, allocator: std.mem.Allocator) !JWT2 {
     };
 }
 
-const Algorithm = @import("root.zig").Algorithm;
-const HeaderRoot = @import("root.zig").Header;
-const Validation = @import("root.zig").Validation;
+const Algorithm = @import("jwt_types.zig").Algorithm;
+const HeaderRoot = @import("jwt_types.zig").Header;
+const Validation = @import("jwt_types.zig").Validation;
 
 /// Key used for decoding JWT tokens
 pub const DecodingKey = union(enum) {

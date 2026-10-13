@@ -347,9 +347,18 @@ End-to-end tests should wait for it before interacting.
 
 ### Authentication
 
-`Vapor.KeyStone` wraps OAuth sign-in, session storage, token refresh and
+KeyStone wraps OAuth sign-in, session storage, token refresh and
 authenticated fetch for Google, GitHub, Apple and Azure. It expects a backend
 that exchanges the OAuth code — tokens are never minted in the browser.
+
+It is a separate module in the vapor package, so apps that do not sign users
+in never compile it. Add it in `build.zig`:
+
+```zig
+exe.root_module.addImport("keystone", vapor_dep.module("keystone"));
+```
+
+and import it with `const KeyStone = @import("keystone");`.
 
 ## Static generation
 

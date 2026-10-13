@@ -177,14 +177,18 @@ pub const fetch = Fetch.fetch;
 pub const store = lib.store;
 /// Reads back what `store` saved: `load([]const u8, "key")`, `load(u32, "key")`.
 pub const load = lib.getStore;
+/// Clears everything `store` saved.
+pub const clearPersistentStorage = lib.clearPersistentStorage;
+/// Sets a cookie: `setCookie("name=value; Path=/; SameSite=Lax")`.
+pub const setCookie = lib.setCookie;
+/// The value of the cookie `name`, if set.
+pub const getCookie = lib.getCookie;
 /// Copies text to the system clipboard: `Clipboard.copy("...")`.
 pub const Clipboard = lib.Clipboard;
 /// Reads files the user picked in a file input.
 pub const FileReader = @import("lib/File.zig").FileReader;
 /// Calendar dates and times.
 pub const DateTime = @import("lib/DateTime.zig");
-/// Client-side authentication: sessions, OAuth and JWT handling.
-pub const KeyStone = @import("lib/keystone/KeyStone.zig");
 /// Browser helpers: navigation, window, timestamps, cookies, URL parsing.
 pub const Kit = @import("lib/kit/kit.zig");
 
@@ -288,7 +292,6 @@ pub const Testing = if (builtin.is_test) struct {
     pub const Reconciler = @import("lib/reconciler.zig");
     pub const UIContext = @import("lib/UITree.zig");
     pub const FrameAllocator = @import("lib/FrameAllocator.zig");
-    pub const JWT = @import("lib/keystone/jwt.zig");
     pub const HtmlGenerator = @import("lib/html_generator.zig");
     pub const StyleCompiler = @import("lib/style_compiler.zig");
     pub const ConfigureVisual = @import("lib/configure/visual.zig");
@@ -304,7 +307,6 @@ test {
     _ = lib; // lib/vapor.zig
     _ = Animation;
     _ = types.NewShadow;
-    _ = @import("lib/keystone/jwt.zig");
     _ = @import("lib/Router.zig");
     _ = @import("lib/class_cache.zig");
     _ = @import("lib/node_table.zig");

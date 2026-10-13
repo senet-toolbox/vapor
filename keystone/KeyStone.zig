@@ -1,12 +1,17 @@
 //! KeyStone: client-side authentication against a KeyStone backend: OAuth
 //! sign-in, session storage and refresh, and authenticated fetches.
+//!
+//! A module of its own, beside `vapor`: apps that sign users in add
+//! `vapor_dep.module("keystone")` as the import "keystone".
 
 // This is the Frontend module dep for KeyStone.
 const std = @import("std");
-const Vapor = @import("../vapor.zig");
+const Vapor = @import("vapor");
+const log = std.log.scoped(.keystone);
 const Kit = Vapor.Kit;
-const Fetch = @import("../fetch.zig");
-const JWT = @import("jwt.zig");
+const Fetch = Vapor.Fetch;
+/// Decoding and validating JSON Web Tokens.
+pub const JWT = @import("jwt.zig");
 
 pub const Provider = enum {
     google,
@@ -227,7 +232,7 @@ pub fn oauthUrl(provider: Provider) ?[]const u8 {
 pub fn signInWithOauth(provider: Provider) void {
     const client = keystone.getClient(provider) orelse return;
     const url = buildAuthorizeUrl(provider, client, false) catch return;
-    defer Vapor.allocator_global.free(url);
+    defer Vapor.lib.allocator_global.free(url);
     setAuthState(.{ .state = .loading });
     Kit.setWindowLocation(url);
 }
@@ -281,7 +286,7 @@ pub fn refreshSession() void {
 
 /// Updates the auth state if another tab changed the stored session.
 pub fn syncFromStorage() void {
-    const stored = Vapor.getStore([]const u8, keystone.session_storage_key) orelse "";
+    const stored = Vapor.load([]const u8, keystone.session_storage_key) orelse "";
     const current = auth_snapshot.session orelse SessionInfo{ .token = "" };
     if (!std.mem.eql(u8, stored, current.token)) {
         if (stored.len == 0) {
@@ -314,7 +319,7 @@ pub fn isAuthenticated() bool {
 
 /// The stored access token, or `null`.
 pub fn getAccessToken() ?[]const u8 {
-    return Vapor.getStore([]const u8, keystone.session_storage_key);
+    return Vapor.load([]const u8, keystone.session_storage_key);
 }
 
 /// The signed-in user, or `null`.
@@ -451,9 +456,9 @@ fn initHooks(self: *KeyStone) void {
     self.hook_registered = true;
 }
 
-fn exchangeHook(_: Vapor.HookContext) void {
+fn exchangeHook(_: Vapor.lib.HookContext) void {
     if (!maybeHandleAuthExchange()) {
-        Vapor.report.err("Failed to handle auth exchange", .{});
+        log.err("Failed to handle auth exchange", .{});
     }
 }
 
@@ -476,12 +481,12 @@ fn getProviderFromCookieOrStore() ?Provider {
         if (std.meta.stringToEnum(Provider, provider_str)) |provider| return provider;
     }
 
-    const stored = Vapor.getStore([]const u8, keystone.oauth_provider_storage_key) orelse return null;
+    const stored = Vapor.load([]const u8, keystone.oauth_provider_storage_key) orelse return null;
     return std.meta.stringToEnum(Provider, stored);
 }
 
 fn validateCallbackGuards(params: std.StringHashMap([]const u8)) bool {
-    const expected_state = Vapor.getStore([]const u8, keystone.oauth_state_storage_key);
+    const expected_state = Vapor.load([]const u8, keystone.oauth_state_storage_key);
     if (expected_state) |state| {
         if (state.len > 0) {
             const incoming_state = params.get("state") orelse return false;
@@ -489,7 +494,7 @@ fn validateCallbackGuards(params: std.StringHashMap([]const u8)) bool {
         }
     }
 
-    const expected_nonce = Vapor.getStore([]const u8, keystone.oauth_nonce_storage_key);
+    const expected_nonce = Vapor.load([]const u8, keystone.oauth_nonce_storage_key);
     if (expected_nonce) |nonce| {
         if (nonce.len > 0) {
             const incoming_nonce = params.get("nonce") orelse return false;
@@ -555,7 +560,7 @@ fn buildAuthorizeUrl(provider: Provider, client: ClientConfig, dry_run: bool) ![
     }
 
     var query: Kit.QueryBuilder = undefined;
-    try query.init(Vapor.allocator_global);
+    try query.init(Vapor.lib.allocator_global);
     defer query.deinit();
 
     try query.add("client_id", client.client_id);
@@ -607,8 +612,8 @@ fn clearPendingOauthGuards() void {
 }
 
 fn exchangeCode(provider: Provider, code: []const u8) void {
-    const state = Vapor.getStore([]const u8, keystone.oauth_state_storage_key) orelse "";
-    const nonce = Vapor.getStore([]const u8, keystone.oauth_nonce_storage_key) orelse "";
+    const state = Vapor.load([]const u8, keystone.oauth_state_storage_key) orelse "";
+    const nonce = Vapor.load([]const u8, keystone.oauth_nonce_storage_key) orelse "";
     const body = Vapor.frame.fmt("auth-code={s}&state={s}&nonce={s}", .{ code, state, nonce });
     const url = Vapor.frame.fmt("{s}/exchange/{s}/token", .{ keystone.backend_url, @tagName(provider) });
     Fetch.fetch(url, .{
@@ -836,4 +841,9 @@ fn getClient(self: *const KeyStone, provider: Provider) ?ClientConfig {
         .apple => self.clients.apple,
         .azure => self.clients.azure,
     };
+}
+
+test {
+    _ = JWT;
+    _ = @import("jwt_types.zig");
 }

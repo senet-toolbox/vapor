@@ -1,7 +1,7 @@
-//! JWT types shared by keystone/jwt.zig: algorithms, header, validation.
+//! JWT types shared by jwt.zig: algorithms, header, validation.
 
 const std = @import("std");
-const Vapor = @import("../vapor.zig");
+const Vapor = @import("vapor");
 
 pub const EncodingKey = @import("jwt.zig").EncodingKey;
 

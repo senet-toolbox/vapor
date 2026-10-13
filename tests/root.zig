@@ -1,5 +1,6 @@
 const std = @import("std");
 const Vapor = @import("vapor");
+const KeyStone = @import("keystone");
 
 const Request = Vapor.Fetch.Request;
 
@@ -828,7 +829,7 @@ test "writer handles a zero-length buffer without underflowing capacity" {
 // overflow under the ReleaseSmall builds that ship.
 // -----------------------------------------------------------------------------
 
-const JWT = Vapor.Testing.JWT;
+const JWT = KeyStone.JWT;
 
 fn hs256Token(allocator: std.mem.Allocator, signature_b64: []const u8) []const u8 {
     const encoder = std.base64.url_safe_no_pad.Encoder;
@@ -1046,9 +1047,9 @@ fn docGenericApi() !void {
     _ = event.formData(&form);
     Vapor.Hooks(.{ .mounted = docNoArgs })({});
     try Vapor.registerLayout("/doc", docLayout, .{});
-    Vapor.KeyStone.authFetch("/doc", .{}, docPlainFetched);
-    Vapor.KeyStone.authFetchWithOptions("/doc", .{}, .{}, docPlainFetched);
-    Vapor.KeyStone.validateSession(.github, docPlainFetched);
+    KeyStone.authFetch("/doc", .{}, docPlainFetched);
+    KeyStone.authFetchWithOptions("/doc", .{}, .{}, docPlainFetched);
+    KeyStone.validateSession(.github, docPlainFetched);
 }
 
 // Never called; taking its address compiles every line.
@@ -1183,9 +1184,9 @@ test "README examples type-check against the real API" {
         _ = Vapor.Fetch.Options;
 
         // "Authentication"
-        _ = Vapor.KeyStone.signInWithOauth;
-        _ = Vapor.KeyStone.isAuthenticated;
-        _ = Vapor.KeyStone.getAccessToken;
+        _ = KeyStone.signInWithOauth;
+        _ = KeyStone.isAuthenticated;
+        _ = KeyStone.getAccessToken;
 
         // "Setup" — the theme fixture mirrors what the README tells users to write.
         _ = Vapor.Types.Color.black;
