@@ -42,6 +42,30 @@ pub const Page = lib.Page;
 pub const PageFn = lib.PageFn;
 pub const registerLayout = lib.registerLayout;
 pub const routeParam = lib.routeParam;
+
+// ── Navigation ──────────────────────────────────────────────────────────────
+
+const Navigation = lib.Navigation;
+/// Navigates within the app to `path`, without a page load.
+pub const navigate = Navigation.navigate;
+/// Goes back one entry in the browser history.
+pub const back = Navigation.back;
+/// Adds `path` to the browser history without navigating.
+pub const pushPath = Navigation.pushPath;
+/// Leaves the app for `url`, with a full page load.
+pub const redirect = Navigation.redirect;
+/// Opens `url` in a new tab.
+pub const openTab = Navigation.openTab;
+/// The current URL path, e.g. "/users/42".
+pub const currentPath = Navigation.currentPath;
+/// The URL's query string with its leading "?", or `null`.
+pub const queryString = Navigation.queryString;
+/// The URL's query parameters, decoded, or `null`.
+pub const queryParams = Navigation.queryParams;
+/// The page's origin, e.g. "https://example.com".
+pub const origin = Navigation.origin;
+/// Scrolls the window to `x`, `y` pixels.
+pub const scrollTo = Navigation.scrollTo;
 pub const getStatus = lib.getStatus;
 pub const cycle = lib.cycle;
 

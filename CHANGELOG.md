@@ -61,6 +61,13 @@ section); the compiler points at anything it leaves.
   `contains` and `startsWith` (use `std.mem`), `Kit.String` and `fastJson`
   (use `std.ArrayList(u8)` / `std.json`), and the unused `StructSchema`,
   `FieldDescriptor` and `FieldType`.
+- Navigation moves from `Vapor.Kit` to the root: `Kit.navigate` →
+  `Vapor.navigate`, `back` → `Vapor.back`, `routePush` → `Vapor.pushPath`,
+  `setWindowLocation` → `Vapor.redirect`, `scrollTo` → `Vapor.scrollTo`,
+  `getWindowPath` / `Window.path` → `Vapor.currentPath` (no longer
+  optional), `getWindowParams` / `Window.paramsStr` → `Vapor.queryString`,
+  `Window.params` → `Vapor.queryParams`, `Window.origin` → `Vapor.origin`,
+  `Window.openTab` → `Vapor.openTab`. `Kit.Window` is gone.
 - `.view` memory is now freed when the app leaves the page (see Fixed). A
   global that points into it must be reset in the page's deinit or
   reallocated on the next visit.

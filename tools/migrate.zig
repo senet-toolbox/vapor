@@ -314,6 +314,29 @@ const renames = [_]Rename{
     .{ .from = "KeyStone.Config", .to = "KeyStone.ClientConfig", .whole = true },
     .{ .from = "Vapor.lib.eventListener(", .to = "Vapor.addGlobalListener(" },
     .{ .from = "Vapor.KeyStone", .to = "@import(\"keystone\")", .whole = true },
+    // Navigation moved from Kit to the root.
+    .{ .from = "Vapor.Kit.navigate", .to = "Vapor.navigate", .whole = true },
+    .{ .from = "Vapor.Kit.back", .to = "Vapor.back", .whole = true },
+    .{ .from = "Vapor.Kit.routePush", .to = "Vapor.pushPath", .whole = true },
+    .{ .from = "Vapor.Kit.setWindowLocation", .to = "Vapor.redirect", .whole = true },
+    .{ .from = "Vapor.Kit.scrollTo", .to = "Vapor.scrollTo", .whole = true },
+    .{ .from = "Vapor.Kit.getWindowParams", .to = "Vapor.queryString", .whole = true },
+    .{ .from = "Vapor.Kit.Window.openTab", .to = "Vapor.openTab", .whole = true },
+    .{ .from = "Vapor.Kit.Window.origin", .to = "Vapor.origin", .whole = true },
+    .{ .from = "Vapor.Kit.Window.paramsStr", .to = "Vapor.queryString", .whole = true },
+    .{ .from = "Vapor.Kit.Window.params", .to = "Vapor.queryParams", .whole = true },
+    .{ .from = "Vapor.Kit.Window.path", .to = "Vapor.currentPath", .whole = true },
+    .{ .from = "Kit.navigate", .to = "Vapor.navigate", .whole = true, .bare = true },
+    .{ .from = "Kit.back", .to = "Vapor.back", .whole = true, .bare = true },
+    .{ .from = "Kit.routePush", .to = "Vapor.pushPath", .whole = true, .bare = true },
+    .{ .from = "Kit.setWindowLocation", .to = "Vapor.redirect", .whole = true, .bare = true },
+    .{ .from = "Kit.scrollTo", .to = "Vapor.scrollTo", .whole = true, .bare = true },
+    .{ .from = "Kit.getWindowParams", .to = "Vapor.queryString", .whole = true, .bare = true },
+    .{ .from = "Kit.Window.openTab", .to = "Vapor.openTab", .whole = true, .bare = true },
+    .{ .from = "Kit.Window.origin", .to = "Vapor.origin", .whole = true, .bare = true },
+    .{ .from = "Kit.Window.paramsStr", .to = "Vapor.queryString", .whole = true, .bare = true },
+    .{ .from = "Kit.Window.params", .to = "Vapor.queryParams", .whole = true, .bare = true },
+    .{ .from = "Kit.Window.path", .to = "Vapor.currentPath", .whole = true, .bare = true },
     // Kit's wrappers around std.mem.
     .{ .from = "Vapor.Kit.startsWith(", .to = "std.mem.startsWith(u8, " },
     .{ .from = "Vapor.Kit.split(", .to = "std.mem.splitSequence(u8, " },
@@ -404,6 +427,22 @@ fn applyRenames(arena: Allocator, text: []const u8, report: *Report) ![]const u8
                 try report.add(arena, text, i, false, "{s} -> {s}", .{ r.from, r.to });
                 i = end;
                 continue :outer;
+            }
+            // getWindowPath() returned an optional; currentPath() does not, so
+            // an `orelse` fallback after it goes.
+            inline for (.{ "Vapor.Kit.getWindowPath()", "Kit.getWindowPath()" }) |from| {
+                if (std.mem.startsWith(u8, text[i..], from) and (i == 0 or !(isIdent(text[i - 1]) or text[i - 1] == '.'))) {
+                    var end = i + from.len;
+                    var j = end;
+                    while (j < text.len and (text[j] == ' ' or text[j] == '\n' or text[j] == '\t')) j += 1;
+                    if (std.mem.startsWith(u8, text[j..], "orelse") and j + 6 < text.len and !isIdent(text[j + 6])) {
+                        if (spanEnd(text, mask, j + 6, ",;")) |stop| end = stop;
+                    }
+                    try out.appendSlice(arena, "Vapor.currentPath()");
+                    try report.add(arena, text, i, false, "{s} -> Vapor.currentPath()", .{std.mem.trim(u8, text[i..end], " ")});
+                    i = end;
+                    continue :outer;
+                }
             }
             // inlineStyleStr("css") is inlineStyle("css", .{}) when the CSS has
             // no braces to escape.
@@ -847,6 +886,11 @@ test "renames calls and types, not strings or comments" {
         \\fn done(a: Vapor.Kit.Response, b: Kit.Response, c: Kit.HttpReq) void {}
         \\const KeyStone = Vapor.KeyStone;
         \\if (Vapor.Kit.startsWith(path, "/a") and Kit.startsWith(path, "/")) {}
+        \\const url = Vapor.Kit.getWindowPath() orelse "/";
+        \\const p = Kit.getWindowPath();
+        \\Vapor.Kit.navigate("/a");
+        \\Kit.Window.openTab(u);
+        \\Vapor.Button(Vapor.Kit.back, .{});
     ,
         \\const e: *Vapor.Element = x; // Vapor.Binded
         \\Vapor.print(.err, "{d} .square_px(", .{1});
@@ -868,6 +912,11 @@ test "renames calls and types, not strings or comments" {
         \\fn done(a: Vapor.Fetch.Result, b: Vapor.Fetch.Result, c: Vapor.Fetch.Options) void {}
         \\const KeyStone = @import("keystone");
         \\if (std.mem.startsWith(u8, path, "/a") and std.mem.startsWith(u8, path, "/")) {}
+        \\const url = Vapor.currentPath();
+        \\const p = Vapor.currentPath();
+        \\Vapor.navigate("/a");
+        \\Vapor.openTab(u);
+        \\Vapor.Button(Vapor.back, .{});
     );
 }
 

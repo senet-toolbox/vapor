@@ -256,6 +256,11 @@ try Vapor.registerLayout("/docs", docsLayout, .{ .reset = true });
 _ = Vapor.registerHook("/docs", beforeNavigate, .before);
 ```
 
+Move between pages with `Vapor.navigate("/docs")` (no page load) and
+`Vapor.back()`; read the location with `Vapor.currentPath()`,
+`Vapor.queryParams()` and `Vapor.origin()`. `Vapor.redirect(url)` leaves the
+app with a full page load and `Vapor.openTab(url)` opens a new tab.
+
 ### Memory
 
 Vapor never asks you for an allocator. It exposes three arenas with different

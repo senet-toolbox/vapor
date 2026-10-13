@@ -10,6 +10,7 @@ const hashKey = utils.hashKey;
 const getUnderlyingType = utils.getUnderlyingType;
 const getUnderlyingValue = utils.getUnderlyingValue;
 const DynamicObject = @import("../dynamic.zig");
+const Navigation = @import("../navigation.zig");
 pub const Json = @import("json.zig");
 
 pub const Kit = @This();
@@ -29,64 +30,6 @@ pub fn milliTimestamp() i64 {
     const ts = std.Io.Timestamp.now(io, .cpu_thread);
     return ts.toMilliseconds();
 }
-
-pub const Window = struct {
-    /// Opens `url` in a new tab.
-    pub fn openTab(url: []const u8) void {
-        if (isWasi) {
-            Wasm.windowOpenWasm(url.ptr, url.len);
-        }
-    }
-
-    /// The URL's query string, or `null` if it has none.
-    pub fn paramsStr() ?[]const u8 {
-        if (isWasi) {
-            const _params = getWindowParamsWasm();
-            const params_str = std.mem.span(_params);
-            if (params_str.len == 0) {
-                return null;
-            } else {
-                return params_str;
-            }
-        } else {
-            return null;
-        }
-    }
-
-    /// The URL's query parameters as a map (frame memory), or `null`.
-    pub fn params() ?std.StringHashMap([]const u8) {
-        if (isWasi) {
-            const params_str = paramsStr() orelse return null;
-            return parseParams(params_str, Vapor.arena(.frame)) catch return null;
-        }
-        return null;
-    }
-
-    /// The page's origin, e.g. "https://example.com".
-    pub fn origin() []const u8 {
-        if (isWasi) {
-            const _origin = Wasm.getWindowOriginWasm();
-            const origin_str = std.mem.span(_origin);
-            return origin_str;
-        } else {
-            return "";
-        }
-    }
-    /// The current URL path.
-    pub fn path() []const u8 {
-        if (isWasi) {
-            return std.mem.span(getWindowInformationWasm());
-        } else {
-            const prefix = "/root";
-            if (std.mem.startsWith(u8, Vapor.current_route, prefix)) {
-                const rest = Vapor.current_route[prefix.len..];
-                return if (rest.len == 0) "/" else rest;
-            } else {
-                return Vapor.current_route;
-            }
-        }
-    }
-};
 
 /// This function takes a slice of json and parses it into a struct
 /// # Parameters:
@@ -122,85 +65,6 @@ pub fn throttle(delay: i64) bool {
     }
     last_time = current_time;
     return false;
-}
-
-extern fn setWindowLocationWasm(
-    url_ptr: [*]const u8,
-    url_len: usize,
-) void;
-
-/// Navigates the browser to `url` with a full page load.
-pub fn setWindowLocation(url: []const u8) void {
-    if (isWasi) {
-        setWindowLocationWasm(url.ptr, url.len);
-    }
-}
-
-extern fn navigateWasm(
-    path_ptr: [*]const u8,
-    path_len: usize,
-) void;
-
-/// Navigates within the app to `path`, without a page load.
-pub fn navigate(path: []const u8) void {
-    if (isWasi) {
-        navigateWasm(path.ptr, path.len);
-    }
-}
-
-extern fn backWasm() void;
-
-/// Goes back one entry in the browser history.
-pub fn back() void {
-    if (isWasi) {
-        backWasm();
-    }
-}
-
-extern fn routePushWASM(
-    path_ptr: [*]const u8,
-    path_len: usize,
-) void;
-
-/// Adds `path` to the browser history without navigating.
-pub fn routePush(path: []const u8) void {
-    if (isWasi) {
-        routePushWASM(path.ptr, path.len);
-    }
-}
-
-extern fn getWindowInformationWasm() [*:0]u8;
-
-/// The current URL path, or `null`.
-pub fn getWindowPath() ?[]const u8 {
-    if (isWasi) {
-        return std.mem.span(getWindowInformationWasm());
-    } else {
-        const prefix = "/root";
-        if (std.mem.startsWith(u8, Vapor.current_route, prefix)) {
-            const rest = Vapor.current_route[prefix.len..];
-            return if (rest.len == 0) "/" else rest;
-        } else {
-            return Vapor.current_route;
-        }
-    }
-}
-
-extern fn getWindowParamsWasm() [*:0]u8;
-
-/// The URL's query string, or `null` if it has none.
-pub fn getWindowParams() ?[]const u8 {
-    if (isWasi) {
-        const params = getWindowParamsWasm();
-        const params_str = std.mem.span(params);
-        if (params_str.len == 0) {
-            return null;
-        } else {
-            return params_str;
-        }
-    } else {
-        return null;
-    }
 }
 
 fn decoder(encoded: []const u8, decoded: *std.array_list.Managed(u8)) !void {
@@ -284,13 +148,6 @@ const Param = struct {
     key: []const u8,
     value: []const u8,
 };
-
-/// Scrolls the window to `x`, `y` pixels.
-pub fn scrollTo(x: f32, y: f32) void {
-    if (isWasi) {
-        Wasm.scrollToWasm(x, y);
-    }
-}
 
 pub const QueryBuilder = struct {
     allocator: std.mem.Allocator,
@@ -584,11 +441,8 @@ pub const API = struct {
     /// Internal: runs a `registerHook` callback for a navigation.
     pub fn hookInstCallback(id: u32) callconv(.c) void {
         const hook_cb = Vapor.hooks_inst_callbacks.get(id).?;
-        const params_str = Kit.getWindowParams() orelse "";
-        const path = Kit.getWindowPath() orelse {
-            Vapor.report.err("Hooks ERROR: Could not get window path", .{});
-            return;
-        };
+        const params_str = Navigation.queryString() orelse "";
+        const path = Navigation.currentPath();
         var params = std.StringHashMap([]const u8).init(Vapor.arena(.frame));
         if (params_str.len != 0) {
             params = Kit.parseParams(params_str, Vapor.arena(.frame)) catch return orelse return;

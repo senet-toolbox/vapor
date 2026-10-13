@@ -107,6 +107,7 @@ pub const Animation = @import("Animation.zig");
 pub const Edges = @import("Edges.zig").Edges;
 pub const Transition = @import("transition.zig");
 
+pub const Navigation = @import("navigation.zig");
 const StorageModule = @import("storage.zig");
 pub const clearPersistentStorage = StorageModule.clearPersistentStorage;
 pub const store = StorageModule.store;

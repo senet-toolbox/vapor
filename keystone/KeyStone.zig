@@ -234,7 +234,7 @@ pub fn signInWithOauth(provider: Provider) void {
     const url = buildAuthorizeUrl(provider, client, false) catch return;
     defer Vapor.lib.allocator_global.free(url);
     setAuthState(.{ .state = .loading });
-    Kit.setWindowLocation(url);
+    Vapor.redirect(url);
 }
 
 /// Completes an OAuth sign-in if the URL carries the provider's callback.
@@ -244,7 +244,7 @@ pub fn handleAuthExchanges() void {
 
 /// Like `handleAuthExchanges`; returns whether the URL was an OAuth callback.
 pub fn maybeHandleAuthExchange() bool {
-    const params = Kit.Window.params() orelse return false;
+    const params = Vapor.queryParams() orelse return false;
     if (params.get("code") == null and params.get("error") == null) return false;
 
     if (params.get("error")) |oauth_err| {
@@ -541,7 +541,7 @@ fn callbackUrl() []const u8 {
     if (std.mem.startsWith(u8, keystone.hook_path, "http://") or std.mem.startsWith(u8, keystone.hook_path, "https://")) {
         return keystone.hook_path;
     }
-    const origin = Kit.Window.origin();
+    const origin = Vapor.origin();
     if (origin.len == 0) return keystone.hook_path;
     return Vapor.frame.fmt("{s}{s}", .{ origin, keystone.hook_path });
 }
