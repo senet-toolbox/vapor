@@ -7,6 +7,7 @@ import {
 } from "./maps.js";
 import { elementCache } from "./env.js";
 import { activeNodeIds, readWasmString, wasmInstance } from "./runtime.js";
+import { dropElementListeners } from "./env/events.js";
 
 // Store intervals by route for cleanup
 const routeIntervals = new Map();
@@ -83,6 +84,7 @@ function runDestroyHook(id) {
 }
 
 function cleanupRegistryEntry(id) {
+  dropElementListeners(id);
   const entry = domNodeRegistry.get(id);
   if (entry?.domNode) {
     // Remove event listeners
@@ -148,6 +150,7 @@ export async function recurseDestroy(el, skipAnimation = false) {
   }
 
   // Cleanup registries
+  dropElementListeners(el.id);
   domNodeRegistry.delete(el.id);
   pureNodeRegistry.delete(el.id);
   loadedSections.delete(el.id);

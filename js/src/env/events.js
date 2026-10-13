@@ -40,7 +40,68 @@ function addDocumentListener(ptr, len, onid) {
   });
 }
 
+/**
+ * Element listeners from `Element.listen`, by the id wasm gave them. They
+ * outlive renders; `dropElementListeners` detaches them when their element
+ * leaves the page.
+ */
+const elementListeners = new Map();
+/** Ids in `elementListeners` per element id. */
+const listenersByElement = new Map();
+
+function detachElementListener(id) {
+  const entry = elementListeners.get(id);
+  if (!entry) return;
+  entry.remove();
+  elementListeners.delete(id);
+  delete eventStorage[id];
+  const ids = listenersByElement.get(entry.elementId);
+  ids?.delete(id);
+  if (ids?.size === 0) listenersByElement.delete(entry.elementId);
+}
+
+/**
+ * Detaches the `Element.listen` listeners of the element `elementId`, which
+ * is leaving the page, and lets wasm free their callbacks.
+ */
+export function dropElementListeners(elementId) {
+  const ids = listenersByElement.get(elementId);
+  if (!ids) return;
+  for (const id of [...ids]) {
+    detachElementListener(id);
+    wasmInstance?.dropElementListener(id);
+  }
+}
+
 export const eventsBindings = {
+  addElementListener: (idPtr, idLen, ptr, len, onid) => {
+    if (!requireWasm()) return false;
+    const [elementId, element] = getElement(idPtr, idLen);
+    if (!element) return false;
+
+    const id = onid >>> 0;
+    const name = readWasmString(ptr, len);
+    const code = EventType[name];
+    const domType = name === "rightclick" ? "contextmenu" : name;
+    const handler = (event) => {
+      eventStorage[id] = event;
+      wasmInstance.dispatchElementListener(code, id);
+    };
+
+    element.addEventListener(domType, handler);
+    elementListeners.set(id, {
+      elementId,
+      remove: () => element.removeEventListener(domType, handler),
+    });
+    if (!listenersByElement.has(elementId)) listenersByElement.set(elementId, new Set());
+    listenersByElement.get(elementId).add(id);
+    return true;
+  },
+  removeElementListener: (onid) => {
+    if (!requireWasm()) return;
+    detachElementListener(onid >>> 0);
+  },
+
   // Event Handling - Document Level
   createEventListenerGlobal: addDocumentListener,
   createEventListener: addDocumentListener,

@@ -278,6 +278,27 @@ pub const Element = struct {
         mutateDomElement(id.ptr, id.len, attribute.ptr, attribute.len, @floatFromInt(value));
     }
 
+    /// Calls `cb` with `args` and then the event whenever `event_type` fires
+    /// on the element, until `.remove()` on the returned listener or until
+    /// the element leaves the page.
+    ///
+    /// Unlike the builder's `.onEvent`, the listener is not part of the
+    /// render: it stays across rerenders, and its events do not rerender the
+    /// page, which suits frequent events such as `scroll` or `pointermove`.
+    /// Call `Vapor.cycle()` from the handler when it changes what the page
+    /// shows.
+    ///
+    /// The element must already be on the page: bind it with `.ref()` and
+    /// call `listen` from `onMount` or an event handler. Returns null when it
+    /// is not, and outside the browser.
+    pub fn listen(self: *Element, event_type: types.EventType, cb: anytype, args: anytype) ?Vapor.Listener {
+        const id = self._get_id() orelse {
+            Vapor.report.warn("Element.listen: not bound to an element on the page; bind it with .ref() first", .{});
+            return null;
+        };
+        return Vapor.addElementListener(id, event_type, cb, args);
+    }
+
     /// Calls `cb` with `args` and the event whenever `event_type` fires on the
     /// element.
     pub fn addInstListener(

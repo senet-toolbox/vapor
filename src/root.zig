@@ -146,6 +146,8 @@ pub const registerHook = lib.registerHook;
 pub const addGlobalListener = lib.addGlobalListener;
 pub const addGlobalListenerCtx = lib.addGlobalListenerCtx;
 pub const removeGlobalListener = lib.removeGlobalListener;
+/// A listener `Element.listen` added; `.remove()` detaches it.
+pub const Listener = lib.Listener;
 pub const timeout = lib.timeout;
 pub const registerTimeout = lib.registerTimeout;
 pub const scrollIntoView = Event.scrollIntoView;

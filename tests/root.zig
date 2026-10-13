@@ -1003,6 +1003,8 @@ fn docGenericApi() !void {
     _ = Vapor.addGlobalListener(.keydown, docEventHandler);
     _ = Vapor.addGlobalListenerCtx(.keydown, docCtxHandler, .{@as(u32, 1)});
     _ = Vapor.removeGlobalListener(.keydown, 1);
+    var doc_element: Vapor.Element = .{};
+    if (doc_element.listen(.scroll, docCtxHandler, .{@as(u32, 1)})) |l| l.remove();
     Vapor.store("k", @as(u32, 1));
     Vapor.store("k", @as(i64, -1));
     Vapor.store("k", @as(f32, 1.5));

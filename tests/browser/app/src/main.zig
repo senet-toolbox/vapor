@@ -33,6 +33,7 @@ pub export fn init() void {
     Vapor.Page(.{ .route = "/hooks" }, hooksPage, null);
     Vapor.Page(.{ .route = "/styles" }, stylesPage, null);
     Vapor.Page(.{ .route = "/listeners" }, listenersPage, null);
+    Vapor.Page(.{ .route = "/listen" }, listenPage, null);
     Vapor.Page(.{ .route = "/error" }, notFound, null);
 }
 
@@ -208,6 +209,58 @@ fn listenersPage() void {
             Text("Refresh").end();
         });
         TextFmt("{d}/{d}", .{ key_a, key_b }).id("key-count").end();
+    });
+}
+
+// ── /listen : Element.listen outlives renders and does not rerender ───────
+
+var listen_element: Vapor.Element = .{};
+var listener: ?Vapor.Listener = null;
+var listen_hits: u32 = 0;
+var listen_renders: u32 = 0;
+var listen_target_shown = true;
+
+fn targetClicked(step: u32, _: *Vapor.Event) void {
+    listen_hits += step;
+}
+
+fn startListening() void {
+    listener = listen_element.listen(.click, targetClicked, .{@as(u32, 2)});
+}
+
+fn stopListening() void {
+    if (listener) |l| l.remove();
+    listener = null;
+}
+
+fn toggleListenTarget() void {
+    listen_target_shown = !listen_target_shown;
+    // The listener goes with its element; the handle is stale now.
+    if (!listen_target_shown) listener = null;
+}
+
+fn listenPage() void {
+    listen_renders += 1;
+    Box().id("listen-page").children({
+        if (listen_target_shown) {
+            Box().id("listen-target").ref(&listen_element).children({
+                Text("Target").end();
+            });
+        }
+        Button(startListening, .{}).id("listen-start").children({
+            Text("Listen").end();
+        });
+        Button(stopListening, .{}).id("listen-stop").children({
+            Text("Stop").end();
+        });
+        Button(toggleListenTarget, .{}).id("listen-toggle").children({
+            Text("Toggle").end();
+        });
+        Button(rerenderOnly, .{}).id("listen-refresh").children({
+            Text("Refresh").end();
+        });
+        TextFmt("hits={d} listeners={d}", .{ listen_hits, Vapor.lib.element_listeners.count() }).id("listen-state").end();
+        TextFmt("{d}", .{listen_renders}).id("listen-renders").end();
     });
 }
 

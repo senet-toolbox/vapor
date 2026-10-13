@@ -139,6 +139,8 @@ pub const attachEventCallback = EventsModule.attachEventCallback;
 pub const addGlobalListener = EventsModule.addGlobalListener;
 pub const addGlobalListenerCtx = EventsModule.addGlobalListenerCtx;
 pub const removeGlobalListener = EventsModule.removeGlobalListener;
+pub const addElementListener = EventsModule.addElementListener;
+pub const Listener = EventsModule.Listener;
 pub const EventHandler = EventsModule.EventHandler;
 pub const EventHandlers = EventsModule.EventHandlers;
 pub const Action = EventsModule.Action;
@@ -327,7 +329,9 @@ pub var button_callbacks: NodeTable(ErasedCallback) = undefined;
 pub var erased_hooks_registry: NodeTable(ErasedCallback) = undefined;
 /// Document listeners from `addGlobalListener`, by the id it returned.
 pub var erased_event_registry: std.AutoHashMap(u32, ErasedEventCallback) = undefined;
-/// The id the next `addGlobalListener` returns.
+/// Element listeners from `Element.listen`, by id. They outlive renders.
+pub var element_listeners: std.AutoHashMap(u32, ErasedEventCallback) = undefined;
+/// The id the next `addGlobalListener` or `Element.listen` returns.
 pub var next_global_listener_id: u32 = 1;
 /// `.onResize` callbacks, per element.
 pub var resize_callbacks: NodeTable(Kit.ResizeCallback) = undefined;
@@ -344,6 +348,7 @@ fn initCalls(persistent_allocator: std.mem.Allocator) void {
     button_callbacks = .init(persistent_allocator);
     erased_hooks_registry = .init(persistent_allocator);
     erased_event_registry = std.AutoHashMap(u32, ErasedEventCallback).init(persistent_allocator);
+    element_listeners = std.AutoHashMap(u32, ErasedEventCallback).init(persistent_allocator);
     next_global_listener_id = 1;
     resize_callbacks = .init(persistent_allocator);
 }

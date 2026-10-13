@@ -98,8 +98,7 @@ pub export fn dispatchEvent(event_type_int: u32, callback_id: u32) void {
     };
 
     const erased = Vapor.erased_event_registry.get(callback_id) orelse {
-        Vapor.report.err("Event Callback not found {s}", .{@tagName(event_type)});
-        Vapor.report.err("Event Callback not found", .{});
+        Vapor.report.err("dispatchEvent: no document listener {d} for {s}", .{ callback_id, @tagName(event_type) });
         return;
     };
 
@@ -231,6 +230,61 @@ pub fn removeGlobalListener(event_type: Vapor.EventType, cb_idx: u32) ?bool {
         Wasm.removeEventListener(event_type_str.ptr, event_type_str.len, cb_idx);
     }
     return true;
+}
+
+/// A listener `Element.listen` added.
+pub const Listener = struct {
+    id: u32,
+
+    /// Detaches the listener and frees its callback. Safe from inside the
+    /// listener itself, and after its element left the page.
+    pub fn remove(self: Listener) void {
+        dropElementListener(self.id);
+        if (Vapor.isWasi) Wasm.removeElementListener(self.id);
+    }
+};
+
+/// Listens for `event_type` on the element whose DOM id is `element_id`,
+/// calling `cb` with `args` and then the event. See `Element.listen`.
+pub fn addElementListener(element_id: []const u8, event_type: Vapor.EventType, cb: anytype, args: anytype) ?Listener {
+    if (!Vapor.isWasi) return null;
+
+    const erased = ErasedEventCallback.make(Vapor.arena(.persist), event_type, cb, args) catch |err| {
+        Vapor.report.err("Element.listen: could not allocate the callback: {any}", .{err});
+        return null;
+    };
+    const id = Vapor.next_global_listener_id;
+    Vapor.element_listeners.put(id, erased) catch |err| {
+        erased.destroy(Vapor.arena(.persist));
+        Vapor.report.err("Element.listen: could not register the listener: {any}", .{err});
+        return null;
+    };
+    Vapor.next_global_listener_id += 1;
+
+    const event_type_str = @tagName(event_type);
+    if (!Wasm.addElementListener(element_id.ptr, element_id.len, event_type_str.ptr, event_type_str.len, id)) {
+        dropElementListener(id);
+        Vapor.report.warn("Element.listen: element \"{s}\" is not on the page yet; call listen once it is, e.g. from onMount", .{element_id});
+        return null;
+    }
+    return .{ .id = id };
+}
+
+/// Called by the runtime when an `Element.listen` listener's element leaves
+/// the page, and by `Listener.remove`: frees the listener's callback.
+pub export fn dropElementListener(id: u32) void {
+    const kv = Vapor.element_listeners.fetchRemove(id) orelse return;
+    kv.value.destroy(Vapor.arena(.persist));
+}
+
+/// Called by the runtime when an `Element.listen` listener's event fires.
+/// Unlike `.onEvent` handlers, it does not rerender the page.
+pub export fn dispatchElementListener(event_type_int: u32, id: u32) void {
+    const erased = Vapor.element_listeners.get(id) orelse return;
+    var event = Event{ .id = id, .type = @enumFromInt(event_type_int) };
+    // The closure may remove the listener while it runs: `call` has copied
+    // its arguments out by then.
+    erased.call(&event);
 }
 
 pub const ErasedCallback = struct {

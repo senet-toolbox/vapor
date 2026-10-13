@@ -380,6 +380,45 @@ const tests = {
     await p.waitForText("key-count", "1/2");
   },
 
+  async "Element.listen outlives renders, does not rerender, and leaves with its element"(p) {
+    await p.goto("/listen");
+    await p.waitForText("listen-state", "hits=0 listeners=0");
+    await p.click("listen-start");
+    await p.waitForText("listen-state", "hits=0 listeners=1");
+
+    // Its events reach Zig without a render.
+    const renders = await p.text("listen-renders");
+    for (let i = 0; i < 3; i++) await p.click("listen-target");
+    await sleep(100);
+    assertEqual(await p.text("listen-renders"), renders, "renders after listener events");
+    assertEqual(await p.text("listen-state"), "hits=0 listeners=1", "state before a render");
+    await p.click("listen-refresh");
+    await p.waitForText("listen-state", "hits=6 listeners=1");
+
+    // It is still attached after more renders.
+    await p.click("listen-refresh");
+    await p.click("listen-refresh");
+    await p.click("listen-target");
+    await p.click("listen-refresh");
+    await p.waitForText("listen-state", "hits=8 listeners=1");
+
+    // remove() detaches it.
+    await p.click("listen-stop");
+    await p.waitForText("listen-state", "hits=8 listeners=0");
+    await p.click("listen-target");
+    await p.click("listen-refresh");
+    await p.waitForText("listen-state", "hits=8 listeners=0");
+
+    // It goes when its element leaves the page.
+    await p.click("listen-start");
+    await p.waitForText("listen-state", "hits=8 listeners=1");
+    await p.click("listen-toggle");
+    await p.waitFor(`!document.getElementById("listen-target")`, "target removed");
+    await sleep(50);
+    await p.click("listen-refresh");
+    await p.waitForText("listen-state", "hits=8 listeners=0");
+  },
+
   async "typing reaches Zig state"(p) {
     await p.goto("/input");
     await p.waitForText("greeting", "Hello, !");

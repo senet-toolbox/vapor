@@ -48,9 +48,10 @@ section); the compiler points at anything it leaves.
   element's handlers are rebuilt on every render, so a listener added
   after the fact could only last until the next one. Attach handlers with
   `.onEvent(event, cb)` where the element is built; for the document, use
-  `Vapor.addGlobalListener`. `Vapor.lib.eventListener` (whose callback was
-  never called either) is gone too: `Vapor.addGlobalListener` does the
-  same.
+  `Vapor.addGlobalListener`, and for a listener that outlives renders,
+  the new `Element.listen` (see Added). `Vapor.lib.eventListener` (whose
+  callback was never called either) is gone too: `Vapor.addGlobalListener`
+  does the same.
 - `.view` memory is now freed when the app leaves the page (see Fixed). A
   global that points into it must be reset in the page's deinit or
   reallocated on the next visit.
@@ -112,6 +113,10 @@ and the compiler points at the rest:
   `Vapor.Kit.init()`; `Kit.Fetch`, `Kit.ErrResponse` and `HooksCtx` are
   reported. Removed side constructors are rewritten wherever they appear
   (`.top => .b(2)` in a switch becomes `.top => .{ .bottom = 2 }`).
+- `Element.listen(event, cb, args)` attaches a listener that is not part of
+  the render, for frequent events such as `scroll` or `pointermove`: it stays
+  across renders until `.remove()` on the returned `Vapor.Listener` or until
+  the element leaves the page, and its events do not rerender the page.
 - `.padX(n)` / `.padY(n)` on elements and text fields: padding on one
   axis, keeping the other.
 - Text fields get the margin shorthands elements had: `.mt`, `.mb`, `.ml`,

@@ -202,6 +202,39 @@ CSS transition) when something above it changes.
 The value also becomes the element's DOM id, so it must be unique in the
 document.
 
+### Events
+
+Attach handlers where the element is built. They are part of the render:
+every render attaches them again, and after a handler runs vapor rerenders the
+page, so state it changed shows up.
+
+```zig
+Vapor.Box().onEvent(.click, select, .{item.id}).children({
+    Vapor.Text(item.name).end();
+});
+// fn select(id: u32, event: *Vapor.Event) void { ... }
+```
+
+For document-wide events use `Vapor.addGlobalListener(.keydown, onKey)` (and
+`removeGlobalListener`).
+
+`Element.listen` is for listeners that should not be tied to rendering, such as
+`scroll` or `pointermove` on one element. It stays across renders until you
+remove it or the element leaves the page, and its events do not rerender; call
+`Vapor.cycle()` from the handler when the page should change. The element has
+to be on the page, so bind it with `.ref()` and call `listen` from `onMount` or
+an event handler:
+
+```zig
+var panel: Vapor.Element = .{};
+var scroll_listener: ?Vapor.Listener = null;
+
+fn mounted() void {
+    scroll_listener = panel.listen(.scroll, onScroll, .{});
+}
+// later: if (scroll_listener) |l| l.remove();
+```
+
 ### Pages, layouts and hooks
 
 ```zig

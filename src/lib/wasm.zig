@@ -79,6 +79,20 @@ pub extern fn createElementEventListener(
     cb_id: u32,
 ) void;
 
+/// Listens for `event_type` on the element with this id until
+/// `removeElementListener(cb_id)` or until the element leaves the page.
+/// Returns false when no such element is on the page.
+pub extern fn addElementListener(
+    element_ptr: [*]const u8,
+    element_len: usize,
+    event_ptr: [*]const u8,
+    event_type_len: usize,
+    cb_id: u32,
+) bool;
+
+/// Removes the listener `addElementListener` added for `cb_id`.
+pub extern fn removeElementListener(cb_id: u32) void;
+
 /// Removes a previously registered event listener from an element.
 pub extern fn removeElementEventListener(
     element_ptr: [*]const u8,
