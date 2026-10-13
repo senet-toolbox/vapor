@@ -4,9 +4,12 @@ All notable changes to this project are documented here. This project follows
 [Semantic Versioning](https://semver.org/): breaking changes bump the major
 version and are listed with a migration note.
 
-## [Unreleased]
+## [3.0.0] — 2026-10-13
 
-Breaking: the next release is a major version.
+A major version: the names deprecated during the API cleanup are removed,
+along with APIs that did nothing. Run `zig build migrate -- <app src>` from
+this checkout to rewrite an app (see "Renamed" and the README's Upgrading
+section); the compiler points at anything it leaves.
 
 ### Breaking
 
@@ -84,6 +87,10 @@ and the compiler points at the rest:
   `cycle`, `Pool.initGlobalPool` → `Pool.init`, `utils.hash` →
   `hashKey`, `Vapor.Fetch.Fetch` → `Vapor.Fetch.Request`,
   `clearPersitantStorage` → `clearPersistentStorage`.
+- The HTTP names `Vapor.Kit` kept when fetch moved in 2.2.0:
+  `Kit.Response` → `Vapor.Fetch.Result`, `Kit.HttpReq` → `Fetch.Options`,
+  `Kit.Headers` → `Fetch.Headers`, `Kit.HttpHeader` → `Fetch.Header`,
+  `Kit.Methods` → `Fetch.Method`.
 - `BorderThickness.solid` → `.all(1)`; `BorderRadius.toplr(a, b)` →
   `.{ .top_left = a, .top_right = b }`.
 - `.hide(bool)` → `.hidden(bool)`. `.hide` set the DOM attribute after the
@@ -109,7 +116,6 @@ and the compiler points at the rest:
   axis, keeping the other.
 - Text fields get the margin shorthands elements had: `.mt`, `.mb`, `.ml`,
   `.mr`, `.mx`, `.my`.
-
 - vapor reports its own problems through `std.log` with scope `.vapor`
   (shown as `[vapor] ...` by `Vapor.lib.log`). About 150 of these reports
   printed nothing before, and the rest went through four different
@@ -124,7 +130,7 @@ noted.
 - Element event handlers (`onEvent`, `onHover`, `onLeave`, `onFocus`, ...)
   were only attached after the first rerender.
 - `Box().onFocus`/`onBlur` never fired and did not compile once called;
-  `Box().onChange`, `onMountCtx`, the text field's `onFocus`/`onBlur`/
+  `Box().onChange`, `onMount` with arguments, the text field's `onFocus`/`onBlur`/
   `onKeyDown`/`onHover`/`onLeave` and `onDragStart` did not compile either.
   Every callback-taking public function is now compiled by the test suite.
 - Text fields received focus, blur and input events twice once a page had
@@ -138,7 +144,6 @@ noted.
 - `Vapor.onMount` did not compile on 64-bit hosts, which broke prerendering
   for apps that used it.
 - A `Page`'s deinit callback never ran, and passing one did not compile.
-- `.hide(false)` left the element hidden.
 - `Box().items(.{ Text("a") })` and `.child(Text(...))` dropped the text.
 - An `Svg` over the 2 KB debug limit panicked on `.end()`.
 - `Types.Layers.modal` rendered into the popover layer; the enum now matches
@@ -176,15 +181,13 @@ noted.
   in frame memory, and navigation no longer clears the tables. Removed
   `prev_style_hashes` and `element_style_hash_map`, which stored an entry
   per element and were never read.
-- Two elements with the same styles but different `.class(...)` (or edge
-  classes) shared one cached class attribute, so one got the other's
-  classes.
 - The whole stylesheet was regenerated on every route change; only the
   first render's is used.
 - `TextField(...).radius(...)` did nothing.
 - Two elements with the same styles but different `.class(...)`, `style_id`
-  or edge classes got the first one's class attribute in the browser: the
-  runtime cached class attributes by a hash that left those classes out.
+  or edge classes got the first one's class attribute: both vapor's and the
+  runtime's caches keyed class attributes by a hash that left those classes
+  out.
 - After unused CSS rules were removed, every hover style still in use was
   inserted again each time its element changed, since the runtime looked it
   up under a different name than the one it was stored under.
@@ -213,8 +216,7 @@ noted.
 - A responsive style with two breakpoints wrote its first `@media` rule
   twice, and after the first render the runtime overwrote it with a plain
   rule, so the mobile style applied at every width.
-- `clearPersitantStorage` is spelled `clearPersistentStorage`;
-  `error.SeperatorNotFound` is `error.SeparatorNotFound`.
+- `error.SeperatorNotFound` is spelled `error.SeparatorNotFound`.
 
 ### Documentation
 
@@ -222,8 +224,7 @@ noted.
   opens with an overview and an example the test suite compiles.
 - Every public function an app calls has a doc comment, and every source
   file has a module header. Docs state current behaviour, including the
-  no-ops: `.inherit()` records fields nothing reads and `onPushState`
-  callbacks are never called.
+  no-op `.inherit()`, which records fields nothing reads yet.
 
 ### Internal
 
