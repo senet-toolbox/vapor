@@ -310,42 +310,69 @@ pub fn movementY(evt: *Event) f32 {
     return 0;
 }
 
-// Static buffers for the dummy returns
-var dummy_string_buffer: [256:0]u8 = undefined;
+/// Outside the browser there is no runtime to read event data from; handlers
+/// read this instead. `Vapor.testing` sets it while it fires an event.
+pub var native_data: NativeData = .{};
+
+/// Event data for a natively fired event.
+pub const NativeData = struct {
+    /// The target field's value (`text`, `number`, `float`).
+    value: []const u8 = "",
+    /// `KeyboardEvent.key`.
+    key: []const u8 = "",
+    /// `InputEvent.inputType`.
+    input_type: []const u8 = "",
+    shift: bool = false,
+    ctrl: bool = false,
+    alt: bool = false,
+    meta: bool = false,
+    /// Numeric properties by DOM name: "clientX", "scrollTop", ...
+    numbers: []const Number = &.{},
+
+    pub const Number = struct { name: []const u8, value: f32 };
+};
+
+var native_string_buffer: [256:0]u8 = undefined;
+
+fn nativeString(value: []const u8) [*:0]u8 {
+    const len = @min(value.len, native_string_buffer.len);
+    @memcpy(native_string_buffer[0..len], value[0..len]);
+    native_string_buffer[len] = 0;
+    return &native_string_buffer;
+}
+
 /// Internal: reads the named property of event `id` from the runtime.
 pub fn getEventData(id: u32, ptr: [*]const u8, len: u32) [*:0]u8 {
-    if (isWasi) {
-        return Wasm.getEventDataWasm(id, ptr, len);
-    } else {
-        // Dummy implementation - return empty string
-        @memset(dummy_string_buffer[0..dummy_string_buffer.len], 0);
-        const dummy_value = "dummy_event_data";
-        @memcpy(dummy_string_buffer[0..dummy_value.len], dummy_value);
-        return &dummy_string_buffer;
-    }
+    if (isWasi) return Wasm.getEventDataWasm(id, ptr, len);
+    const name = ptr[0..len];
+    const data = native_data;
+    const flag = struct {
+        fn f(on: bool) []const u8 {
+            return if (on) "true" else "false";
+        }
+    }.f;
+    if (std.mem.eql(u8, name, "key")) return nativeString(data.key);
+    if (std.mem.eql(u8, name, "inputType")) return nativeString(data.input_type);
+    if (std.mem.eql(u8, name, "shiftKey")) return nativeString(flag(data.shift));
+    if (std.mem.eql(u8, name, "ctrlKey")) return nativeString(flag(data.ctrl));
+    if (std.mem.eql(u8, name, "altKey")) return nativeString(flag(data.alt));
+    if (std.mem.eql(u8, name, "metaKey")) return nativeString(flag(data.meta));
+    return nativeString("");
 }
 
 /// Internal: reads the value of event `id`'s target from the runtime.
 pub fn getEventDataInput(id: u32) [*:0]u8 {
-    if (isWasi) {
-        return Wasm.getEventDataInputWasm(id);
-    } else {
-        // Dummy implementation - return empty string
-        @memset(dummy_string_buffer[0..dummy_string_buffer.len], 0);
-        const dummy_value = "dummy_input_value";
-        @memcpy(dummy_string_buffer[0..dummy_value.len], dummy_value);
-        return &dummy_string_buffer;
-    }
+    if (isWasi) return Wasm.getEventDataInputWasm(id);
+    return nativeString(native_data.value);
 }
 
 /// Internal: reads the named numeric property of event `id` from the runtime.
 pub fn getEventDataNumber(id: u32, ptr: [*]const u8, len: u32) f32 {
-    if (isWasi) {
-        return Wasm.getEventDataNumberWasm(id, ptr, len);
-    } else {
-        // Dummy implementation - return 0.0
-        return 0.0;
+    if (isWasi) return Wasm.getEventDataNumberWasm(id, ptr, len);
+    for (native_data.numbers) |entry| {
+        if (std.mem.eql(u8, entry.name, ptr[0..len])) return entry.value;
     }
+    return 0;
 }
 
 export fn registerAllListenerCallbacks() void {

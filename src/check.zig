@@ -117,6 +117,7 @@ const modules = .{
 const host_only_modules = .{
     @import("lib/File.zig"),
     @import("lib/html_generator.zig"),
+    @import("lib/testing.zig"),
 };
 
 /// How far to descend into nested public types. Container types nested more

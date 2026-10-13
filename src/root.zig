@@ -311,6 +311,10 @@ pub const StateType = lib.StateType;
 /// Functions the JS runtime calls to walk the render tree.
 pub const Bridge = @import("lib/bridge.zig");
 
+/// Testing an app without a browser: `Vapor.testing.App` renders its pages
+/// natively, reads what they show and fires events at them. Native only.
+pub const testing = if (lib.isWasi) struct {} else @import("lib/testing.zig");
+
 /// Internal modules, exposed to vapor's own test suite only.
 pub const Testing = if (builtin.is_test) struct {
     pub const Reconciler = @import("lib/reconciler.zig");

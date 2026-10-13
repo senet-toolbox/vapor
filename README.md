@@ -365,6 +365,38 @@ exe.root_module.addImport("keystone", vapor_dep.module("keystone"));
 
 and import it with `const KeyStone = @import("keystone");`.
 
+## Testing your app
+
+`Vapor.testing.App` renders your pages natively inside `zig build test`, so
+you can check what they show and fire events at them without a browser:
+
+```zig
+const Vapor = @import("vapor");
+const app_main = @import("main.zig");
+
+test "the counter counts" {
+    var app = try Vapor.testing.App.start(app_main.init);
+    defer app.deinit();
+
+    try app.visit("/");
+    try app.expectText("count", "0");
+    try app.click("increment");          // reaches the Button through its label too
+    try app.expectText("count", "1");
+
+    try app.input("name", "Ziggy");      // fires the field's input event
+    try app.fire("editor", .keydown, .{ .key = "Enter", .ctrl = true });
+
+    try app.click("about-link");         // links, Vapor.navigate and back are followed
+    try std.testing.expectEqualStrings("/about", app.path());
+}
+```
+
+Elements are found by `.id()`. After each event the page renders again, as in
+the browser. `app.find(id)` walks the tree and `app.html(allocator)` writes the
+page as HTML for snapshots. The test module needs `link_libc = true`. Layout,
+CSS, `fetch`, timers and the hooks the runtime runs on the DOM (`onMount`,
+`onDestroy`, `onLayout`) need a browser and are not simulated.
+
 ## Static generation
 
 `zig build -Dgenerate=true` prerenders every static route to

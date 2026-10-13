@@ -138,7 +138,7 @@ pub export fn dispatchNodeEvent(ui_node: *UINode, event_type_int: u32) void {
 
 /// Calls `cb` with `args` and then the event whenever `event_type` fires on the node.
 pub fn attachEventCtxCallback(ui_node: *UINode, event_type: Vapor.EventType, cb: anytype, args: anytype) !void {
-    if (!Vapor.isWasi) return;
+    // Natively too: `Vapor.testing` fires these handlers.
 
     // Check for duplicates
     if (ui_node.event_handlers) |handlers| {

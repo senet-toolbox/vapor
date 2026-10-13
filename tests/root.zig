@@ -1157,7 +1157,7 @@ test "README examples type-check against the real API" {
         _ = @TypeOf(Vapor.Image(.{ .src = "/logo.png", .alt = "Logo" }));
         _ = @TypeOf(Vapor.List());
         _ = @TypeOf(Vapor.Table());
-        _ = @TypeOf(Vapor.Form(readmeOnClick, .{}));
+        _ = @TypeOf(Vapor.Form(docEventHandler, .{}));
         _ = Vapor.Svg;
         _ = Vapor.Icon;
         _ = Vapor.TextField;
@@ -1662,4 +1662,152 @@ test "per-element tables drop elements that left the page" {
     try std.testing.expectEqual(texts_full - 38, texts.count());
     try std.testing.expectEqual(refs_full - 38, refs.count());
     try std.testing.expect(refs.get(Vapor.lib.hashKey("row-1")) != null);
+}
+
+// ── Vapor.testing: the harness apps use to test their pages ────────────────
+
+const harness_app = struct {
+    var count: u32 = 0;
+    var name: []const u8 = "";
+    var last_key: []const u8 = "";
+    var shifted = false;
+
+    fn init() void {
+        Vapor.init(.{});
+        count = 0;
+        name = "";
+        last_key = "";
+        shifted = false;
+        Vapor.Page(.{ .route = "/" }, home, null);
+        Vapor.Page(.{ .route = "/about" }, about, null);
+        Vapor.Page(.{ .route = "/users/:id" }, user, null);
+    }
+
+    fn increment() void {
+        count += 1;
+    }
+
+    fn boxClicked(step: u32, _: *Vapor.Event) void {
+        count += step;
+    }
+
+    fn nameChanged(evt: *Vapor.Event) void {
+        name = Vapor.dupe(evt.text(), .persist);
+    }
+
+    fn keyPressed(evt: *Vapor.Event) void {
+        last_key = Vapor.dupe(evt.key(), .persist);
+        shifted = evt.shiftKey();
+    }
+
+    fn goToAbout() void {
+        Vapor.navigate("/about");
+    }
+
+    fn home() void {
+        Vapor.Box().id("home").children({
+            Vapor.TextFmt("{d}", .{count}).id("count").end();
+            Vapor.Button(increment, .{}).id("increment").children({
+                Vapor.Text("Add one").id("increment-label").end();
+            });
+            Vapor.Box().id("by-ten").onEvent(.click, boxClicked, .{@as(u32, 10)}).children({
+                Vapor.Text("Add ten").end();
+            });
+            Vapor.TextField(.string).id("name").bind(&name).onChange(nameChanged, .{}).end();
+            Vapor.TextFmt("Hello, {s}!", .{name}).id("greeting").end();
+            Vapor.Box().id("keys").onEvent(.keydown, keyPressed, .{}).end();
+            Vapor.TextFmt("{s}{s}", .{ if (shifted) "shift+" else "", last_key }).id("last-key").end();
+            Vapor.Link(.{ .url = "/about" }).id("about-link").children({
+                Vapor.Text("About").end();
+            });
+            Vapor.Button(goToAbout, .{}).id("about-button").children({
+                Vapor.Text("About").end();
+            });
+            if (count >= 3) Vapor.Text("Three or more").id("many").end();
+        });
+    }
+
+    fn about() void {
+        Vapor.Box().id("about").children({
+            Vapor.Text("About us").id("about-title").end();
+            Vapor.Button(Vapor.back, .{}).id("back").children({
+                Vapor.Text("Back").end();
+            });
+        });
+    }
+
+    fn user() void {
+        Vapor.TextFmt("user {?s}", .{Vapor.routeParam("id")}).id("user").end();
+    }
+};
+
+test "testing: a click reaches a Button through its label and the page rerenders" {
+    var app = try Vapor.testing.App.start(harness_app.init);
+    defer app.deinit();
+
+    try app.visit("/");
+    try app.expectText("count", "0");
+    try app.click("increment");
+    try app.expectText("count", "1");
+    // The label is inside the button: the click bubbles up to it.
+    try app.click("increment-label");
+    try app.expectText("count", "2");
+    try std.testing.expect(!app.exists("many"));
+    try app.click("by-ten");
+    try app.expectText("count", "12");
+    try std.testing.expect(app.exists("many"));
+    app.report_failures = false;
+    try std.testing.expectError(error.NothingHandledClick, app.click("count"));
+    try std.testing.expectError(error.ElementNotFound, app.click("missing"));
+}
+
+test "testing: typing and key events carry the data the test gives them" {
+    var app = try Vapor.testing.App.start(harness_app.init);
+    defer app.deinit();
+
+    try app.visit("/");
+    try app.input("name", "Ziggy");
+    try app.expectText("greeting", "Hello, Ziggy!");
+    try app.fire("keys", .keydown, .{ .key = "Enter", .shift = true });
+    try app.expectText("last-key", "shift+Enter");
+    app.report_failures = false;
+    try std.testing.expectError(error.NoHandler, app.fire("greeting", .keydown, .{}));
+}
+
+test "testing: links, navigate and back move between pages" {
+    var app = try Vapor.testing.App.start(harness_app.init);
+    defer app.deinit();
+
+    try app.visit("/");
+    try app.click("about-link");
+    try std.testing.expectEqualStrings("/about", app.path());
+    try app.expectText("about-title", "About us");
+    try std.testing.expect(!app.exists("home"));
+
+    try app.click("back");
+    try std.testing.expectEqualStrings("/", app.path());
+    try std.testing.expect(app.exists("home"));
+
+    try app.click("about-button");
+    try std.testing.expectEqualStrings("/about", app.path());
+
+    try app.visit("/users/42");
+    try app.expectText("user", "user 42");
+}
+
+test "testing: the tree can be walked and written as HTML" {
+    var app = try Vapor.testing.App.start(harness_app.init);
+    defer app.deinit();
+
+    try app.visit("/about");
+    const page = app.find("about") orelse return error.MissingAbout;
+    var children = page.children();
+    const title = children.next() orelse return error.MissingTitle;
+    try std.testing.expectEqualStrings("about-title", title.id());
+    try std.testing.expectEqualStrings("About us", title.ownText().?);
+
+    const html = try app.html(std.testing.allocator);
+    defer std.testing.allocator.free(html);
+    try std.testing.expect(std.mem.indexOf(u8, html, "About us") != null);
+    try std.testing.expect(std.mem.indexOf(u8, html, "id=\"back\"") != null);
 }

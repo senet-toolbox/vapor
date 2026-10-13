@@ -131,6 +131,14 @@ and the compiler points at the rest:
   (`.top => .b(2)` in a switch becomes `.top => .{ .bottom = 2 }`).
 - `Vapor.setCookie`, `Vapor.getCookie` and `Vapor.clearPersistentStorage`
   at the root; they were only reachable through `Vapor.lib`.
+- `Vapor.testing.App`: test an app natively in `zig build test`. It renders
+  pages (`visit`), reads them (`text`, `expectText`, `exists`, `find`,
+  `html`), and fires events (`click`, which bubbles like the browser's,
+  `input`, `fire` with the key, value, modifiers or coordinates the handler
+  should read), rerendering after each and following links,
+  `Vapor.navigate` and `Vapor.back`. Event handlers are now attached
+  natively too, which also makes the test suite type-check callbacks it
+  skipped before.
 - `Element.listen(event, cb, args)` attaches a listener that is not part of
   the render, for frequent events such as `scroll` or `pointermove`: it stays
   across renders until `.remove()` on the returned `Vapor.Listener` or until
