@@ -297,47 +297,6 @@ pub const Element = struct {
         };
     }
 
-    /// Calls `cb` with the event whenever `event_type` fires on the element,
-    /// until the element's next render. Prefer the builder's `.onEvent`,
-    /// which every render re-attaches. Returns an id for `removeListener`.
-    pub fn addListener(self: *Element, event_type: types.EventType, cb: fn (event: *Event) void) ?usize {
-        const ui_node = self._node_ptr orelse {
-            Vapor.report.warn("Element: not bound to an element on the page; bind it with .ref() first", .{});
-            return null;
-        };
-        if (isWasi) {
-            return Vapor.elementEventListener(ui_node, event_type, cb);
-        } else {
-            return 0;
-        }
-    }
-
-    /// Removes a listener `addListener` added.
-    pub fn removeListener(
-        self: *Element,
-        event_type: types.EventType,
-        cb_idx: usize,
-    ) ?bool {
-        const id = self._get_id() orelse {
-            Vapor.report.warn("Element: not bound to an element on the page; bind it with .ref() first", .{});
-            return null;
-        };
-        return Vapor.destroyElementEventListener(id, event_type, cb_idx);
-    }
-
-    /// Removes a listener `addInstListener` added.
-    pub fn removeInstListener(
-        self: *Element,
-        event_type: types.EventType,
-        cb_idx: usize,
-    ) ?bool {
-        const id = self._get_id() orelse {
-            Vapor.report.warn("Element: not bound to an element on the page; bind it with .ref() first", .{});
-            return null;
-        };
-        return Vapor.destroyElementInstEventListener(id, event_type, cb_idx);
-    }
-
     /// Sets one CSS property in the element's inline style.
     pub fn mutateStyleString(self: *Element, attribute: []const u8, value: []const u8) void {
         const id = self._get_id() orelse {

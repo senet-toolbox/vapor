@@ -40,6 +40,14 @@ Breaking: the next release is a major version.
   `Types.CheckMark` and `Types.ChildStyle`, `Vapor.onPushState` (its
   callbacks were never called) and `Null2` (use `Null`). The `.request`
   arena is gone: nothing freed it, so it was `.persist` under another name.
+- `Element.addListener`, `removeListener` and `removeInstListener` are
+  removed. `addListener` registered a callback nothing ever called, and an
+  element's handlers are rebuilt on every render, so a listener added
+  after the fact could only last until the next one. Attach handlers with
+  `.onEvent(event, cb)` where the element is built; for the document, use
+  `Vapor.addGlobalListener`. `Vapor.lib.eventListener` (whose callback was
+  never called either) is gone too: `Vapor.addGlobalListener` does the
+  same.
 - `.view` memory is now freed when the app leaves the page (see Fixed). A
   global that points into it must be reset in the page's deinit or
   reallocated on the next visit.
@@ -200,11 +208,6 @@ noted.
   be removed separately: removing one removed whichever was added last and
   left the other attached. `removeGlobalListener` now also frees the
   listener.
-- `Element.addListener` and `Vapor.lib.eventListener` registered callbacks
-  nothing ever called. `addListener` now attaches like `.onEvent` (until
-  the element's next render; prefer `.onEvent`) and `eventListener` is
-  `addGlobalListener`. `addListener` takes `fn (*Event) void`, no longer a
-  runtime function pointer.
 - A border's line style was left out of its class hash, so changing only
   the style kept the old rule.
 - A responsive style with two breakpoints wrote its first `@media` rule

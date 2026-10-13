@@ -196,8 +196,6 @@ fn removeListenerA() void {
     listener_a = null;
 }
 
-var listener_element: Vapor.Element = .{};
-
 fn listenersPage() void {
     Box().id("listeners-page").children({
         Button(addListeners, .{}).id("add-listeners").children({
@@ -211,14 +209,6 @@ fn listenersPage() void {
         });
         TextFmt("{d}/{d}", .{ key_a, key_b }).id("key-count").end();
     });
-}
-
-// Compiled for wasm, never called: `addListener` has no page of its own.
-fn compileElementListener() void {
-    _ = listener_element.addListener(.click, keyA);
-}
-comptime {
-    _ = &compileElementListener;
 }
 
 // ── /focus : onFocus and onBlur on ordinary elements ───────────────────────

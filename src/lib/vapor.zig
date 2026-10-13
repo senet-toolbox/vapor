@@ -828,44 +828,6 @@ pub fn toggleTheme() void {
     }
 }
 
-/// This function creates an eventListener on the element.
-/// Takes a callback function to be called when an event is received;
-/// # Parameters:
-/// - `element_id`: []const u8,
-/// - `event_type`: *EventType,
-/// - `cb`: *const fn (event: *Event) void,
-///
-/// # Returns:
-/// !void
-pub inline fn destroyElementEventListener(
-    element_uuid: []const u8,
-    event_type: types.EventType,
-    cb_id: usize,
-) ?bool {
-    const event_type_str = std.enums.tagName(types.EventType, event_type) orelse return null;
-    Wasm.removeElementEventListener(element_uuid.ptr, element_uuid.len, event_type_str.ptr, event_type_str.len, @intCast(cb_id));
-    return false;
-}
-
-/// This function creates an eventListener on the element.
-/// Takes a callback function to be called when an event is received;
-/// # Parameters:
-/// - `element_id`: []const u8,
-/// - `event_type`: *EventType,
-/// - `cb`: *const fn (event: *Event) void,
-///
-/// # Returns:
-/// !void
-pub inline fn destroyElementInstEventListener(
-    element_uuid: []const u8,
-    event_type: types.EventType,
-    cb_id: usize,
-) ?bool {
-    const event_type_str = std.enums.tagName(types.EventType, event_type) orelse return null;
-    Wasm.removeElementEventListener(element_uuid.ptr, element_uuid.len, event_type_str.ptr, event_type_str.len, @intCast(cb_id));
-    return false;
-}
-
 /// This function creates an focuses on the element.
 /// # Parameters:
 /// - `element_id`: []const u8,
@@ -893,25 +855,7 @@ pub inline fn focused(element_uuid: []const u8) bool {
 
 const serializeArgs = utils.serializeArgs;
 
-/// Internal: calls `cb` with the event whenever `event_type` fires on
-/// `ui_node`. Returns the listener's id, or `null` outside the browser.
-pub fn elementEventListener(
-    ui_node: *UINode,
-    event_type: types.EventType,
-    cb: fn (event: *Event) void,
-) ?usize {
-    if (!isWasi) return null;
-    EventsModule.attachEventCallback(ui_node, event_type, cb) catch |err| {
-        report.err("Event Callback Error: {any}", .{err});
-        return null;
-    };
-    const event_type_str = std.enums.tagName(types.EventType, event_type) orelse return null;
-    const onid = hashKey(ui_node.uuid) +% @intFromEnum(event_type);
-    Wasm.createElementEventListener(ui_node.uuid.ptr, ui_node.uuid.len, event_type_str.ptr, event_type_str.len, onid);
-    return onid;
-}
-
-/// Internal: removes a listener `elementEventListener` added.
+/// Internal: removes the element listener for `event_type` on `ui_node`.
 pub inline fn removeElementEventListener(
     ui_node: *UINode,
     event_type: types.EventType,
@@ -955,12 +899,6 @@ pub inline fn registerHook(
 
     Wasm.createHookWASM(url.ptr, url.len, id, @intFromEnum(hook_type));
     return id;
-}
-
-/// Calls `cb` with the event whenever `event_type` fires on the document.
-/// Same as `addGlobalListener`.
-pub fn eventListener(event_type: types.EventType, cb: fn (*Event) void) ?u32 {
-    return EventsModule.addGlobalListener(event_type, cb);
 }
 
 // The first node needs to be marked as false always

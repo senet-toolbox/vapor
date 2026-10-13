@@ -309,6 +309,7 @@ const renames = [_]Rename{
     .{ .from = "Pool.initGlobalPool(", .to = "Pool.init(" },
     .{ .from = "KeyStone.signout(", .to = "KeyStone.signOut(" },
     .{ .from = "KeyStone.Config", .to = "KeyStone.ClientConfig", .whole = true },
+    .{ .from = "Vapor.lib.eventListener(", .to = "Vapor.addGlobalListener(" },
 };
 
 const Hint = struct {
@@ -335,6 +336,8 @@ const hints = [_]Hint{
     .{ .from = ".will_change", .msg = "Style.will_change is gone; it never reached the CSS" },
     .{ .from = ".btn_id", .msg = "Style.btn_id is gone; it did nothing" },
     .{ .from = ".dialog_id", .msg = "Style.dialog_id is gone; it did nothing" },
+    .{ .from = ".addListener(", .msg = "Element.addListener is gone (it lasted until the element's next render); attach the handler with .onEvent(event, cb) where the element is built, or use Vapor.addGlobalListener for the document" },
+    .{ .from = ".removeListener(", .msg = "Element.removeListener is gone; render the element without its .onEvent to remove the handler" },
     .{ .from = ".toplr(", .msg = "BorderRadius.toplr is gone; use .{ .top_left = a, .top_right = b }" },
     .{ .from = "Sizing.at(", .msg = "Sizing.at is gone; use .mobileDesktopPercent" },
     .{
