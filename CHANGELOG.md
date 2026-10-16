@@ -4,7 +4,53 @@ All notable changes to this project are documented here. This project follows
 [Semantic Versioning](https://semver.org/): breaking changes bump the major
 version and are listed with a migration note.
 
-## [Unreleased]
+## [3.1.0] — 2026-10-16
+
+New API (`Shadow.dropShadow`) and two behaviour changes, plus fixes found by
+the interaction tests of the opaque-ui showcase. Run `zig build migrate`
+over an app to find the shadow calls to check.
+
+### Added
+
+- `Shadow.dropShadow(x, y, blur, spread, color)`: a drop shadow with offset,
+  blur and spread, usable as a decl literal (`.shadow(.dropShadow(...))`).
+
+### Changed
+
+- `Shadow.insetGlow` and `Shadow.insetSpread` draw inside the element, as
+  their names say; they drew drop shadows. For the old look use
+  `.dropShadow(x, y, blur, spread, color)` (`insetGlow(x, y, size, c)` was
+  `.dropShadow(x, y, size, size / 2, c)`). `zig build migrate` points at
+  every call.
+- `Element.focus()` focuses any element (a button, a link, anything with a
+  tab index), not only text fields.
+
+### Fixed
+
+- `.createDraggable(&d)` wrote through `d.element`, which nothing had set
+  for a Draggable made with `.{}`: wasm memory at address 0 was overwritten,
+  or, with junk left in the field, the page crashed with "memory access out
+  of bounds". A Draggable now carries the element `.createDraggable` points
+  it at.
+- Timeouts leaked their closures: one that fired, was cancelled with
+  `cancelTimeout`, or was replaced by another under the same name stayed
+  allocated. A timeout that scheduled itself again under its own name also
+  lost the new one. All three free it now, and re-arming works.
+- An accessibility attribute that a later render left out (`aria-disabled`
+  once it was false, `aria-expanded`, a role) stayed on the element: the
+  runtime only ever set attributes. It now removes the ones that went away,
+  on prerendered pages too.
+- A `.onEvent(.keydown, ...)` (or `.keyup`) handler on an element other than
+  a button, text field or form ran twice per key press: once from the
+  element's own listener and again from the runtime's delegated one.
+- An element that lost its `onMount` hook between renders (the same spot on
+  the next page, say) made the runtime look up hook 0 and report "Hooks
+  Callback not found 0".
+- Every interval printed a leftover debug warning to the console.
+- `zig build migrate` rewrites `Vapor.CtxButton` to `Vapor.Button` and
+  `.newShadow(` to `.shadow(`, which took them over in 2.x.
+
+## [3.0.1] — 2026-10-13
 
 ### Fixed
 

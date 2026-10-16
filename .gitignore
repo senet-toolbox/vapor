@@ -5,3 +5,6 @@ zig-out/
 
 # macOS
 .DS_Store
+
+# Packages Zig fetches into the project
+zig-pkg/
