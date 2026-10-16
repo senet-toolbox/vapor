@@ -15,6 +15,7 @@ import {
   loadedSections,
   afterHooksHandlers,
   eventStorage,
+  eventHandlers,
   invokedHooks,
 } from "./maps.js";
 import {
@@ -389,6 +390,9 @@ function setupWasiInstance() {
 
     const nodeInfo = domNodeRegistry.get(targetElement.id);
     if (!nodeInfo) return;
+    // An element with its own listener for this event (from .onEvent) gets
+    // it there; dispatching here too would run its handler twice.
+    if (eventHandlers.get(targetElement.id)?.[event.type]) return;
 
     const callback_id = nodeInfo.hash + EventType[event.type];
     eventStorage[callback_id] = event;

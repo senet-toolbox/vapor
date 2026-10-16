@@ -140,10 +140,7 @@ const API = struct {
 
     /// Runtime export: Runs the timeout closure `id`.
     pub fn timeoutCtxCallBackId(id: usize) callconv(.c) void {
-        const key: u32 = @intCast(id);
-        const node = Vapor.ctx_callback_registry.get(key) orelse return;
-        defer _ = Vapor.ctx_callback_registry.remove(key);
-        @call(.auto, node.data.runFn, .{&node.data});
+        Vapor.runTimeout(@intCast(id));
         if (Vapor.mode == .atomic) {
             Vapor.cycle();
         }

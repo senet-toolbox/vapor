@@ -236,9 +236,8 @@ export function updateElement(element, uinode, force = false) {
         videoView.getUint8(12) === 1 ? "lazy" : "eager",
       );
     }
-    if (uinode.accessibility) {
-      applyAccessibility(element, uinode.offset);
-    }
+    // Also when it has none now: attributes from an earlier render go.
+    applyAccessibility(element, uinode.offset, uinode.accessibility);
   }
 
   // This means that the style hash has changed and we need to update
@@ -439,7 +438,8 @@ export function traverseUINodes(parent, parentUINode) {
     if (uinode.isDirty) {
       element = document.getElementById(uinode.id);
 
-      if (uinode.hooksChanged) {
+      // The hooks changed: a new onMount to run, or the old one is gone (0).
+      if (uinode.hooksChanged && uinode.onCallbacks[0] > 0) {
         debug("Hooks Change", uinode.id, uinode.hooksChanged);
         invokedHooks.set(uinode.onCallbacks[0], true);
       }

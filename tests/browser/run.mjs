@@ -393,6 +393,62 @@ const tests = {
     await p.waitFor(`/^hovers=[1-9]/.test(document.getElementById("stale-hovers").textContent)`, "the hover handler to run");
   },
 
+  async ".createDraggable moves its element with the pointer"(p) {
+    await p.goto("/drag");
+    await p.waitFor(`!!document.getElementById("drag-target")`, "the draggable");
+    await p.evaluate(`(() => {
+      const el = document.getElementById("drag-target");
+      const r = el.getBoundingClientRect();
+      const x = r.left + 5, y = r.top + 5;
+      const at = (dx, dy) => ({ bubbles: true, clientX: x + dx, clientY: y + dy });
+      el.dispatchEvent(new PointerEvent("pointerdown", at(0, 0)));
+      document.dispatchEvent(new PointerEvent("pointermove", at(30, 10)));
+      document.dispatchEvent(new PointerEvent("pointerup", at(30, 10)));
+    })()`);
+    await p.waitFor(`document.getElementById("drag-target").style.transform.startsWith("translate3d(30px, 10px")`, "the element to follow the pointer");
+  },
+
+  async "one key press or mouseover runs an element's handler once"(p) {
+    await p.goto("/once");
+    await p.waitForText("once-count", "keys=0 overs=0");
+    await p.evaluate(`document.getElementById("once-target").focus()`);
+    await p.evaluate(`document.getElementById("once-target").dispatchEvent(new KeyboardEvent("keydown", { key: "a", bubbles: true }))`);
+    await p.evaluate(`document.getElementById("once-target").dispatchEvent(new MouseEvent("mouseover", { bubbles: true }))`);
+    // A render to show the counts.
+    await p.evaluate(`document.getElementById("once-target").dispatchEvent(new KeyboardEvent("keydown", { key: "b", bubbles: true }))`);
+    await p.waitFor(`/^keys=\\d+ overs=\\d+$/.test(document.getElementById("once-count").textContent) && document.getElementById("once-count").textContent !== "keys=0 overs=0"`, "the counts to update");
+    await sleep(100);
+    assertEqual(await p.text("once-count"), "keys=2 overs=1", "handler calls for 2 key presses and 1 mouseover");
+  },
+
+  async "an accessibility attribute that goes away is removed"(p) {
+    await p.goto("/aria");
+    const disabled = `document.getElementById("aria-target").getAttribute("aria-disabled")`;
+    assertEqual(await p.evaluate(disabled), "true", "aria-disabled at first");
+    await p.click("aria-toggle");
+    await p.waitFor(`${disabled} === null`, "aria-disabled to go when it no longer applies");
+    await p.click("aria-toggle");
+    await p.waitFor(`${disabled} === "true"`, "aria-disabled to come back");
+  },
+
+  async "Element.focus focuses any element, not only text fields"(p) {
+    await p.goto("/focus-any");
+    await p.click("focus-any-go");
+    await p.waitFor(`document.activeElement?.id === "focus-any-target"`, "the button to take focus");
+    assertEqual(p.consoleMessages.filter((m) => m.includes("focus")), [], "focus complaints");
+  },
+
+  async "an element that loses its onMount hook calls nothing"(p) {
+    await p.goto("/mount-off");
+    await p.waitFor(`!!document.getElementById("mount-off-target")`, "the target");
+    await p.click("mount-off-toggle");
+    await sleep(100);
+    await p.click("mount-off-toggle");
+    await sleep(100);
+    const reports = p.consoleMessages.filter((m) => m.includes("Callback not found"));
+    assertEqual(reports, [], "hook lookups that found nothing");
+  },
+
   async "Element.listen outlives renders, does not rerender, and leaves with its element"(p) {
     await p.goto("/listen");
     await p.waitForText("listen-state", "hits=0 listeners=0");

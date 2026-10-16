@@ -283,14 +283,16 @@ pub fn onDragStart(self: *const Self, cb: fn (*Vapor.Event) void) Self {
     return n;
 }
 
-/// Makes the element draggable with the drag state in `draggable_ptr`.
+/// Makes the element draggable with the drag state in `draggable_ptr`, which
+/// must outlive the element (keep it in persistent memory).
 pub fn createDraggable(self: *const Self, draggable_ptr: *Draggable) *const Self {
-    var element = draggable_ptr.element;
     var ui_node = self._ui_node orelse {
         Vapor.report.err("Node is null must ref() first", .{});
         @panic("vapor: Node is null must ref() first");
     };
     ui_node.hooks.created_id = 1;
+    // The Draggable's own element: its `element` field may never have been set.
+    const element = &draggable_ptr.attached;
     element.element_type = self._elem_type;
     element._node_ptr = ui_node;
     draggable_ptr.element = element;

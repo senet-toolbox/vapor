@@ -237,6 +237,8 @@ const renames = [_]Rename{
     .{ .from = "Vapor.Kit.init();", .to = "" },
     .{ .from = "Vapor.transparentizeHex(", .to = "Vapor.Types.Color.transparentize(" },
     .{ .from = ".Binded", .to = ".Element", .whole = true },
+    // Button took over CtxButton's (callback, args) signature in 2.x.
+    .{ .from = "Vapor.CtxButton", .to = "Vapor.Button", .whole = true },
     .{ .from = ".BorderGrouped", .to = ".Border", .whole = true },
     .{ .from = "Vapor.PureComponentClose", .to = "Vapor.PureComponent", .whole = true },
     .{ .from = "Vapor.BuilderClose", .to = "Vapor.Builder", .whole = true },
@@ -277,6 +279,8 @@ const renames = [_]Rename{
     .{ .from = ".weight(", .to = ".fontWeight(", .method_only = true },
     .{ .from = ".whitespace(", .to = ".whiteSpace(", .method_only = true },
     .{ .from = ".childGap(", .to = ".spacing(", .method_only = true },
+    // shadow() took over newShadow()'s layered Shadow in 2.x.
+    .{ .from = ".newShadow(", .to = ".shadow(", .method_only = true },
     .{ .from = "FormButton(", .to = "SubmitButton(" },
     .{ .from = ".size(.px(", .to = ".size(.squarePx(" },
     .{ .from = ".size(.percent(", .to = ".size(.squarePercent(" },
@@ -393,6 +397,9 @@ const hints = [_]Hint{
     .{ .from = "Kit.fastJson(", .msg = "Kit.fastJson is gone; use std.json.Stringify" },
     .{ .from = ".toplr(", .msg = "BorderRadius.toplr is gone; use .{ .top_left = a, .top_right = b }" },
     .{ .from = "Sizing.at(", .msg = "Sizing.at is gone; use .mobileDesktopPercent" },
+    // Not removed, but they now do what their names say.
+    .{ .from = "insetGlow(", .msg = "insetGlow now draws inside the element (it drew a drop shadow); for a drop shadow use .dropShadow(x, y, size, size / 2, color)" },
+    .{ .from = "insetSpread(", .msg = "insetSpread now draws inside the element (it drew a drop shadow); for a drop shadow use .dropShadow(x, y, blur, spread, color)" },
     .{
         .from = "&IconTokens{",
         .msg = "Icon() takes an IconTokens value: tokens declared as &IconTokens{...} work with Icon(.name) once the & is dropped (and *const IconTokens in your own types becomes IconTokens)",
@@ -878,6 +885,7 @@ fn expectMigrated(input: []const u8, expected: []const u8) !void {
 test "renames calls and types, not strings or comments" {
     try expectMigrated(
         \\const e: *Vapor.Binded = x; // Vapor.Binded
+        \\const Btn = Vapor.CtxButton;
         \\Vapor.printErr("{d} .square_px(", .{1});
         \\_ = Box().fontColor(.white).size(.square_px(4));
         \\const BindedThing = 1;
@@ -887,7 +895,7 @@ test "renames calls and types, not strings or comments" {
         \\Vapor.onEnd(reinit);
         \\Vapor.onEndCtx(scrollTo, .{id});
         \\_ = Box().hide(true).gradient(.white)
-        \\    .hide(false).end();
+        \\    .hide(false).newShadow(s).end();
         \\Box().background(.gradient(.linear, .right, &cs)).end();
         \\.border = .tb(.white),
         \\.border = .sharp(.solid, .black),
@@ -904,6 +912,7 @@ test "renames calls and types, not strings or comments" {
         \\Vapor.Button(Vapor.Kit.back, .{});
     ,
         \\const e: *Vapor.Element = x; // Vapor.Binded
+        \\const Btn = Vapor.Button;
         \\Vapor.print(.err, "{d} .square_px(", .{1});
         \\_ = Box().textColor(.white).size(.squarePx(4));
         \\const BindedThing = 1;
@@ -913,7 +922,7 @@ test "renames calls and types, not strings or comments" {
         \\Vapor.onLayout(reinit, .{});
         \\Vapor.onLayout(scrollTo, .{id});
         \\_ = Box().hidden(true).background(.white)
-        \\    .hidden(false).end();
+        \\    .hidden(false).shadow(s).end();
         \\Box().background(.gradient(.linear, .right, &cs)).end();
         \\.border = .vertical(1, .white),
         \\.border = .sharp(.all(1), .black),
@@ -1012,4 +1021,15 @@ test "a position corner is not a removed side constructor" {
     const result = try migrate(arena_state.allocator(), input, &report);
     try std.testing.expectEqualStrings(input, result);
     try std.testing.expectEqual(@as(usize, 0), report.notes.items.len);
+}
+
+test "the inset shadow presets are flagged for a person to check" {
+    var arena_state = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena_state.deinit();
+    var report: Report = .{};
+    const src = "_ = Box().shadow(.insetGlow(0, 2, 2, .black)).shadow(.insetSpread(0, 4, 6, 2, .black));";
+    const out = try migrate(arena_state.allocator(), src, &report);
+    try std.testing.expectEqualStrings(src, out);
+    try std.testing.expectEqual(@as(usize, 2), report.notes.items.len);
+    for (report.notes.items) |note| try std.testing.expect(note.manual);
 }

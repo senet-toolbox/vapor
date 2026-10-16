@@ -118,9 +118,14 @@ pub fn timeout(callback_name: []const u8, ms: u32, cb: anytype, args: anytype) v
     };
 
     const callback_id = Vapor.hashKey(callback_name);
-    Vapor.ctx_callback_registry.put(callback_id, &closure.run_node) catch |err| {
-        Vapor.report.err("Button Function Registry {any}", .{err});
+    // A pending timeout under the same name is replaced (the runtime clears
+    // its timer); free its closure.
+    const replaced = Vapor.ctx_callback_registry.fetchPut(callback_id, &closure.run_node) catch |err| {
+        Vapor.report.err("timeout: could not register the callback: {any}", .{err});
+        Vapor.allocator_global.destroy(closure);
+        return;
     };
+    if (replaced) |old| old.value.data.deinitFn(old.value);
 
     if (Vapor.isWasi) {
         Wasm.timeoutCtx(ms, callback_id);
@@ -135,6 +140,18 @@ pub fn cancelTimeout(callback_name: []const u8) void {
     if (Vapor.isWasi) {
         Wasm.cancelTimeoutWasm(callback_id);
     }
+    if (Vapor.ctx_callback_registry.fetchRemove(callback_id)) |kv| kv.value.data.deinitFn(kv.value);
+}
+
+/// Internal: runs the timeout registered under `callback_id` (the runtime
+/// calls this when its timer fires), then frees its closure. It is taken out
+/// of the registry first, so a callback may schedule itself again under the
+/// same name.
+pub fn runTimeout(callback_id: u32) void {
+    const kv = Vapor.ctx_callback_registry.fetchRemove(callback_id) orelse return;
+    const node = kv.value;
+    defer node.data.deinitFn(node);
+    @call(.auto, node.data.runFn, .{&node.data});
 }
 
 /// Calls `cb` once, after `ms` milliseconds.

@@ -627,7 +627,8 @@ pub const Element = struct {
         return std.mem.span(resp);
     }
 
-    /// Focuses the element (meant for text fields).
+    /// Focuses the element: a field, a button, a link, or anything with a
+    /// tab index.
     pub fn focus(self: *Element) void {
         const id = self._get_id() orelse {
             Vapor.report.warn("Element: not bound to an element on the page; bind it with .ref() first", .{});
@@ -635,10 +636,6 @@ pub const Element = struct {
             Vapor.report.err("Check your if statement?", .{});
             return;
         };
-        if (self.element_type != .TextField and self.element_type != .TextArea) {
-            Vapor.report.err("Can only focus on TextField Element, add element Type Input", .{});
-            return;
-        }
         Vapor.focus(id);
     }
 

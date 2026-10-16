@@ -127,7 +127,6 @@ export const coreBindings = {
     clearTimeout(timeoutId);
   },
   createInterval: (id, delay) => {
-    console.warn("WE NEED TO CREATE A SEPERATE HASHMAP FOR THE INTERVALS");
     const callbackId = id >>> 0;
 
     // Cancel existing interval if one exists with this ID

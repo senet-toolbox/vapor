@@ -1811,3 +1811,51 @@ test "testing: the tree can be walked and written as HTML" {
     try std.testing.expect(std.mem.indexOf(u8, html, "About us") != null);
     try std.testing.expect(std.mem.indexOf(u8, html, "id=\"back\"") != null);
 }
+
+// A timer's closure lives in allocator_global until the timer fires or is
+// cancelled; std.testing.allocator fails the test on any closure left behind.
+test "timeouts free their closures when they fire, are replaced or are cancelled" {
+    Vapor.init(.{});
+    const saved = Vapor.lib.allocator_global;
+    defer Vapor.lib.allocator_global = saved;
+    Vapor.lib.allocator_global = std.testing.allocator;
+
+    const Counter = struct {
+        fn hit(n: *u32) void {
+            n.* += 1;
+        }
+    };
+    var fired: u32 = 0;
+
+    Vapor.lib.timeout("cancelled", 10, Counter.hit, .{&fired});
+    Vapor.lib.cancelTimeout("cancelled");
+
+    // A second timeout under the same name replaces the first.
+    Vapor.lib.timeout("replaced", 10, Counter.hit, .{&fired});
+    Vapor.lib.timeout("replaced", 10, Counter.hit, .{&fired});
+    Vapor.lib.runTimeout(Vapor.lib.hashKey("replaced"));
+    try std.testing.expectEqual(@as(u32, 1), fired);
+}
+
+const Rearm = struct {
+    var runs: u32 = 0;
+    fn tick() void {
+        runs += 1;
+        if (runs < 3) Vapor.lib.timeout("rearm", 10, tick, .{});
+    }
+};
+
+// A timeout that schedules itself again under its own name keeps the new one.
+test "a timeout that re-arms itself stays scheduled" {
+    Vapor.init(.{});
+    const saved = Vapor.lib.allocator_global;
+    defer Vapor.lib.allocator_global = saved;
+    Vapor.lib.allocator_global = std.testing.allocator;
+
+    Rearm.runs = 0;
+    Vapor.lib.timeout("rearm", 10, Rearm.tick, .{});
+    Vapor.lib.runTimeout(Vapor.lib.hashKey("rearm"));
+    Vapor.lib.runTimeout(Vapor.lib.hashKey("rearm"));
+    Vapor.lib.runTimeout(Vapor.lib.hashKey("rearm"));
+    try std.testing.expectEqual(@as(u32, 3), Rearm.runs);
+}

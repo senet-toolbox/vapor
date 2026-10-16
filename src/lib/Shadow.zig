@@ -134,13 +134,20 @@ pub fn glow(size: u16, color: Color) Shadow {
     return init().dropSpread(0, 0, size, @divFloor(@as(i16, @intCast(size)), 2), color);
 }
 
-/// Glow effect (centered, blurred, optional spread)
+/// A glow inside the element: offset by `x`, `y`, blurred by `size`, spread
+/// by half of it.
 pub fn insetGlow(x: i16, y: i16, size: u16, color: Color) Shadow {
-    return init().dropSpread(x, y, size, @divFloor(@as(i16, @intCast(size)), 2), color);
+    return init().add(Layer.init(color).off(x, y).setBlur(size).setSpread(@divFloor(@as(i16, @intCast(size)), 2)).setInset());
 }
 
-/// Add an inset shadow with blur
+/// An inner shadow with offset, blur and spread.
 pub fn insetSpread(x: i16, y: i16, blur: u16, spread: i16, color: Color) Shadow {
+    return init().add(Layer.init(color).off(x, y).setBlur(blur).setSpread(spread).setInset());
+}
+
+/// A drop shadow with offset, blur and spread.
+/// Usage: .shadow(.dropShadow(0, 4, 6, 2, .transparentize(.black, 0.05)))
+pub fn dropShadow(x: i16, y: i16, blur: u16, spread: i16, color: Color) Shadow {
     return init().dropSpread(x, y, blur, spread, color);
 }
 
@@ -178,4 +185,21 @@ test "inset and drop layers compose into one box-shadow" {
     const css = writer.getAll();
 
     try std.testing.expectEqualStrings("inset 0px -2px 0px rgb(5,55,148),0px 1px 3px rgba(0,0,0,0.40)", css);
+}
+
+test "the inset presets draw inset; dropShadow draws a drop shadow" {
+    var buf: [256]u8 = undefined;
+    var writer: Writer = undefined;
+
+    writer.init(&buf);
+    try Shadow.insetSpread(0, 2, 4, 1, .hex("#000000")).writeCss(&writer);
+    try std.testing.expectEqualStrings("inset 0px 2px 4px 1px rgb(0,0,0)", writer.getAll());
+
+    writer.init(&buf);
+    try Shadow.insetGlow(0, 0, 4, .hex("#000000")).writeCss(&writer);
+    try std.testing.expectEqualStrings("inset 0px 0px 4px 2px rgb(0,0,0)", writer.getAll());
+
+    writer.init(&buf);
+    try Shadow.dropShadow(0, 4, 6, 2, .hex("#000000")).writeCss(&writer);
+    try std.testing.expectEqualStrings("0px 4px 6px 2px rgb(0,0,0)", writer.getAll());
 }

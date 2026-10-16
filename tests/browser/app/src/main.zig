@@ -35,6 +35,11 @@ pub export fn init() void {
     Vapor.Page(.{ .route = "/listeners" }, listenersPage, null);
     Vapor.Page(.{ .route = "/listen" }, listenPage, null);
     Vapor.Page(.{ .route = "/stale" }, stalePage, null);
+    Vapor.Page(.{ .route = "/drag" }, dragPage, null);
+    Vapor.Page(.{ .route = "/mount-off" }, mountOffPage, null);
+    Vapor.Page(.{ .route = "/once" }, oncePage, null);
+    Vapor.Page(.{ .route = "/aria" }, ariaPage, null);
+    Vapor.Page(.{ .route = "/focus-any" }, focusAnyPage, null);
     Vapor.Page(.{ .route = "/error" }, notFound, null);
 }
 
@@ -483,6 +488,127 @@ fn stalePage() void {
         TextFmt("hovers={d}", .{stale_hovers}).id("stale-hovers").end();
         Button(staleRefresh, .{}).id("stale-refresh").children({
             Text("Refresh").end();
+        });
+    });
+}
+
+// ── /drag : .createDraggable moves its element with the pointer ────────────
+
+var drag: Vapor.Draggable = .{};
+var drag_first_render = true;
+
+fn dragPage() void {
+    const d = &drag;
+    if (drag_first_render) {
+        drag_first_render = false;
+        // A Draggable made without an element holds junk there (Debug fills
+        // undefined memory with 0xAA); zero would hide the bug, since wasm
+        // can write to address 0.
+        d.element = @ptrFromInt(0xAAAA_AAA8);
+    }
+    Box().id("drag-page").children({
+        Box()
+            .id("drag-target")
+            .width(.px(40))
+            .height(.px(40))
+            .background(.black)
+            .createDraggable(d)
+            .children({});
+    });
+}
+
+// ── /mount-off : an element that stops having an onMount hook ─────────────
+
+var mount_on = true;
+
+fn mounted() void {}
+
+fn toggleMount() void {
+    mount_on = !mount_on;
+}
+
+fn mountOffPage() void {
+    Box().id("mount-off-page").children({
+        // The same element in the same place, with and without the hook.
+        const target = Box().id("mount-off-target");
+        if (mount_on) {
+            target.onMount(mounted, .{}).children({});
+        } else {
+            target.children({});
+        }
+        Button(toggleMount, .{}).id("mount-off-toggle").children({
+            Text("Toggle").end();
+        });
+    });
+}
+
+// ── /once : one event, one handler call ──────────────────────────────────
+
+var once_keys: u32 = 0;
+var once_overs: u32 = 0;
+
+fn onceKey(_: *Vapor.Event) void {
+    once_keys += 1;
+}
+
+fn onceOver(_: *Vapor.Event) void {
+    once_overs += 1;
+}
+
+fn oncePage() void {
+    Box().id("once-page").children({
+        Box()
+            .id("once-target")
+            .tabIndex(0)
+            .onEvent(.keydown, onceKey, .{})
+            .onEvent(.mouseover, onceOver, .{})
+            .children({
+            Text("Target").end();
+        });
+        TextFmt("keys={d} overs={d}", .{ once_keys, once_overs }).id("once-count").end();
+    });
+}
+
+// ── /aria : accessibility attributes follow state both ways ─────────────────
+
+var aria_off = true;
+
+fn toggleAria() void {
+    aria_off = !aria_off;
+}
+
+fn ariaPage() void {
+    Box().id("aria-page").children({
+        // aria-disabled is written only while true.
+        Box()
+            .id("aria-target")
+            .a11y(Vapor.Accessibility.init().setDisabled(aria_off))
+            .children({
+            Text("Target").end();
+        });
+        Button(toggleAria, .{}).id("aria-toggle").children({
+            Text("Toggle").end();
+        });
+    });
+}
+
+// ── /focus-any : Element.focus works on any focusable element ─────────────
+
+var focus_any_target: Vapor.Element = .{};
+
+fn focusTheTarget() void {
+    focus_any_target.focus();
+}
+
+fn noop() void {}
+
+fn focusAnyPage() void {
+    Box().id("focus-any-page").children({
+        Button(noop, .{}).id("focus-any-target").ref(&focus_any_target).children({
+            Text("Target").end();
+        });
+        Button(focusTheTarget, .{}).id("focus-any-go").children({
+            Text("Focus it").end();
         });
     });
 }

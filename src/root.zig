@@ -175,8 +175,7 @@ pub const Listener = lib.Listener;
 pub const timeout = lib.timeout;
 pub const registerTimeout = lib.registerTimeout;
 pub const scrollIntoView = Event.scrollIntoView;
-/// Drag state for an element; attach it with the element's `.createDraggable(&d)`
-/// after `.ref(...)`.
+/// Drag state for an element; attach it with the element's `.createDraggable(&d)`.
 pub const Draggable = @import("lib/draggable.zig").Draggable;
 
 // ── Reading and changing the DOM ────────────────────────────────────────────

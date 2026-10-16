@@ -703,6 +703,7 @@ pub const callAnimationFrameCallback = TimersModule.callAnimationFrameCallback;
 pub const loopInterval = TimersModule.loopInterval;
 pub const timeout = TimersModule.timeout;
 pub const cancelTimeout = TimersModule.cancelTimeout;
+pub const runTimeout = TimersModule.runTimeout;
 pub const registerTimeout = TimersModule.registerTimeout;
 pub const runOnAnimationFrame = TimersModule.runOnAnimationFrame;
 pub const nowMs = TimersModule.nowMs;

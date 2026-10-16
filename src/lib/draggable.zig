@@ -6,7 +6,12 @@ const Vapor = @import("vapor.zig");
 
 // Draggable behavior that can be attached to any element
 pub const Draggable = struct {
+    /// The element being dragged: the one given to `init`, or `attached` once
+    /// the element's `.createDraggable` has run.
     element: *Vapor.Element = undefined,
+    /// The element `.createDraggable` points `element` at, so a Draggable made
+    /// with `.{}` needs nothing else.
+    attached: Vapor.Element = .{},
 
     // State
     initial_x: f32 = 0,
@@ -70,8 +75,9 @@ pub const Draggable = struct {
     };
 
     // Initialize a draggable with fluent API
-    /// Drag state for `element` (bound with `.ref`). Attach it with the element's
-    /// `.createDraggable(d)`.
+    /// Drag state for `element` (bound with `.ref`), listening for pointerdown
+    /// on it already. For a Draggable attached with `.createDraggable`, start
+    /// from `.{}` instead.
     pub fn init(element: *Vapor.Element) *Draggable {
         const self = Vapor.arena(.persist).create(Draggable) catch |err| {
             Vapor.report.err("Draggable.init: allocation failed: {any}", .{err});

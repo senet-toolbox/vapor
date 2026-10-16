@@ -140,23 +140,39 @@ export function attachElementListeners(element, renderCmd) {
  * @param {HTMLElement} element
  * @param {number} offset - The node offset
  */
-export function applyAccessibility(element, offset) {
-  const ptr = wasmInstance.getAccessibilityAttributes(offset);
-  if (ptr === 0) return;
+// The accessibility attributes each element was last given, so ones a later
+// render leaves out (aria-disabled once it is false, say) can be removed.
+const appliedA11y = new WeakMap();
 
-  const len = wasmInstance.getAccessibilityAttributesLen();
-  if (len === 0) return;
+export function applyAccessibility(element, offset, hasAccessibility = true) {
+  // A prerendered element carries attributes the runtime never recorded;
+  // its role and aria-* attributes came from accessibility all the same.
+  const previous =
+    appliedA11y.get(element) ??
+    element.getAttributeNames().filter((n) => n === "role" || n.startsWith("aria-"));
+  const current = new Set();
 
-  const attrString = readWasmString(ptr, len);
-
-  // Parse and apply attributes
-  // The string looks like: ' role="dialog" aria-modal="true" aria-label="Search"'
-  const attrRegex = /(\S+)="([^"]*)"/g;
-  let match;
-  while ((match = attrRegex.exec(attrString)) !== null) {
-    const [, name, value] = match;
-    element.setAttribute(name, value);
+  const ptr = hasAccessibility ? wasmInstance.getAccessibilityAttributes(offset) : 0;
+  const len = ptr === 0 ? 0 : wasmInstance.getAccessibilityAttributesLen();
+  if (len > 0) {
+    const attrString = readWasmString(ptr, len);
+    // The string looks like: ' role="dialog" aria-modal="true" aria-label="Search"'
+    const attrRegex = /(\S+)="([^"]*)"/g;
+    let match;
+    while ((match = attrRegex.exec(attrString)) !== null) {
+      const [, name, value] = match;
+      element.setAttribute(name, value);
+      current.add(name);
+    }
   }
+
+  if (previous) {
+    for (const name of previous) {
+      if (!current.has(name)) element.removeAttribute(name);
+    }
+  }
+  if (current.size > 0) appliedA11y.set(element, current);
+  else appliedA11y.delete(element);
 }
 
 /**
