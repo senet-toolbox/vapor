@@ -4,6 +4,36 @@ All notable changes to this project are documented here. This project follows
 [Semantic Versioning](https://semver.org/): breaking changes bump the major
 version and are listed with a migration note.
 
+## [3.1.1] — 2026-10-19
+
+Fixes found while moving ryven and assembler-chat to 3.x. One visible
+change: a `.transition(...)` that never ran now animates when state changes
+an element's style, as declared.
+
+### Fixed
+
+- A `Vapor.timeout` that fired was never freed in the browser. 3.1.0 fixed
+  this in an export the runtime never called, so only the unit tests saw
+  the fix; the runtime now runs fired timeouts through `timeoutCtxFired`.
+- Arming a timeout name that is still pending printed "Interval … already
+  exists, replacing it". Replacing it is the documented behaviour, so it no
+  longer warns.
+- `zig build migrate` renamed an app's own `menu.hide()` to `.hidden()`; it
+  now renames only the builder's `.hide(bool)`.
+- `.transition(...)` never ran when a render changed an element's style
+  (a sidebar widening on hover jumped to its new width): the runtime turned
+  transitions off for every restyle. It now does so only on a render that
+  changes the route, where ids, being positional, let the new page reuse
+  the old page's elements. Restyles also no longer force a layout each.
+- `.morph(true)` did nothing: the builders' configure paths never copied it
+  onto the node, so a morphing element jumped like any other. It now
+  animates its style changes, across pages too.
+
+### Added
+
+- `zig build migrate` rewrites 2.x `Vapor.print("...", args)` to
+  `Vapor.print(.info, "...", args)`.
+
 ## [3.1.0] — 2026-10-16
 
 New API (`Shadow.dropShadow`) and two behaviour changes, plus fixes found by
