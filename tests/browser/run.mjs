@@ -196,10 +196,15 @@ function makePage(cdp, origin) {
       await waitFor(`document.documentElement.hasAttribute("data-vapor-ready")`, "vapor:ready");
     },
     async waitForText(id, expected) {
-      await waitFor(
-        `document.getElementById(${JSON.stringify(id)})?.textContent === ${JSON.stringify(expected)}`,
-        `#${id} to read ${JSON.stringify(expected)} (is ${JSON.stringify(await text(id))})`,
-      );
+      try {
+        await waitFor(
+          `document.getElementById(${JSON.stringify(id)})?.textContent === ${JSON.stringify(expected)}`,
+          `#${id} to read ${JSON.stringify(expected)}`,
+        );
+      } catch (err) {
+        // The text when the wait gave up, not when it started.
+        throw new Error(`${err.message.replace(/ \(last: .*\)$/, "")} (is ${JSON.stringify(await text(id))})`);
+      }
     },
     async click(id) {
       const ok = await evaluate(`(() => { const e = document.getElementById(${JSON.stringify(id)}); if (!e) return false; e.click(); return true; })()`);
@@ -222,6 +227,10 @@ function makePage(cdp, origin) {
       return Math.max(0, ...r.result.value);
     },
   };
+}
+
+function assert(cond, what) {
+  if (!cond) throw new Error(what);
 }
 
 function assertEqual(actual, expected, what) {
@@ -436,6 +445,85 @@ const tests = {
     await p.click("focus-any-go");
     await p.waitFor(`document.activeElement?.id === "focus-any-target"`, "the button to take focus");
     assertEqual(p.consoleMessages.filter((m) => m.includes("focus")), [], "focus complaints");
+  },
+
+  async "a named timeout armed twice fires once, and fired ones are freed"(p) {
+    await p.goto("/timeout");
+    await p.waitForText("timeout-state", "fires=0 last=0 pending=0");
+    await p.click("timeout-arm");
+    await p.click("timeout-arm");
+    await p.waitForText("timeout-state", "fires=1 last=2 pending=0");
+    await sleep(300);
+    assertEqual(await p.text("timeout-state"), "fires=1 last=2 pending=0", "state once both timers would have fired");
+    assertEqual(p.consoleMessages, [], "console output");
+  },
+
+  async "a timeout that re-arms its own name keeps running"(p) {
+    await p.goto("/timeout");
+    await p.click("timeout-chain");
+    await p.waitForText("timeout-state", "fires=3 last=0 pending=0");
+    assertEqual(p.consoleMessages, [], "console output");
+  },
+
+  async "a declared transition runs when state changes the style"(p) {
+    await p.goto("/transition");
+    await p.waitFor(`document.getElementById("transition-box")?.getBoundingClientRect().width === 60`, "the narrow box");
+    // The box's width every frame for 200ms after the click.
+    const sampleWidths = () => p.evaluate(`new Promise((done) => {
+      const out = []; const t0 = performance.now();
+      const tick = () => {
+        const e = document.getElementById("transition-box");
+        out.push(e ? Math.round(e.getBoundingClientRect().width) : -1);
+        if (performance.now() - t0 < 200) requestAnimationFrame(tick); else done(out);
+      };
+      requestAnimationFrame(tick);
+    })`);
+    const sampling = sampleWidths();
+    await p.click("transition-toggle");
+    const seen = await sampling;
+    // A 300ms linear transition from 60 to 300 passes through the middle.
+    assert(seen.some((w) => w > 70 && w < 290), `width went straight from 60 to 300: ${seen.join(" ")}`);
+    // With the box's own transition, not one the runtime put inline.
+    assertEqual(await p.evaluate(`document.getElementById("transition-box").style.transition`), "", "inline transition");
+  },
+
+  async "navigating to a page does not animate the elements it reuses"(p) {
+    await p.goto("/transition");
+    await p.waitFor(`document.getElementById("transition-box")?.getBoundingClientRect().width === 60`, "the narrow box");
+    // The box's width every frame for 200ms after the click.
+    const sampleWidths = () => p.evaluate(`new Promise((done) => {
+      const out = []; const t0 = performance.now();
+      const tick = () => {
+        const e = document.getElementById("transition-box");
+        out.push(e ? Math.round(e.getBoundingClientRect().width) : -1);
+        if (performance.now() - t0 < 200) requestAnimationFrame(tick); else done(out);
+      };
+      requestAnimationFrame(tick);
+    })`);
+    const sampling = sampleWidths();
+    await p.click("transition-to-b");
+    const seen = await sampling;
+    assertEqual(await p.evaluate("location.pathname"), "/transition-b", "path after the link");
+    // Page B's box is a different element as far as the user is concerned.
+    assert(!seen.some((w) => w > 60 && w < 400), `width animated across the navigation: ${seen.join(" ")}`);
+  },
+
+  async "a .morph(true) element animates across a navigation"(p) {
+    await p.goto("/transition");
+    await p.waitFor(`document.getElementById("morph-box")?.getBoundingClientRect().width === 60`, "the narrow morph box");
+    const sampling = p.evaluate(`new Promise((done) => {
+      const out = []; const t0 = performance.now();
+      const tick = () => {
+        const e = document.getElementById("morph-box");
+        out.push(e ? Math.round(e.getBoundingClientRect().width) : -1);
+        if (performance.now() - t0 < 200) requestAnimationFrame(tick); else done(out);
+      };
+      requestAnimationFrame(tick);
+    })`);
+    await p.click("transition-to-b");
+    const seen = await sampling;
+    assertEqual(await p.evaluate("location.pathname"), "/transition-b", "path after the link");
+    assert(seen.some((w) => w > 70 && w < 390), `morph box jumped from 60 to 400: ${seen.join(" ")}`);
   },
 
   async "an element that loses its onMount hook calls nothing"(p) {

@@ -40,6 +40,9 @@ pub export fn init() void {
     Vapor.Page(.{ .route = "/once" }, oncePage, null);
     Vapor.Page(.{ .route = "/aria" }, ariaPage, null);
     Vapor.Page(.{ .route = "/focus-any" }, focusAnyPage, null);
+    Vapor.Page(.{ .route = "/timeout" }, timeoutPage, null);
+    Vapor.Page(.{ .route = "/transition" }, transitionPage, null);
+    Vapor.Page(.{ .route = "/transition-b" }, transitionPageB, null);
     Vapor.Page(.{ .route = "/error" }, notFound, null);
 }
 
@@ -610,6 +613,109 @@ fn focusAnyPage() void {
         Button(focusTheTarget, .{}).id("focus-any-go").children({
             Text("Focus it").end();
         });
+    });
+}
+
+// ── /timeout : named timeouts replace, fire once, re-arm and free ──────────
+
+var timeout_arms: u32 = 0;
+var timeout_fires: u32 = 0;
+var timeout_last: u32 = 0;
+var timeout_chain_left: u32 = 0;
+
+fn timeoutFired(arm: u32) void {
+    timeout_fires += 1;
+    timeout_last = arm;
+}
+
+/// Arms the same named timeout again: the pending one is replaced.
+fn armTimeout() void {
+    timeout_arms += 1;
+    Vapor.timeout("browser-test-timeout", 150, timeoutFired, .{timeout_arms});
+}
+
+/// Runs three times: each run arms the next one under its own name.
+fn chainStep() void {
+    timeout_fires += 1;
+    timeout_chain_left -= 1;
+    if (timeout_chain_left > 0) Vapor.timeout("browser-test-chain", 30, chainStep, .{});
+}
+
+fn startChain() void {
+    timeout_chain_left = 3;
+    Vapor.timeout("browser-test-chain", 30, chainStep, .{});
+}
+
+fn timeoutPage() void {
+    Box().id("timeout-page").children({
+        Button(armTimeout, .{}).id("timeout-arm").children({
+            Text("Arm").end();
+        });
+        Button(startChain, .{}).id("timeout-chain").children({
+            Text("Chain").end();
+        });
+        TextFmt("fires={d} last={d} pending={d}", .{
+            timeout_fires,
+            timeout_last,
+            Vapor.lib.ctx_callback_registry.count(),
+        }).id("timeout-state").end();
+    });
+}
+
+// ── /transition : a declared transition runs when state changes the style ──
+
+var transition_wide = false;
+
+fn toggleTransition() void {
+    transition_wide = !transition_wide;
+}
+
+/// The same tree on both pages, so navigating reuses the box (ids are
+/// positional) with another width.
+fn transitionBox(width: f32) void {
+    Box()
+        .id("transition-box")
+        .width(.px(width))
+        .height(.px(20))
+        .background(.hex("#336699"))
+        .transition(.{ .properties = &.{.width}, .duration = 300, .timing = .linear })
+        .end();
+}
+
+/// Opts in to animating across pages too.
+fn morphBox(width: f32) void {
+    Box()
+        .id("morph-box")
+        .width(.px(width))
+        .height(.px(20))
+        .background(.hex("#993366"))
+        .morph(true)
+        .end();
+}
+
+fn transitionPage() void {
+    Box().id("transition-page").children({
+        Button(toggleTransition, .{}).id("transition-toggle").children({
+            Text("Toggle").end();
+        });
+        Link(.{ .url = "/transition-b" }).id("transition-to-b").children({
+            Text("To B").end();
+        });
+        transitionBox(if (transition_wide) 300 else 60);
+        morphBox(60);
+    });
+}
+
+fn transitionPageB() void {
+    Box().id("transition-page").children({
+        Button(toggleTransition, .{}).id("transition-toggle").children({
+            Text("Toggle").end();
+        });
+        Link(.{ .url = "/transition" }).id("transition-to-b").children({
+            Text("To A").end();
+        });
+        transitionBox(400);
+        morphBox(400);
     });
 }
 

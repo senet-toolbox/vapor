@@ -1085,6 +1085,7 @@ pub const getRenderTreePtr = ExportsModule.getRenderTreePtr;
 pub const renderUI = ExportsModule.renderUI;
 pub const resizeCallback = ExportsModule.resizeCallback;
 pub const callbackCtx = ExportsModule.callbackCtx;
+pub const timeoutCtxFired = ExportsModule.timeoutCtxFired;
 pub const onPopStateCallback = ExportsModule.onPopStateCallback;
 pub const getVideo = ExportsModule.getVideo;
 pub const onLayoutCallback = ExportsModule.onLayoutCallback;

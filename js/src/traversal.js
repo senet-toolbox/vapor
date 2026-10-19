@@ -246,14 +246,15 @@ export function updateElement(element, uinode, force = false) {
     // Update styling
 
     const isReusedNode = !force; // force=true means freshly created/attached
+    // A state change animates with the element's declared transition; a new
+    // page reusing this element does not (see state.routeChanged).
+    const suppress = state.routeChanged && !uinode.morph;
     if (isReusedNode) {
       const prevTransition = element.style.transition;
-      if (!uinode.morph) {
+      if (suppress) {
         element.style.transition = "none";
-      } else {
-        if (element.style.transition === "") {
-          element.style.transition = "all 0.3s ease-in-out";
-        }
+      } else if (uinode.morph && element.style.transition === "") {
+        element.style.transition = "all 0.3s ease-in-out";
       }
 
       updateComponentStyle(uinode.offset, uinode.styleId, "", element);
@@ -270,7 +271,7 @@ export function updateElement(element, uinode, force = false) {
       } else {
       }
 
-      if (!uinode.morph) {
+      if (suppress) {
         // Force style flush so the new width/etc commits with transition:none
         void element.offsetHeight;
 

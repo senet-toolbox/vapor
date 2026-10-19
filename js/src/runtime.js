@@ -25,7 +25,7 @@ import {
   animateExit,
   resetTimers,
 } from "./traversal.js";
-import { state } from "./state.js";
+import { state, beginTraversal } from "./state.js";
 import { styleRuleCache } from "./styling.js";
 import { parseWasmError } from "./formatter.js";
 import { readRenderCommand, readUINode, readWasmString } from "./memory_reader.js";
@@ -530,6 +530,7 @@ function setupWasiInstance() {
 
   activeNodeIds = new Set();
   const rootUINode = wasmInstance.getRenderUINodeRootPtr();
+  beginTraversal(currentPath);
   traverseUINodes(root, rootUINode);
   if (state.initial_render) {
     sweep();
@@ -804,6 +805,7 @@ export async function render() {
         activeNodeIds = new Set();
 
         root = document.getElementById("contents");
+        beginTraversal(currentPath);
         traverseUINodes(root, rootUINode);
 
         state.initial_render = false;

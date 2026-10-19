@@ -56,6 +56,15 @@ pub export fn callbackCtx(callback_ptr: u32, object_ptr: ?*DynamicObject) callco
     }
 }
 
+/// Runs the `Vapor.timeout` closure `id` once and frees it. The runtime has
+/// already forgotten the timer, so the callback may arm the same name again.
+pub export fn timeoutCtxFired(id: u32) callconv(.c) void {
+    Vapor.runTimeout(id);
+    if (Vapor.mode == .atomic) {
+        Vapor.cycle();
+    }
+}
+
 pub export fn resizeCallback(resize_callback: u32, object_ptr: ?*DynamicObject) callconv(.c) void {
     if (object_ptr == null) {
         Vapor.report.err("Resize Entry is Null", .{});

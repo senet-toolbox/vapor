@@ -99,22 +99,17 @@ export const coreBindings = {
   timeoutCtx: (ms, id) => {
     const callbackId = id >>> 0;
 
-    // Cancel existing timeout/interval if one exists with this ID
+    // Arming a name that is still pending replaces it: Vapor.timeout has
+    // already swapped the Zig closure, so the old timer must not fire.
     const existingTimeoutId = timeouts.get(callbackId);
-    if (existingTimeoutId !== undefined) {
-      console.warn(`Interval ${callbackId} already exists, replacing it`);
-      clearTimeout(existingTimeoutId);
-      clearInterval(existingTimeoutId);
-    }
+    if (existingTimeoutId !== undefined) clearTimeout(existingTimeoutId);
 
     const timeoutId = setTimeout(() => {
-      try {
-        wasmInstance.callbackCtx(callbackId, null);
-      } catch (e) {
-        // Ignore errors
-      } finally {
-        timeouts.delete(callbackId);
-      }
+      // Forget this timer before the callback runs, which may arm the
+      // same name again.
+      if (timeouts.get(callbackId) === timeoutId) timeouts.delete(callbackId);
+      // Runs the closure once and frees it.
+      wasmInstance.timeoutCtxFired(callbackId);
     }, ms);
     timeouts.set(callbackId, timeoutId);
     return timeoutId;

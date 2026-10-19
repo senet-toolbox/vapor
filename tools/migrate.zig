@@ -217,12 +217,18 @@ const Rename = struct {
     method_only: bool = false,
     /// Not a field of some other value: `Kit.Response`, not `x.Kit.Response`.
     bare: bool = false,
+    /// Only a call with arguments: the builder's `.hide(true)`, not an app's
+    /// own `menu.hide()`.
+    with_args: bool = false,
 };
 
 /// Every `from` is matched in code only. Entries ending in `(` are calls, so
 /// they cannot match a longer name.
 const renames = [_]Rename{
     .{ .from = "Vapor.printErr(", .to = "Vapor.print(.err, " },
+    // print(fmt, args) took a level first in 3.0; a string there is 2.x.
+    .{ .from = "Vapor.print(\"", .to = "Vapor.print(.info, \"" },
+    .{ .from = "Vapor.lib.print(\"", .to = "Vapor.print(.info, \"" },
     .{ .from = "Vapor.lib.printErr(", .to = "Vapor.print(.err, " },
     .{ .from = "Vapor.printlnErr(", .to = "Vapor.print(.err, " },
     .{ .from = "Vapor.lib.printlnErr(", .to = "Vapor.print(.err, " },
@@ -274,7 +280,7 @@ const renames = [_]Rename{
     .{ .from = ".onEventCtx(", .to = ".onEvent(" },
     .{ .from = ".anchorPlacement(", .to = ".placement(" },
     .{ .from = ".simple(", .to = ".thin(", .literal_only = true },
-    .{ .from = ".hide(", .to = ".hidden(", .method_only = true },
+    .{ .from = ".hide(", .to = ".hidden(", .method_only = true, .with_args = true },
     .{ .from = ".gradient(", .to = ".background(", .method_only = true },
     .{ .from = ".weight(", .to = ".fontWeight(", .method_only = true },
     .{ .from = ".whitespace(", .to = ".whiteSpace(", .method_only = true },
@@ -429,6 +435,7 @@ fn applyRenames(arena: Allocator, text: []const u8, report: *Report) ![]const u8
                 if (r.method_only and !afterValue(text, i)) continue;
                 if (r.bare and i > 0 and text[i - 1] == '.') continue;
                 const end = i + r.from.len;
+                if (r.with_args and std.mem.startsWith(u8, std.mem.trimStart(u8, text[end..], " \t\n"), ")")) continue;
                 if (r.whole and end < text.len and isIdent(text[end])) continue;
                 try out.appendSlice(arena, r.to);
                 try report.add(arena, text, i, false, "{s} -> {s}", .{ r.from, r.to });
@@ -896,6 +903,9 @@ test "renames calls and types, not strings or comments" {
         \\Vapor.onEndCtx(scrollTo, .{id});
         \\_ = Box().hide(true).gradient(.white)
         \\    .hide(false).newShadow(s).end();
+        \\self.autocomplete.hide();
+        \\Vapor.print("hi {d}", .{1});
+        \\Vapor.print(.warn, "hi", .{});
         \\Box().background(.gradient(.linear, .right, &cs)).end();
         \\.border = .tb(.white),
         \\.border = .sharp(.solid, .black),
@@ -923,6 +933,9 @@ test "renames calls and types, not strings or comments" {
         \\Vapor.onLayout(scrollTo, .{id});
         \\_ = Box().hidden(true).background(.white)
         \\    .hidden(false).shadow(s).end();
+        \\self.autocomplete.hide();
+        \\Vapor.print(.info, "hi {d}", .{1});
+        \\Vapor.print(.warn, "hi", .{});
         \\Box().background(.gradient(.linear, .right, &cs)).end();
         \\.border = .vertical(1, .white),
         \\.border = .sharp(.all(1), .black),

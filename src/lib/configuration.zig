@@ -482,6 +482,7 @@ pub fn configureByNode(ui_node: ?*UINode, elem_decl: ElemDecl) *UINode {
     current_open.src = elem_decl.src;
     current_open.type = elem_decl.elem_type;
     current_open.name = elem_decl.name;
+    current_open.morph = elem_decl.morph;
 
     if (current_open.href) |href| {
         current_open.finger_print +%= hashKey(href);
@@ -781,6 +782,7 @@ pub fn configurePlainByNode(ui_node: ?*UINode, elem_decl: ElemDecl) *UINode {
     current_open.src = elem_decl.src;
     current_open.type = elem_decl.elem_type;
     current_open.name = elem_decl.name;
+    current_open.morph = elem_decl.morph;
 
     if (current_open.href) |href| {
         current_open.finger_print +%= hashKey(href);
