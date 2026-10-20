@@ -4,7 +4,9 @@ All notable changes to this project are documented here. This project follows
 [Semantic Versioning](https://semver.org/): breaking changes bump the major
 version and are listed with a migration note.
 
-## [Unreleased]
+## [3.1.2] — 2026-10-20
+
+Playground frames run on vapor's own runtime.
 
 ### Added
 
