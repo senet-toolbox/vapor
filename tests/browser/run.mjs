@@ -703,6 +703,41 @@ const tests = {
     }
   },
 
+  async "a playground iframe runs the wasm its parent hands it, at /"(p) {
+    await p.goto("/playground");
+    await p.click("playground-run");
+    // runPlaygroundWasm swaps in a fresh frame, so look it up each time.
+    const frame = `document.getElementById("playground-frame").contentDocument`;
+    await p.waitFor(`${frame}?.getElementById("count")?.textContent === "0"`, "the app to render in the frame");
+    assertEqual(
+      await p.evaluate(`document.getElementById("playground-frame").contentWindow.location.pathname`),
+      "/",
+      "the path the app sees in the frame",
+    );
+    await p.evaluate(`${frame}.getElementById("inc").click()`);
+    await p.waitFor(`${frame}.getElementById("count").textContent === "1"`, "a click in the frame to update it");
+  },
+
+  async "a playground iframe reports wasm that does not load"(p) {
+    await p.goto("/playground");
+    const reply = await p.evaluate(`new Promise((resolve) => {
+      const frame = document.getElementById("playground-frame");
+      setTimeout(() => resolve("no answer in 5 s"), 5000);
+      addEventListener("message", (e) => {
+        if (e.source !== frame.contentWindow) return;
+        if (e.data.type === "playground-ready") {
+          frame.contentWindow.postMessage({ type: "load-wasm", bytes: new ArrayBuffer(8) }, "*");
+        } else {
+          resolve(e.data.type);
+        }
+      });
+      // It said it was ready before this listener existed; ask again.
+      frame.contentWindow.location.reload();
+    })`);
+    assertEqual(reply, "playground-error", "the frame's answer to bytes that are not wasm");
+    assertEqual(p.allowErrors("Playground WASM error"), 1, "errors logged by the frame");
+  },
+
   async "every declared binding is wired into the runtime"(p) {
     // The bindings app imports all of Vapor.Wasm and Vapor.Browser. One
     // missing import and the browser refuses to instantiate it (LinkError),

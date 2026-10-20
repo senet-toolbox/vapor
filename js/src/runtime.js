@@ -67,9 +67,10 @@ window.addEventListener("popstate", async function(event) {
   });
 });
 
-async function loadWasm(path, imports = {}) {
-  const response = await fetch(path);
-  const bytes = await response.arrayBuffer();
+// `source` is the wasm's URL, or its bytes (an ArrayBuffer or typed array).
+async function loadWasm(source, imports = {}) {
+  const bytes =
+    typeof source === "string" ? await (await fetch(source)).arrayBuffer() : source;
   const module = await WebAssembly.compile(bytes);
   const browser = await loadBrowserBindings(module, imports);
   const instance = await WebAssembly.instantiate(module, imports);
@@ -90,31 +91,50 @@ async function loadBrowserBindings(module, imports) {
   return browser;
 }
 
-let pathname;
 export let text_data;
-async function loadWasiModule() {
-  pathname = "vapor";
-  (async () => {
-    try {
-      const instance = await loadWasm(
-        `/zig-out/bin/${pathname}.wasm`,
-        importObject,
-      );
-      const exports = instance.exports;
-      moduleCache.set(pathname, exports);
-      moduleRoutes.add(pathname);
-      wasmInstance = exports;
-      setWasiInstance(wasmInstance);
 
-      text_data = {};
-      init();
-    } catch (err) {
-      console.error("Fatal error loading WASM:", err);
-    }
-  })();
+// Instantiates the app's wasm and renders it.
+async function boot(source) {
+  const instance = await loadWasm(source, importObject);
+  const exports = instance.exports;
+  moduleCache.set("vapor", exports);
+  moduleRoutes.add("vapor");
+  wasmInstance = exports;
+  setWasiInstance(wasmInstance);
+
+  text_data = {};
+  await init();
 }
-async function initWasi() {
-  wasmInstance = await loadWasiModule();
+
+// How the page gets its wasm, chosen by <html data-vapor-boot>:
+//
+//   (absent)      fetched from /zig-out/bin/vapor.wasm.
+//   "playground"  posted by the parent window, for a page that runs other
+//                 people's builds in an iframe. The frame tells its parent
+//                 {type: "playground-ready"}, boots the bytes of the first
+//                 {type: "load-wasm", bytes} the parent sends, and answers
+//                 {type: "playground-loaded"} or {type: "playground-error",
+//                 error}. `runPlaygroundWasm` (env/navigation.js) is the
+//                 parent's side. The app is rendered as if at "/", since the
+//                 frame's own URL is the host page, not one of its routes.
+function start() {
+  if (document.documentElement.dataset.vaporBoot !== "playground") {
+    boot("/zig-out/bin/vapor.wasm").catch((err) => console.error("Fatal error loading WASM:", err));
+    return;
+  }
+  window.addEventListener("message", function onMessage(e) {
+    if (e.source !== window.parent || e.data?.type !== "load-wasm") return;
+    window.removeEventListener("message", onMessage);
+    window.history.replaceState(null, "", "/");
+    boot(e.data.bytes).then(
+      () => window.parent.postMessage({ type: "playground-loaded" }, "*"),
+      (err) => {
+        console.error("Playground WASM error:", err);
+        window.parent.postMessage({ type: "playground-error", error: String(err?.message ?? err) }, "*");
+      },
+    );
+  });
+  window.parent.postMessage({ type: "playground-ready" }, "*");
 }
 
 export const encodeString = (string) => {
@@ -900,7 +920,4 @@ function sweep() {
   }
 }
 
-// Check if memory is growing over time
-// Get total WASM memory size
-
-initWasi();
+start();

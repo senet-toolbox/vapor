@@ -679,6 +679,10 @@ pub extern fn removeAttributeWasm(
     attribute_len: usize,
 ) void;
 
+/// Fetches the wasm at `url` and runs it in a fresh copy of the iframe with
+/// id `playground-frame`, whose page must be `<html
+/// data-vapor-boot="playground">` (see "Running a build in an iframe" in the
+/// README).
 pub extern fn runPlaygroundWasm(url_ptr: [*]const u8, url_len: usize) void;
 
 pub extern fn startViewTransitionWasm(callback_id: u32) void;

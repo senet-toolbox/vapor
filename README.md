@@ -350,6 +350,26 @@ window.addEventListener("vapor:ready", () => { /* ... */ });
 
 End-to-end tests should wait for it before interacting.
 
+### Running a build in an iframe
+
+A page can run another vapor build, such as a playground's, in an iframe.
+The frame is a page that marks itself as a playground and loads the
+runtime:
+
+```html
+<html data-vapor-boot="playground">
+  <head><script type="module" src="/bundle.min.js"></script></head>
+  <body><main id="contents" style="display: contents"></main></body>
+</html>
+```
+
+The host renders it with `Vapor.Iframe("/playground.html").id("playground-frame")`
+and calls `Vapor.Wasm.runPlaygroundWasm(url.ptr, url.len)` to run a build in
+a fresh frame. The frame renders the build's `/` page, whatever its own URL,
+and tells its parent `{type: "playground-loaded"}` or
+`{type: "playground-error", error}`. The build must use the same vapor
+version as the runtime the frame loads.
+
 ### Authentication
 
 KeyStone wraps OAuth sign-in, session storage, token refresh and

@@ -43,6 +43,7 @@ pub export fn init() void {
     Vapor.Page(.{ .route = "/timeout" }, timeoutPage, null);
     Vapor.Page(.{ .route = "/transition" }, transitionPage, null);
     Vapor.Page(.{ .route = "/transition-b" }, transitionPageB, null);
+    Vapor.Page(.{ .route = "/playground" }, playgroundPage, null);
     Vapor.Page(.{ .route = "/error" }, notFound, null);
 }
 
@@ -716,6 +717,25 @@ fn transitionPageB() void {
         });
         transitionBox(400);
         morphBox(400);
+    });
+}
+
+// ── /playground : an iframe runs wasm the page hands it ────────────────────
+
+/// The wasm to run is this app's own: in the iframe it renders "/", so the
+/// counter on the home page shows that it booted and handles events. The
+/// binding exists only in the browser, not in the prerendering generator.
+fn runPlayground() void {
+    const url = "/zig-out/bin/vapor.wasm";
+    if (Vapor.lib.isWasi) Vapor.Wasm.runPlaygroundWasm(url.ptr, url.len);
+}
+
+fn playgroundPage() void {
+    Box().id("playground-page").children({
+        Button(runPlayground, .{}).id("playground-run").children({
+            Text("Run").end();
+        });
+        Vapor.Iframe("/playground.html").id("playground-frame").end();
     });
 }
 

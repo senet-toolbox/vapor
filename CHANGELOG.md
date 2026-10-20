@@ -4,6 +4,17 @@ All notable changes to this project are documented here. This project follows
 [Semantic Versioning](https://semver.org/): breaking changes bump the major
 version and are listed with a migration note.
 
+## [Unreleased]
+
+### Added
+
+- `<html data-vapor-boot="playground">`: a page that runs the wasm its
+  parent window posts instead of fetching `/zig-out/bin/vapor.wasm`. It is
+  the frame side of `Vapor.Wasm.runPlaygroundWasm`, which until now had no
+  3.x counterpart, so a playground needed a forked runtime. The build is
+  rendered at `/`, and the frame reports `playground-loaded` or
+  `playground-error` to its parent.
+
 ## [3.1.1] — 2026-10-19
 
 Fixes found while moving ryven and assembler-chat to 3.x. One visible
