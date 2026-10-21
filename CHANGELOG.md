@@ -4,7 +4,10 @@ All notable changes to this project are documented here. This project follows
 [Semantic Versioning](https://semver.org/): breaking changes bump the major
 version and are listed with a migration note.
 
-## [Unreleased]
+## [3.1.3] — 2026-10-21
+
+KeyStone sign-in can no longer be forged from another site, and
+`TextField(.float).bind` works.
 
 ### Fixed
 
