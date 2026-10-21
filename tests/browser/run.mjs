@@ -583,6 +583,21 @@ const tests = {
     await p.waitForText("greeting", "Hello, Ziggy!");
   },
 
+  async "number fields show and write back their bound values"(p) {
+    // A .float field's bind did not compile (it parsed the input as an
+    // integer) and did not show the value it was bound to.
+    await p.goto("/numbers");
+    await p.waitForText("order", "3 at 2.5");
+    assertEqual(await p.evaluate(`document.getElementById("quantity").value`), "3", "int field's value");
+    assertEqual(await p.evaluate(`document.getElementById("price").value`), "2.5", "float field's value");
+    await p.evaluate(`document.getElementById("price").value = ""`);
+    await p.type("price", "4.75");
+    await p.waitForText("order", "3 at 4.75");
+    await p.evaluate(`document.getElementById("quantity").value = ""`);
+    await p.type("quantity", "7");
+    await p.waitForText("order", "7 at 4.75");
+  },
+
   async "text is escaped, never parsed as HTML"(p) {
     await p.goto("/escape");
     await p.waitFor(`!!document.getElementById("payload")`, "payload");

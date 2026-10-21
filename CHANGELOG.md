@@ -4,6 +4,14 @@ All notable changes to this project are documented here. This project follows
 [Semantic Versioning](https://semver.org/): breaking changes bump the major
 version and are listed with a migration note.
 
+## [Unreleased]
+
+### Fixed
+
+- `TextField(.float).bind(&value)` did not compile: the field parsed what
+  was typed as an integer. It now reads a float, and shows the bound value
+  when it renders, as `.int` fields already did.
+
 ## [3.1.2] — 2026-10-20
 
 Playground frames run on vapor's own runtime.

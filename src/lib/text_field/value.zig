@@ -481,6 +481,8 @@ pub fn bind(self: *const Self, value: anytype) Self {
                 Vapor.report.err("Float bindValue and TextField type mismatch", .{});
                 return self.*;
             }
+
+            new_self._text_field_params.?.float.value = value.*;
         },
         .date => {
             if (@TypeOf(value.*) == []u8) {
@@ -515,7 +517,11 @@ pub fn bind(self: *const Self, value: anytype) Self {
             const typed: *T = @ptrCast(@alignCast(ptr));
 
             typed.* = switch (@typeInfo(T)) {
-                .int, .float, .comptime_int, .comptime_float => evt.number() catch blk: {
+                .int, .comptime_int => evt.number() catch blk: {
+                    Vapor.report.err("Error casting number", .{});
+                    break :blk 0;
+                },
+                .float, .comptime_float => evt.float() catch blk: {
                     Vapor.report.err("Error casting number", .{});
                     break :blk 0;
                 },

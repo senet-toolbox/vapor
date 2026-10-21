@@ -19,6 +19,7 @@ pub export fn init() void {
     Vapor.Page(.{ .route = "/list" }, list, null);
     Vapor.Page(.{ .route = "/cond" }, cond, null);
     Vapor.Page(.{ .route = "/input" }, input, null);
+    Vapor.Page(.{ .route = "/numbers" }, numbers, null);
     Vapor.Page(.{ .route = "/escape" }, escape, null);
     Vapor.Page(.{ .route = "/a" }, pageA, null);
     Vapor.Page(.{ .route = "/b" }, pageB, null);
@@ -358,6 +359,19 @@ fn input() void {
     Box().id("input-page").children({
         TextField(.string).id("name").bind(&name).onChange(nameChanged, .{}).end();
         TextFmt("Hello, {s}!", .{name}).id("greeting").end();
+    });
+}
+
+// ── /numbers : number fields bound to Zig values ──────────────────────────
+
+var quantity: i32 = 3;
+var price: f32 = 2.5;
+
+fn numbers() void {
+    Box().id("numbers-page").children({
+        TextField(.int).id("quantity").bind(&quantity).end();
+        TextField(.float).id("price").bind(&price).end();
+        TextFmt("{d} at {d}", .{ quantity, price }).id("order").end();
     });
 }
 
