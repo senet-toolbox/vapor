@@ -598,6 +598,52 @@ const tests = {
     await p.waitForText("order", "7 at 4.75");
   },
 
+  async "OAuth state is random, and a callback needs a sign-in this browser started"(p) {
+    // KeyStone made the state from the clock, so it could be guessed, and
+    // it exchanged a callback's code when no sign-in was pending: another
+    // site could sign this browser into an account of its choosing.
+    const signIn = async () => {
+      await p.goto("/signin");
+      await p.click("sign-in");
+      // Google is blocked, so the page ends on the browser's error page.
+      await p.waitFor(`location.pathname !== "/signin"`, "the redirect to Google");
+      await p.goto("/signin");
+      return p.evaluate(`localStorage.getItem("keystone_oauth_state")`);
+    };
+    const exchanged = () => p.requested.app.includes("/exchange/google/token");
+    await p.send("Network.enable");
+    await p.send("Network.setBlockedURLs", { urls: ["https://accounts.google.com/*"] });
+    try {
+      const first = await signIn();
+      const second = await signIn();
+      assertEqual(/^[0-9a-f]{32}$/.test(first), true, `state is 128 random bits (${first})`);
+      assertEqual(first === second, false, "each sign-in gets its own state");
+
+      await p.evaluate(`localStorage.clear()`);
+      p.requested.app.length = 0;
+      await p.goto(`/auth/callback?code=theirs&state=${first}`);
+      await p.waitForText("auth-error", "oauth_guard_mismatch");
+      assertEqual(exchanged(), false, "no sign-in pending: no code exchanged");
+
+      await signIn();
+      p.requested.app.length = 0;
+      await p.goto("/auth/callback?code=theirs&state=0123456789abcdef0123456789abcdef");
+      await p.waitForText("auth-error", "oauth_guard_mismatch");
+      assertEqual(exchanged(), false, "the wrong state: no code exchanged");
+
+      const state = await signIn();
+      p.requested.app.length = 0;
+      await p.goto(`/auth/callback?code=ours&state=${state}`);
+      const end = Date.now() + 5000;
+      while (!exchanged() && Date.now() < end) await sleep(25);
+      assertEqual(exchanged(), true, "the state this browser holds: the code is exchanged");
+    } finally {
+      await p.send("Network.setBlockedURLs", { urls: [] });
+      await p.send("Network.disable");
+      await p.evaluate(`localStorage.clear()`);
+    }
+  },
+
   async "text is escaped, never parsed as HTML"(p) {
     await p.goto("/escape");
     await p.waitFor(`!!document.getElementById("payload")`, "payload");
@@ -838,6 +884,7 @@ const cdp = await launch();
 const page = makePage(cdp, origin);
 page.bindingsOrigin = bindingsOrigin;
 page.requested = requested;
+page.send = cdp.send;
 
 const selected = Object.entries(tests).filter(([name]) => !only || name.toLowerCase().includes(only.toLowerCase()));
 if (selected.length === 0) {

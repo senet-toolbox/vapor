@@ -6,6 +6,7 @@
 
 const std = @import("std");
 const Vapor = @import("vapor");
+const KeyStone = @import("keystone");
 const Box = Vapor.Box;
 const Button = Vapor.Button;
 const Text = Vapor.Text;
@@ -45,7 +46,13 @@ pub export fn init() void {
     Vapor.Page(.{ .route = "/transition" }, transitionPage, null);
     Vapor.Page(.{ .route = "/transition-b" }, transitionPageB, null);
     Vapor.Page(.{ .route = "/playground" }, playgroundPage, null);
+    Vapor.Page(.{ .route = "/signin" }, signInPage, null);
+    Vapor.Page(.{ .route = "/auth/callback" }, callbackPage, null);
     Vapor.Page(.{ .route = "/error" }, notFound, null);
+    // After the pages: it formats into the frame arena, which needs a route.
+    // The backend is this origin, where the test server answers the code
+    // exchange.
+    KeyStone.init(.{ .clients = .{ .google = .{ .client_id = "test-client" } }, .backend_url = "" });
 }
 
 pub const std_options = std.Options{
@@ -372,6 +379,26 @@ fn numbers() void {
         TextField(.int).id("quantity").bind(&quantity).end();
         TextField(.float).id("price").bind(&price).end();
         TextFmt("{d} at {d}", .{ quantity, price }).id("order").end();
+    });
+}
+
+// ── /signin and /auth/callback : KeyStone's OAuth state ────────────────────
+
+fn signIn() void {
+    KeyStone.signInWithOauth(.google);
+}
+
+fn signInPage() void {
+    Box().id("signin-page").children({
+        Button(signIn, .{}).id("sign-in").children({
+            Text("Sign in with Google").end();
+        });
+    });
+}
+
+fn callbackPage() void {
+    Box().id("callback-page").children({
+        Text(KeyStone.getAuthState().err orelse "none").id("auth-error").end();
     });
 }
 

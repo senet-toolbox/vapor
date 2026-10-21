@@ -8,6 +8,12 @@ version and are listed with a migration note.
 
 ### Fixed
 
+- KeyStone's OAuth `state` and `nonce` are 128 random bits
+  (`crypto.getRandomValues`); they were the provider's name and the time,
+  which anyone could guess. A callback is now exchanged only when this
+  browser holds a pending sign-in with that `state`. With none stored, the
+  code used to be sent to the backend, so another site could sign the
+  browser into an account of its choosing.
 - `TextField(.float).bind(&value)` did not compile: the field parsed what
   was typed as an integer. It now reads a float, and shows the bound value
   when it renders, as `.int` fields already did.

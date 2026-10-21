@@ -6,6 +6,7 @@
 
 // This is the Frontend module dep for KeyStone.
 const std = @import("std");
+const builtin = @import("builtin");
 const Vapor = @import("vapor");
 const log = std.log.scoped(.keystone);
 const Kit = Vapor.Kit;
@@ -485,14 +486,14 @@ fn getProviderFromCookieOrStore() ?Provider {
     return std.meta.stringToEnum(Provider, stored);
 }
 
+/// Whether the callback answers the sign-in this browser started: its
+/// `state` must be the one `rememberOAuthGuard` stored. With none stored,
+/// no sign-in is pending, and the code (someone else's, perhaps) is refused.
 fn validateCallbackGuards(params: std.StringHashMap([]const u8)) bool {
-    const expected_state = Vapor.load([]const u8, keystone.oauth_state_storage_key);
-    if (expected_state) |state| {
-        if (state.len > 0) {
-            const incoming_state = params.get("state") orelse return false;
-            if (!std.mem.eql(u8, state, incoming_state)) return false;
-        }
-    }
+    const expected_state = Vapor.load([]const u8, keystone.oauth_state_storage_key) orelse return false;
+    if (expected_state.len == 0) return false;
+    const incoming_state = params.get("state") orelse return false;
+    if (!std.mem.eql(u8, expected_state, incoming_state)) return false;
 
     const expected_nonce = Vapor.load([]const u8, keystone.oauth_nonce_storage_key);
     if (expected_nonce) |nonce| {
@@ -552,8 +553,8 @@ fn resolveRedirectUri(client: ClientConfig) []const u8 {
 
 fn buildAuthorizeUrl(provider: Provider, client: ClientConfig, dry_run: bool) ![]const u8 {
     const cfg = providerDefaults(provider);
-    const state = defaultState(provider);
-    const nonce = defaultNonce(provider);
+    const state = randomToken();
+    const nonce = randomToken();
 
     if (!dry_run) {
         rememberOAuthGuard(provider, state, nonce, cfg.include_nonce);
@@ -582,12 +583,18 @@ fn buildAuthorizeUrl(provider: Provider, client: ClientConfig, dry_run: bool) ![
     return query.generateUrl(cfg.base_url, query.str);
 }
 
-fn defaultState(provider: Provider) []const u8 {
-    return Vapor.frame.fmt("keystone-{s}-{d}", .{ @tagName(provider), Vapor.Kit.timestamp() });
-}
-
-fn defaultNonce(provider: Provider) []const u8 {
-    return Vapor.frame.fmt("nonce-{s}-{d}", .{ @tagName(provider), Vapor.Kit.timestamp() });
+/// 128 random bits in hex, for an OAuth `state` or `nonce` no one else
+/// can guess.
+fn randomToken() []const u8 {
+    var bytes: [16]u8 = undefined;
+    if (builtin.target.cpu.arch == .wasm32) {
+        // vapor's runtime answers with crypto.getRandomValues.
+        _ = std.os.wasi.random_get(&bytes, bytes.len);
+    } else {
+        std.Io.Threaded.global_single_threaded.io().random(&bytes);
+    }
+    const hex = std.fmt.bytesToHex(bytes, .lower);
+    return Vapor.frame.fmt("{s}", .{&hex});
 }
 
 fn rememberOAuthGuard(provider: Provider, state: []const u8, nonce: []const u8, include_nonce: bool) void {

@@ -49,6 +49,7 @@ fn generateHtml(b: *std.Build, static: bool, atomic: bool) *std.Build.Step {
             .{ .name = "vapor", .module = vapor_module },
             .{ .name = "theme", .module = theme_module }, // ADD THIS
             .{ .name = "config", .module = config_module },
+            .{ .name = "keystone", .module = vapor_dep.module("keystone") },
         },
     });
 
@@ -118,6 +119,7 @@ pub fn build(b: *std.Build) void {
             .{ .name = "vapor", .module = vapor_module },
             .{ .name = "theme", .module = theme_module },
             .{ .name = "config", .module = config_module },
+            .{ .name = "keystone", .module = vapor_dep.module("keystone") },
         },
     });
 
