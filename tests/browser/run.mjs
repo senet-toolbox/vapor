@@ -106,27 +106,39 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 async function launch() {
   const profile = mkdtempSync(join(tmpdir(), "vapor-browser-"));
-  const port = 9200 + Math.floor(Math.random() * 700);
+  // Port 0: Chrome picks a free port and writes it to DevToolsActivePort in
+  // the profile. A port picked here could be taken, and CI failed with
+  // "Chrome did not start" now and then.
   const proc = spawn(findChrome(), [
     "--headless=new",
     "--disable-gpu",
     "--no-first-run",
     "--no-default-browser-check",
     "--no-sandbox", // CI containers run as root
-    `--remote-debugging-port=${port}`,
+    "--remote-debugging-port=0",
     `--user-data-dir=${profile}`,
     "about:blank",
-  ], { stdio: "ignore" });
+  ], { stdio: ["ignore", "ignore", "pipe"] });
+  let chromeErr = "";
+  proc.stderr.on("data", (d) => (chromeErr = (chromeErr + d).slice(-4000)));
+  let exited = null;
+  proc.on("exit", (code, signal) => (exited = signal ?? code));
 
+  // A cold start on a CI runner can take a while.
   let targets;
-  for (let i = 0; i < 100 && !targets; i++) {
+  const activePort = join(profile, "DevToolsActivePort");
+  for (let i = 0; i < 300 && !targets && exited === null; i++) {
     try {
+      const port = readFileSync(activePort, "utf8").split("\n")[0];
       targets = await (await fetch(`http://127.0.0.1:${port}/json`)).json();
     } catch {
       await sleep(100);
     }
   }
-  if (!targets) throw new Error("Chrome did not start");
+  if (!targets) {
+    proc.kill();
+    throw new Error(`Chrome did not start (${exited === null ? "no DevTools port after 30 s" : `exited: ${exited}`}):\n${chromeErr}`);
+  }
   const ws = new WebSocket(targets.find((t) => t.type === "page").webSocketDebuggerUrl);
   await new Promise((r, j) => { ws.onopen = r; ws.onerror = j; });
 
