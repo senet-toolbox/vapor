@@ -4,7 +4,10 @@ All notable changes to this project are documented here. This project follows
 [Semantic Versioning](https://semver.org/): breaking changes bump the major
 version and are listed with a migration note.
 
-## [Unreleased]
+## [3.2.0] — 2026-10-22
+
+Crash reports: an app can have its panics and traps posted to its own
+backend, and what Zig prints reaches the console.
 
 ### Added
 
