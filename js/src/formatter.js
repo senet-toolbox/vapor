@@ -141,8 +141,10 @@ export function parseWasmError(error) {
       return { raw: trimmed, type: "unknown" };
     });
 
-  // Filter out internal panic/abort machinery
+  // Filter out internal panic/abort machinery (Zig 0.16 aborts through
+  // process.abort; earlier versions through posix.abort)
   const internalFunctions = [
+    "process.abort",
     "posix.abort",
     "debug.defaultPanic",
     "debug.FullPanic",

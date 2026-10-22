@@ -38,6 +38,8 @@ pub const lib = @import("lib/vapor.zig");
 // ── App and pages ───────────────────────────────────────────────────────────
 
 pub const init = lib.init;
+pub const reportErrors = lib.reportErrors;
+pub const ErrorReports = lib.ErrorReports;
 pub const Page = lib.Page;
 pub const PageFn = lib.PageFn;
 pub const registerLayout = lib.registerLayout;

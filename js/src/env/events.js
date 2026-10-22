@@ -1,7 +1,7 @@
 /** DOM event listeners and reading event data back into wasm. */
 import { debug } from "../debug.js";
 import { EventType } from "../event_type.js";
-import { parseWasmError } from "../formatter.js";
+import { reportCrash } from "../reporter.js";
 import { getElement, requireWasm, wasmInstance } from "../instance.js";
 import { domNodeRegistry, eventHandlers, eventStorage } from "../maps.js";
 import { WasmObjectBuilder } from "../struct_bridge.js";
@@ -23,12 +23,7 @@ function addDocumentListener(ptr, len, onid) {
       eventStorage[callback_id] = event;
       wasmInstance.dispatchEvent(EventType[event_type], callback_id);
     } catch (e) {
-      if (e instanceof WebAssembly.RuntimeError) {
-        const parsed = parseWasmError(e);
-        const stringified = JSON.stringify(parsed);
-        const errorPtr = allocStringFrame(stringified);
-        wasmInstance.recordState(errorPtr, null);
-      }
+      reportCrash(e);
       throw e;
     }
   };

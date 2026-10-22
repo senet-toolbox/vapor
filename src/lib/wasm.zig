@@ -48,6 +48,17 @@ pub extern fn consoleLogColoredWarnWasm(
 /// Shows a browser alert dialog.
 pub extern fn alertWasm(ptr: [*]const u8, len: usize) void;
 
+/// Where the runtime posts crash reports, and what it tags them with; see
+/// `Vapor.reportErrors`.
+pub extern fn configureErrorReports(
+    url_ptr: [*]const u8,
+    url_len: usize,
+    release_ptr: [*]const u8,
+    release_len: usize,
+    environment_ptr: [*]const u8,
+    environment_len: usize,
+) void;
+
 // =============================================================================
 // EVENT HANDLING - Document Level
 // =============================================================================

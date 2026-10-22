@@ -27,7 +27,7 @@ import {
 } from "./traversal.js";
 import { state, beginTraversal } from "./state.js";
 import { styleRuleCache } from "./styling.js";
-import { parseWasmError } from "./formatter.js";
+import { recordEvent, reportCrash } from "./reporter.js";
 import { readRenderCommand, readUINode, readWasmString } from "./memory_reader.js";
 export { checkMemoryGrowth } from "./memory_stats.js";
 export { readRenderCommand, readUINode, readWasmString } from "./memory_reader.js";
@@ -394,6 +394,9 @@ function setupWasiInstance() {
   ];
 
   // 2. The single master function that handles EVERYTHING
+  /** What a crash report lists as having happened before it. */
+  const reportedEvents = new Set(["click", "dblclick", "input", "change", "submit", "keydown"]);
+
   function handleGlobalEvent(event) {
     // Find the closest element that has an ID (so we can look it up in the registry)
     let targetElement = event.target.closest("[id]");
@@ -410,6 +413,7 @@ function setupWasiInstance() {
 
     const nodeInfo = domNodeRegistry.get(targetElement.id);
     if (!nodeInfo) return;
+    if (reportedEvents.has(event.type)) recordEvent(event.type, targetElement.id);
     // An element with its own listener for this event (from .onEvent) gets
     // it there; dispatching here too would run its handler twice.
     if (eventHandlers.get(targetElement.id)?.[event.type]) return;
@@ -483,18 +487,9 @@ function setupWasiInstance() {
     rootContainer.addEventListener(eventType, handleGlobalEvent);
   });
 
-  // 4. (Bonus) Extracted your error handler so the main function isn't cluttered
+  // A crash in an element's callback is reported with the element.
   function handleWasmError(e, elementId) {
-    if (e instanceof WebAssembly.RuntimeError) {
-      const parsed = parseWasmError(e);
-      const idPtr = allocStringFrame(JSON.stringify(parsed));
-
-      const eventData = { id: elementId };
-      debug(eventData);
-
-      const eventPtr = allocStringFrame(JSON.stringify(eventData));
-      wasmInstance.recordState(idPtr, eventPtr);
-    }
+    reportCrash(e, elementId);
     throw e;
   }
 
@@ -864,6 +859,7 @@ export async function render() {
       debug("Grain Rerender");
     }
   } catch (error) {
+    reportCrash(error);
     console.error("An error occurred during the render cycle:", error);
   }
 }

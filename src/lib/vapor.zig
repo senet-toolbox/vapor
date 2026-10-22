@@ -241,6 +241,35 @@ extern fn frame_arena_init(frame_arena: *FrameAllocator, backing_allocator: *std
 
 // 17kb is just the exports and externs
 
+pub const ErrorReports = struct {
+    /// Where to POST reports: the route reverb-errors installs on the app's
+    /// backend, such as "/errors/report", or a full URL.
+    url: []const u8,
+    /// A version or a commit, kept with each report.
+    release: []const u8 = "",
+    /// Such as "production".
+    environment: []const u8 = "",
+};
+
+/// Has the runtime post a report when the app panics or traps: the error
+/// and its stack, the element and route, and the events just before it, as
+/// JSON in the shape reverb-errors records. Off until called; call it in
+/// `init`, after `Vapor.init`.
+///
+/// The report is built and sent by the JS runtime, never by the wasm that
+/// just crashed. Each crash is sent once, and a page sends at most 10.
+pub fn reportErrors(options: ErrorReports) void {
+    if (!isWasi) return;
+    Wasm.configureErrorReports(
+        options.url.ptr,
+        options.url.len,
+        options.release.ptr,
+        options.release.len,
+        options.environment.ptr,
+        options.environment.len,
+    );
+}
+
 /// Starts the runtime. Call it once, first, in your app's exported `init`,
 /// before registering pages.
 pub fn init(config: VaporConfig) void {
@@ -1057,7 +1086,6 @@ const ExportsModule = @import("exports.zig");
 comptime {
     _ = ExportsModule;
 }
-pub const recordState = ExportsModule.recordState;
 pub const getDirtyValue = ExportsModule.getDirtyValue;
 pub const setRouteRenderTree = ExportsModule.setRouteRenderTree;
 pub const resetRerender = ExportsModule.resetRerender;

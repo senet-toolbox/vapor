@@ -3,6 +3,7 @@ import { debug } from "./debug.js";
 import { readWasmString, wasmInstance } from "./runtime.js";
 import { env, requireWasm } from "./env.js";
 import { fileBindings } from "./file.js";
+import { noteStderr } from "./reporter.js";
 // import { cacheEnv } from "./cachebindings.js";
 
 export const importObject = {
@@ -85,8 +86,24 @@ export const importObject = {
     fd_seek: () => 0,
     fd_sync: () => 0,
     fd_tell: () => 0,
+    // stdout and stderr (`std.debug.print`, a panic's message) go to the
+    // console as logs, and stderr to the crash reporter too. Other files
+    // are not written.
     fd_write: (fd, iovs_ptr, iovs_len, nwritten_ptr) => {
-      // Optional: wire up stdout/stderr to console
+      const view = new DataView(wasmInstance.memory.buffer);
+      let text = "";
+      let written = 0;
+      for (let i = 0; i < iovs_len; i++) {
+        const ptr = view.getUint32(iovs_ptr + i * 8, true);
+        const len = view.getUint32(iovs_ptr + i * 8 + 4, true);
+        text += new TextDecoder().decode(new Uint8Array(wasmInstance.memory.buffer, ptr, len));
+        written += len;
+      }
+      view.setUint32(nwritten_ptr, written, true);
+      if (fd === 1 || fd === 2) {
+        if (text.trim()) console.log(text.replace(/\n$/, ""));
+        if (fd === 2) noteStderr(text);
+      }
       return 0;
     },
 

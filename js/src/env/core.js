@@ -4,6 +4,7 @@ import { requireWasm, wasmInstance } from "../instance.js";
 import { afterHooksHandlers, beforeHooksHandlers, timeouts } from "../maps.js";
 import { checkMemoryGrowth, readWasmString, requestRerender } from "../runtime.js";
 import { batchRemoveTombStones } from "../styling.js";
+import { configureErrorReports } from "../reporter.js";
 
 export const coreBindings = {
   // Core / System
@@ -83,6 +84,13 @@ export const coreBindings = {
     const style1 = readWasmString(stylePtr1, styleLen1);
     const style2 = readWasmString(stylePtr2, styleLen2);
     console.log(str, style1, style2);
+  },
+  configureErrorReports: (urlPtr, urlLen, releasePtr, releaseLen, envPtr, envLen) => {
+    configureErrorReports(
+      readWasmString(urlPtr, urlLen),
+      readWasmString(releasePtr, releaseLen),
+      readWasmString(envPtr, envLen),
+    );
   },
   alertWasm: (ptr, len) => {
     const memory = new Uint8Array(wasmInstance.memory.buffer);

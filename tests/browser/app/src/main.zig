@@ -16,7 +16,10 @@ const Link = Vapor.Link;
 
 pub export fn init() void {
     Vapor.init(.{});
+    // The test server records what is posted here.
+    Vapor.reportErrors(.{ .url = "/errors/report", .release = "browser-test", .environment = "test" });
     Vapor.Page(.{ .route = "/" }, home, null);
+    Vapor.Page(.{ .route = "/crash" }, crashPage, null);
     Vapor.Page(.{ .route = "/list" }, list, null);
     Vapor.Page(.{ .route = "/cond" }, cond, null);
     Vapor.Page(.{ .route = "/input" }, input, null);
@@ -74,6 +77,30 @@ fn home() void {
             Text("Increment").end();
         });
         Text(count).id("count").end();
+    });
+}
+
+// ── /crash : a panic and a trap, reported to the URL the app set ───────────
+
+var crash_note: []const u8 = "";
+
+fn panicNow() void {
+    @panic("boom: the crash test panics");
+}
+
+fn trapNow() void {
+    @trap();
+}
+
+fn crashPage() void {
+    Box().id("crash-page").children({
+        TextField(.string).id("crash-note").bind(&crash_note).end();
+        Button(panicNow, .{}).id("crash-panic").children({
+            Text("Panic").end();
+        });
+        Button(trapNow, .{}).id("crash-trap").children({
+            Text("Trap").end();
+        });
     });
 }
 

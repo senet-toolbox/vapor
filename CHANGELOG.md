@@ -4,6 +4,34 @@ All notable changes to this project are documented here. This project follows
 [Semantic Versioning](https://semver.org/): breaking changes bump the major
 version and are listed with a migration note.
 
+## [Unreleased]
+
+### Added
+
+- `Vapor.reportErrors(.{ .url, .release, .environment })`: when the app
+  panics or traps, the runtime posts a crash report to `url` as JSON, in the
+  shape [reverb-errors](https://github.com/senet-toolbox/reverb-errors)
+  records: the error and its stack, a panic's message, the element whose
+  callback crashed, the route and URL, the last 20 clicks, inputs and key
+  presses (types and element ids only), and a session id per page load.
+  The JS runtime builds and sends it, never the wasm that crashed; each
+  crash is sent once, and a page sends at most 10. The body is
+  `text/plain`, so a backend on another origin needs no preflight. Off
+  until called.
+
+### Fixed
+
+- What Zig wrote to stdout and stderr was dropped, a panic's message
+  included: the WASI `fd_write` shim wrote nothing (and reported nothing
+  written). It now logs it to the console.
+- A panic's crash site, in the stack the runtime parses, was Zig 0.16's
+  `process.abort` rather than the function that panicked.
+
+### Removed
+
+- The `recordState` wasm export, which did nothing. Crash reports replace
+  it.
+
 ## [3.1.3] — 2026-10-21
 
 KeyStone sign-in can no longer be forged from another site, and

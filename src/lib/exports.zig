@@ -232,8 +232,3 @@ pub export fn setRouteRenderTree(ptr: [*:0]u8) callconv(.c) u32 {
 pub export fn getDirtyValue(node: *UINode) callconv(.c) bool {
     return node.dirty;
 }
-
-pub export fn recordState(err_str: [*:0]u8, event_str: ?[*:0]u8) void {
-    _ = err_str;
-    _ = event_str;
-}

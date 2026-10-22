@@ -39,6 +39,9 @@ const mime = {
 
 // Paths each server was asked for, so tests can assert what a page loaded.
 const requested = { app: [], bindings: [] };
+// Crash reports the runtime posted to /errors/report, as reverb-errors' route
+// would receive them: `{ body, contentType }`.
+const crashReports = [];
 
 function makeServer(dir, log, staticSite) {
   return createServer((req, res) => serve(dir, log, staticSite, req, res));
@@ -48,6 +51,15 @@ function serve(appDir, log, staticMode, req, res) {
   const url = new URL(req.url, "http://x");
   let path = decodeURIComponent(url.pathname);
   log.push(path);
+  if (req.method === "POST" && path === "/errors/report") {
+    let body = "";
+    req.on("data", (chunk) => (body += chunk));
+    req.on("end", () => {
+      crashReports.push({ body, contentType: req.headers["content-type"] });
+      res.writeHead(201, { "content-type": "application/json" }).end("{}");
+    });
+    return;
+  }
   if (staticMode) {
     // A static host: release/ is the site root, plus the wasm the runtime
     // fetches from /zig-out/bin/.
@@ -242,6 +254,43 @@ function assertEqual(actual, expected, what) {
 // ── tests ───────────────────────────────────────────────────────────────────
 
 const tests = {
+  async "a crash is reported once, with its panic, element, route and the events before it"(p) {
+    p.crashReports.length = 0;
+    await p.goto("/crash");
+    await p.type("crash-note", "x");
+    await p.click("crash-panic");
+    const [panic] = await crashReportsArrive(p, 1);
+    // A text body: a cross-origin backend gets it without a preflight.
+    assert(panic.contentType.startsWith("text/plain"), `content type ${panic.contentType}`);
+    assertEqual(panic.wasmError.type, "Panic", "type");
+    assertEqual(panic.wasmError.message, "boom: the crash test panics", "the panic's message");
+    assertEqual(panic.wasmError.is_wasm_trap, true, "a trap");
+    assert(panic.wasmError.user_stack.length > 0, "a stack");
+    // Where the app panicked, not the panic machinery it went through.
+    assert(!/abort|Panic/.test(panic.wasmError.crash_site?.function ?? ""), `crash site ${JSON.stringify(panic.wasmError.crash_site)}`);
+    assertEqual(panic.element_id, "crash-panic", "the button");
+    assertEqual(panic.route, "/crash", "route");
+    assert(panic.url.endsWith("/crash"), `url ${panic.url}`);
+    assertEqual([panic.release, panic.environment], ["browser-test", "test"], "release and environment");
+    assert(typeof panic.session_id === "string" && panic.session_id.length > 0, "a session id");
+    assert(Math.abs(panic.timestamp / 1000 - Date.now()) < 60_000, `timestamp ${panic.timestamp} is microseconds, now`);
+    const kinds = panic.events.map((e) => `${e.event_type} ${e.element_id}`);
+    assert(kinds.includes("input crash-note") && kinds.at(-1) === "click crash-panic", `events ${JSON.stringify(kinds)}`);
+    // The error also reaches window "error"; it is still one report.
+    await sleep(300);
+    assertEqual(p.crashReports.length, 1, "reports after the error settled");
+    p.allowErrors("boom");
+    p.allowErrors("unreachable");
+
+    await p.goto("/crash");
+    await p.click("crash-trap");
+    const [, trap] = await crashReportsArrive(p, 2);
+    assertEqual([trap.wasmError.type, trap.wasmError.message, trap.wasmError.is_wasm_trap], ["RuntimeError", "unreachable", true], "a bare trap");
+    assertEqual(trap.element_id, "crash-trap", "the trap's button");
+    assert(trap.session_id !== panic.session_id, "a new page is a new session");
+    p.allowErrors("unreachable");
+  },
+
   async "clicks update state and the DOM"(p) {
     await p.goto("/");
     await p.waitForText("count", "0");
@@ -848,6 +897,13 @@ const tests = {
 
 // ── main ────────────────────────────────────────────────────────────────────
 
+// Waits for the test server to have `n` crash reports, and gives them parsed.
+async function crashReportsArrive(p, n) {
+  for (let i = 0; i < 200 && p.crashReports.length < n; i++) await sleep(25);
+  assertEqual(p.crashReports.length, n, "crash reports received");
+  return p.crashReports.map((r) => ({ ...JSON.parse(r.body), contentType: r.contentType }));
+}
+
 if (staticMode && !existsSync(join(appDir, "release/index.html"))) {
   console.error("--static needs prerendered pages: run `zig build -Dgenerate=true` in tests/browser/app");
   process.exit(2);
@@ -884,6 +940,7 @@ const cdp = await launch();
 const page = makePage(cdp, origin);
 page.bindingsOrigin = bindingsOrigin;
 page.requested = requested;
+page.crashReports = crashReports;
 page.send = cdp.send;
 
 const selected = Object.entries(tests).filter(([name]) => !only || name.toLowerCase().includes(only.toLowerCase()));
