@@ -1614,7 +1614,7 @@ test "style data unused past the grace period is freed and rebuilt on use" {
 }
 
 var list_len: usize = 0;
-var list_refs: [40]Vapor.Element = undefined;
+var list_refs: [40]Vapor.Element = @splat(.{});
 fn ListPage() void {
     Vapor.Stack().id("list").children({
         for (0..list_len) |i| {

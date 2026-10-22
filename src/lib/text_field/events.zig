@@ -234,7 +234,8 @@ pub fn onHoverCtx(self: *const Self, cb: anytype, args: anytype) Self {
 }
 
 /// Fills `element` with a handle to this element, for reading its size, scroll
-/// position or attributes after it is on the page.
+/// position or attributes after it is on the page. Start `element` as `.{}`,
+/// never `undefined`: the render reads its other fields (styles set through it).
 pub fn ref(self: *const Self, element: *Element) Self {
     var new_self: Self = self.*;
 

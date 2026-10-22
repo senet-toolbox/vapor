@@ -193,17 +193,20 @@ pub const PackedVisual = packed struct {
     color_mix: types.PackedColorMix = .{},
 };
 
+/// Each part is empty unless its `has_` flag is set. They are never
+/// `undefined`: their bytes are hashed into the class name (motion.zig), and
+/// a stale byte read as an enum broke the static generator on Linux.
 pub const PackedInteractive = struct {
     has_hover: bool = false,
-    hover: PackedVisual = undefined,
+    hover: PackedVisual = .{},
     has_hover_position: bool = false,
-    hover_position: PackedPosition = undefined,
+    hover_position: PackedPosition = .{},
     has_focus: bool = false,
-    focus: PackedVisual = undefined,
+    focus: PackedVisual = .{},
     has_focus_within: bool = false,
-    focus_within: PackedVisual = undefined,
+    focus_within: PackedVisual = .{},
     has_hover_transform: bool = false,
-    hover_transform: PackedTransform = undefined,
+    hover_transform: PackedTransform = .{},
 };
 
 pub const PackedAnimations = packed struct {
@@ -215,6 +218,6 @@ pub const PackedAnimations = packed struct {
 
 pub const PackedTransforms = packed struct {
     has_transform: bool = false,
-    transform: PackedTransform = undefined,
+    transform: PackedTransform = .{},
     transform_origin: types.TransformOrigin = .default,
 };

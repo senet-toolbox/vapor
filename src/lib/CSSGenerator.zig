@@ -107,11 +107,11 @@ fn writeVisual(visual_ptr: *const Types.PackedVisual) void {
     StyleWriter.generateVisual(visual_ptr, &writer);
 }
 
+/// As `css/exports.zig` writes them in the browser: each part only when its
+/// `has_` flag is set.
 fn writeInteractive(interactive_ptr: *const Types.PackedInteractive) void {
-    const hover = interactive_ptr.hover;
-    const hover_position = interactive_ptr.hover_position;
-    StyleWriter.generateVisual(&hover, &writer);
-    StyleWriter.generatePositions(&hover_position, &writer);
+    if (interactive_ptr.has_hover) StyleWriter.generateVisual(&interactive_ptr.hover, &writer);
+    if (interactive_ptr.has_hover_position) StyleWriter.generatePositions(&interactive_ptr.hover_position, &writer);
     if (interactive_ptr.has_hover_transform) {
         StyleWriter.writePropValue("transform", .{ .tag = .transform_type, .data = .{ .transform_type = interactive_ptr.hover_transform } }, &writer);
     }
