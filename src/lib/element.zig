@@ -227,6 +227,7 @@ pub const Element = struct {
 
     /// The text cursor's position in a text field.
     pub fn cursorPosition(self: *Element) u32 {
+        if (!Vapor.isWasi) return 0;
         const id = self._get_id() orelse {
             Vapor.report.warn("Element: not bound to an element on the page; bind it with .ref() first", .{});
             return 0;
@@ -265,6 +266,7 @@ pub const Element = struct {
 
     /// Replaces characters `start` to `end` of a text field's value.
     pub fn replaceRange(self: *Element, start: usize, end: usize, replacement: []const u8) void {
+        if (!Vapor.isWasi) return;
         const id = self._get_id() orelse return;
         Wasm.replaceRangeWasm(id.ptr, id.len, start, end, replacement.ptr, replacement.len);
     }

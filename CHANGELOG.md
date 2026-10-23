@@ -4,6 +4,22 @@ All notable changes to this project are documented here. This project follows
 [Semantic Versioning](https://semver.org/): breaking changes bump the major
 version and are listed with a migration note.
 
+## [3.2.2] — 2026-10-23
+
+The static generator compiles apps that use animation frames or text-field
+editing.
+
+### Fixed
+
+- `runOnAnimationFrame` keyed the callback registry with a `usize` pointer,
+  which does not fit the registry's `u32` key on a 64-bit host, so the
+  native static generator failed to compile any app that used it. The key
+  is now the pointer truncated to `u32` (unchanged on wasm32).
+- `Element.cursorPosition` and `Element.replaceRange` called the browser
+  without checking for wasm, so the generator failed to link
+  (`undefined symbol: _getAttributeWasmNumber`, `_replaceRangeWasm`). They
+  now return early outside the browser, like the other `Element` reads.
+
 ## [3.2.1] — 2026-10-23
 
 Static pages build on x86_64 Linux again.

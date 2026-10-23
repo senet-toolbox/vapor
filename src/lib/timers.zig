@@ -35,13 +35,16 @@ pub fn runOnAnimationFrame(callback: anytype, args: anytype) u32 {
     };
 
     animation_frame_callback = &closure.run_node;
-    Vapor.ctx_callback_registry.put(@intFromPtr(animation_frame_callback), &closure.run_node) catch |err| {
+    // The registry is keyed by u32: wasm32 pointers fit as-is; the native
+    // static generator never fires the frame, so truncating there is harmless.
+    const callback_id: u32 = @truncate(@intFromPtr(animation_frame_callback));
+    Vapor.ctx_callback_registry.put(callback_id, &closure.run_node) catch |err| {
         Vapor.report.err("runOnAnimationFrame: could not register callback, frame not scheduled: {any}", .{err});
         return 0;
     };
 
     if (Vapor.isWasi) {
-        return Wasm.requestAnimationFrameWasm(@intFromPtr(animation_frame_callback));
+        return Wasm.requestAnimationFrameWasm(callback_id);
     }
     return 0;
 }
