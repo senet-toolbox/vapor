@@ -4,6 +4,24 @@ All notable changes to this project are documented here. This project follows
 [Semantic Versioning](https://semver.org/): breaking changes bump the major
 version and are listed with a migration note.
 
+## [3.2.1] — 2026-10-23
+
+Static pages build on x86_64 Linux again.
+
+### Fixed
+
+- Prerendering a page with an element that had a hover style but no hover
+  position read the position from memory nothing had set. On x86_64 Linux
+  that crashed the static build (an index out of bounds in `values.zig`);
+  elsewhere it could write a wrong `position` into the hover CSS. The
+  static generator now checks `has_hover` and `has_hover_position`, as the
+  browser does.
+- An element's interactive styles (`PackedInteractive`) and transform
+  started `undefined`, and their bytes are hashed into the CSS class name,
+  so two equal elements could get different classes. They start empty.
+- `ref()`'s doc now says an element bound to it must start as `.{}`; an
+  `undefined` one renders garbage styles.
+
 ## [3.2.0] — 2026-10-22
 
 Crash reports: an app can have its panics and traps posted to its own
