@@ -427,6 +427,43 @@ their values, so they render on the client from `release/app.html`, a copy of
 file (e.g. Netlify `/* /app.html 200`); unknown paths then render your
 `/error` page, or the built-in not-found page if you have none.
 
+## Releasing
+
+`addRelease` builds the site to deploy into `release/`. Call it from your
+`build.zig`, where `@import("vapor")` is vapor's build script:
+
+```zig
+const vapor = @import("vapor");
+
+const release = b.step("release", "Build the site to deploy");
+release.dependOn(vapor.addRelease(b, vapor_dep, .{
+    .wasm = release_exe, // your app built with .optimize = .ReleaseSmall
+    // Prerendered pages, only when asked for (zig build release -Dgenerate=true):
+    .generate = if (generate) b.addRunArtifact(generator_exe) else null,
+    .copy = &.{"robots.txt"},
+}));
+```
+
+It empties `release/`, so pages of routes you removed do not linger, then
+writes the pages, runs `wasm-opt` and `brotli` on the wasm when they are
+installed, and moves the wasm, the JS runtime and the generated CSS to
+`release/_vapor/` under names that hash their contents
+(`vapor.1b5450ba33.wasm`). Every page is rewritten to load those names, and
+`<html data-vapor-wasm>` tells the runtime where the wasm is. A file only gets
+a new name when it changes, so the host can cache `_vapor/` forever and only
+revalidate the HTML:
+
+| Path            | Cache-Control                         |
+| --------------- | ------------------------------------- |
+| `/_vapor/*`     | `public, max-age=31536000, immutable` |
+| `*.html`        | `no-cache`                            |
+
+Without `.generate` the site is client-rendered: `template.html` becomes its
+one page, `index.html`, so point the host's fallback for paths with no file
+at `index.html`. With it, every static route is prerendered as well (see
+below) and the fallback is `app.html`. The template must load the runtime as
+`"/bundle.min.js"`.
+
 ## Build options
 
 | Option     | Default | Effect                                    |

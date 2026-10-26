@@ -389,10 +389,21 @@ fn nameChanged(evt: *Vapor.Event) void {
     name = Vapor.dupe(evt.text(), .persist);
 }
 
+var secret: []const u8 = "";
+
 fn input() void {
     Box().id("input-page").children({
         TextField(.string).id("name").bind(&name).onChange(nameChanged, .{}).end();
         TextFmt("Hello, {s}!", .{name}).id("greeting").end();
+        // What the runtime sets when it creates an element, which a
+        // prerendered page has to end up with too.
+        TextField(.password).id("secret").bind(&secret).end();
+        Link(.{ .url = "/a", .aria_label = "Go to page A" }).id("labelled-link").children({
+            Text("A").end();
+        });
+        Button(noop, .{}).id("labelled-button").ariaLabel("Do nothing").children({
+            Text("Nothing").end();
+        });
     });
 }
 

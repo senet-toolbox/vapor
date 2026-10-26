@@ -194,6 +194,14 @@ pub fn build(b: *std.Build) void {
     migrate_step.dependOn(&run_migrate.step);
     test_step.dependOn(&b.addRunArtifact(b.addTest(.{ .root_module = migrate_mod })).step);
 
+    // Hashes a release's files and points its pages at them; apps run it
+    // through `addRelease` below. See tools/release.zig.
+    test_step.dependOn(&b.addRunArtifact(b.addTest(.{ .root_module = b.createModule(.{
+        .root_source_file = b.path("tools/release.zig"),
+        .target = b.graph.host,
+        .optimize = .Debug,
+    }) })).step);
+
     // End-to-end tests in headless Chrome: builds tests/browser/app against
     // this checkout, then drives it (tests/browser/run.mjs). Needs Node >= 22
     // and Chrome, so it is its own step rather than part of `test`.
@@ -414,4 +422,99 @@ fn verifyCheckRootIsComplete(b: *std.Build, check_step: *std.Build.Step) void {
 
     const fail = b.addFail(message.items);
     check_step.dependOn(&fail.step);
+}
+
+pub const ReleaseOptions = struct {
+    /// The app's wasm. Build it with ReleaseSmall: it is what visitors download.
+    wasm: *std.Build.Step.Compile,
+    /// Runs the app's static generator to prerender every page into
+    /// `out_dir`. Left null, the site is client-rendered: template.html
+    /// becomes its one page, index.html, and the wasm renders every route.
+    generate: ?*std.Build.Step.Run = null,
+    /// The site directory, relative to the build root. The generator writes
+    /// `release/`, so that is the default.
+    out_dir: []const u8 = "release",
+    /// Files to copy into the site root as they are, e.g. "robots.txt".
+    copy: []const []const u8 = &.{},
+};
+
+/// Adds the steps that build a site to deploy: the directory is emptied, the
+/// pages are written (template.html as index.html, or every page prerendered
+/// by `generate`), the wasm is optimized with wasm-opt and compressed with
+/// brotli (each when installed), and tools/release.zig gives the wasm, the
+/// runtime and the CSS names that change with their contents. The host can
+/// then cache `_vapor/` forever and only revalidate the HTML. Point its
+/// fallback for paths with no file at index.html (client-rendered) or
+/// app.html (prerendered). Returns the last step; make your `release` step
+/// depend on it:
+///
+///   const vapor = @import("vapor");
+///   const release = b.step("release", "Build the site to deploy");
+///   release.dependOn(vapor.addRelease(b, vapor_dep, .{
+///       .wasm = release_exe,
+///       // Prerendered pages, only when asked for:
+///       .generate = if (generate) b.addRunArtifact(generator_exe) else null,
+///       .copy = &.{"robots.txt"},
+///   }));
+///
+/// The pages must load the runtime as "/bundle.min.js", as template.html does.
+pub fn addRelease(b: *std.Build, vapor_dep: *std.Build.Dependency, options: ReleaseOptions) *std.Build.Step {
+    const tool = b.addExecutable(.{
+        .name = "vapor-release",
+        .root_module = b.createModule(.{
+            .root_source_file = vapor_dep.path("tools/release.zig"),
+            .target = b.graph.host,
+            .optimize = .ReleaseSafe,
+        }),
+    });
+    const site = b.pathFromRoot(options.out_dir);
+
+    // A release holds only what this build wrote: pages of removed routes
+    // must not linger.
+    const clean = b.addRunArtifact(tool);
+    clean.addArgs(&.{ "clean", site });
+    clean.has_side_effects = true;
+    if (options.generate) |generate| {
+        generate.step.dependOn(&clean.step);
+        generate.setCwd(b.path("."));
+        generate.has_side_effects = true;
+    }
+
+    var wasm = options.wasm.getEmittedBin();
+    if (b.findProgram(&.{"wasm-opt"}, &.{})) |wasm_opt| {
+        const opt = b.addSystemCommand(&.{
+            wasm_opt,
+            "-Oz",
+            "--strip-debug",
+            "--enable-bulk-memory",
+            "--enable-nontrapping-float-to-int",
+            "--enable-sign-ext",
+            "--enable-mutable-globals",
+        });
+        opt.addFileArg(wasm);
+        opt.addArg("-o");
+        wasm = opt.addOutputFileArg("vapor.wasm");
+    } else |_| {}
+
+    const fingerprint = b.addRunArtifact(tool);
+    fingerprint.addArgs(&.{ "fingerprint", site });
+    fingerprint.addPrefixedFileArg("--wasm=", wasm);
+    fingerprint.addPrefixedFileArg("--bundle=", vapor_dep.path("js/dist/bundle.min.js"));
+    fingerprint.addPrefixedFileArg("--browser=", vapor_dep.path("js/dist/browser.min.js"));
+    if (b.findProgram(&.{"brotli"}, &.{})) |brotli| {
+        const compress = b.addSystemCommand(&.{ brotli, "-q", "11", "-f", "-o" });
+        const br = compress.addOutputFileArg("vapor.wasm.br");
+        compress.addFileArg(wasm);
+        fingerprint.addPrefixedFileArg("--wasm-br=", br);
+    } else |_| {}
+    for (options.copy) |file| fingerprint.addPrefixedFileArg("--copy=", b.path(file));
+    if (options.generate) |generate| {
+        fingerprint.step.dependOn(&generate.step);
+    } else {
+        fingerprint.addPrefixedFileArg("--shell=", b.path("template.html"));
+        fingerprint.addArg(b.fmt("--assets={s}", .{b.pathFromRoot("assets")}));
+        fingerprint.step.dependOn(&clean.step);
+    }
+    fingerprint.has_side_effects = true;
+    return &fingerprint.step;
 }

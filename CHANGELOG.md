@@ -4,6 +4,36 @@ All notable changes to this project are documented here. This project follows
 [Semantic Versioning](https://semver.org/): breaking changes bump the major
 version and are listed with a migration note.
 
+## [3.4.0] — 2026-10-26
+
+A release build for deploying, with files named by their contents; and
+prerendered pages come up with everything the runtime gives an element.
+
+### Added
+
+- `addRelease` in vapor's build.zig builds the site to deploy into
+  `release/` (see "Releasing" in the README). The wasm, the runtime and the
+  generated CSS get names that hash their contents under `release/_vapor/`,
+  so a host can cache them forever and a new build is never mixed with a
+  visitor's cached files. The release is client-rendered unless the app
+  passes its generator, and `release/` is emptied first. The work is done by
+  tools/release.zig.
+- The runtime loads the wasm from `<html data-vapor-wasm>` and the browser
+  bindings from `<html data-vapor-browser>` when the page sets them, which a
+  release does. Without them it uses `/zig-out/bin/vapor.wasm` and
+  `browser.min.js` beside the bundle, as before.
+
+### Fixed
+
+- When the runtime took over a prerendered page it only updated each
+  element's styles and text, so what it sets when it creates an element was
+  missing: a password field had no `type="password"` and showed what was
+  typed, link and button labels and other accessibility attributes were
+  absent, and buttons were `type="submit"`. A prerendered element is now
+  built as it would be without prerendering and takes the prerendered one's
+  place before the next paint, keeping its children, any text typed into
+  it and focus.
+
 ## [3.3.0] — 2026-10-26
 
 Unknown paths show a not-found page instead of an empty one.

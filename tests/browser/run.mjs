@@ -644,6 +644,22 @@ const tests = {
     await p.waitForText("greeting", "Hello, Ziggy!");
   },
 
+  async "fields, links and buttons get their types and labels, prerendered too"(p) {
+    // A prerendered page came up without them: a password field showed what
+    // was typed and links had no accessible name.
+    await p.goto("/input");
+    await p.waitForText("greeting", "Hello, !");
+    const attrs = await p.evaluate(`JSON.stringify([
+      document.getElementById("secret").type,
+      document.getElementById("labelled-link").getAttribute("aria-label"),
+      document.getElementById("labelled-button").getAttribute("aria-label"),
+      document.getElementById("labelled-button").type,
+    ])`);
+    assertEqual(attrs, JSON.stringify(["password", "Go to page A", "Do nothing", "button"]), "types and labels");
+    await p.type("name", "Ziggy");
+    await p.waitForText("greeting", "Hello, Ziggy!");
+  },
+
   async "number fields show and write back their bound values"(p) {
     // A .float field's bind did not compile (it parsed the input as an
     // integer) and did not show the value it was bound to.

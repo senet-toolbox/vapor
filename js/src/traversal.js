@@ -31,7 +31,6 @@ import { state } from "./state.js";
 import { DynamicStructReader, elementCache } from "./env.js";
 import {
   applyAccessibility,
-  attachElementListeners,
   createElementByType,
 } from "./create_element.js";
 
@@ -392,6 +391,25 @@ function getValidAnchor(parent, nextUinode) {
   return null;
 }
 
+/**
+ * Puts `fresh` where the prerendered element `prerendered` is, with the
+ * prerendered element's vapor children (those still to be taken over), what
+ * a visitor typed into it before the app loaded, and focus.
+ * @param {HTMLElement} prerendered
+ * @param {HTMLElement} fresh
+ */
+function adoptPrerendered(prerendered, fresh) {
+  for (const child of Array.from(prerendered.children)) {
+    if (child.hasAttribute("data-vp")) fresh.appendChild(child);
+  }
+  if ((prerendered.tagName === "INPUT" || prerendered.tagName === "TEXTAREA") && prerendered.value && !fresh.value) {
+    fresh.value = prerendered.value;
+  }
+  const focused = document.activeElement === prerendered;
+  prerendered.replaceWith(fresh);
+  if (focused) fresh.focus();
+}
+
 function placeElement(element, parent, anchor, uinode) {
   if (uinode.layer && uinode.layer > 0) {
     const layerRoot = getLayerRoot(uinode.layer);
@@ -446,19 +464,16 @@ export function traverseUINodes(parent, parentUINode) {
       }
 
       if (element && state.initial_render) {
-        // Create new element
-        attachElementListeners(element, uinode);
-        domNodeRegistry.set(uinode.id, {
-          elementType: uinode.elemType,
-          node_ptr: uinode.offset,
-          domNode: element,
-          exitAnimationId: uinode.exitAnimationId,
-          destroyId: uinode.hooks.destroyId > 0 ? uinode.hooks.destroyId : null,
-          hash: uinode.hash,
-          destroy_hash: uinode.onCallbacks[2],
-        });
-
-        updateElement(element, uinode, true);
+        // A prerendered element. It is built again exactly as without
+        // prerendering, so it gets everything the runtime sets on creation
+        // (input types, labels, roles), and takes the prerendered one's
+        // place; its prerendered children move across and are taken over
+        // the same way below. All of it happens before the next paint.
+        const prerendered = element;
+        element = createElementByType(uinode);
+        if (!element) continue;
+        setupElement(element, uinode);
+        adoptPrerendered(prerendered, element);
 
         // Append to parent
         const anchor = getValidAnchor(parent, uinodes[i + 1]);

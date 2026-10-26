@@ -81,12 +81,15 @@ async function loadWasm(source, imports = {}) {
 // Browser-API bindings (audio, canvas, geolocation, IndexedDB, ...) ship as
 // browser.min.js beside this bundle, and are fetched only when the app's wasm
 // imports one of them: Zig emits an import only for functions the app calls.
+// A release build names the file by its hash and says where in
+// <html data-vapor-browser>.
 async function loadBrowserBindings(module, imports) {
   const needsMore = WebAssembly.Module.imports(module).some(
     (i) => i.module === "env" && !(i.name in imports.env),
   );
   if (!needsMore) return null;
-  const browser = await import(new URL("./browser.min.js", import.meta.url));
+  const url = document.documentElement.dataset.vaporBrowser ?? new URL("./browser.min.js", import.meta.url);
+  const browser = await import(url);
   Object.assign(imports.env, browser.install({ readWasmString, allocString }));
   return browser;
 }
@@ -108,7 +111,9 @@ async function boot(source) {
 
 // How the page gets its wasm, chosen by <html data-vapor-boot>:
 //
-//   (absent)      fetched from /zig-out/bin/vapor.wasm.
+//   (absent)      fetched from <html data-vapor-wasm>, which a release build
+//                 sets to the wasm's hashed name, or else from
+//                 /zig-out/bin/vapor.wasm.
 //   "playground"  posted by the parent window, for a page that runs other
 //                 people's builds in an iframe. The frame tells its parent
 //                 {type: "playground-ready"}, boots the bytes of the first
@@ -119,7 +124,8 @@ async function boot(source) {
 //                 frame's own URL is the host page, not one of its routes.
 function start() {
   if (document.documentElement.dataset.vaporBoot !== "playground") {
-    boot("/zig-out/bin/vapor.wasm").catch((err) => console.error("Fatal error loading WASM:", err));
+    const wasm = document.documentElement.dataset.vaporWasm ?? "/zig-out/bin/vapor.wasm";
+    boot(wasm).catch((err) => console.error("Fatal error loading WASM:", err));
     return;
   }
   window.addEventListener("message", function onMessage(e) {
