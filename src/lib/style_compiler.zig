@@ -386,6 +386,10 @@ pub fn generateLayout(layout_ptr: *const Types.PackedLayout, writer: *Writer) vo
             writer.write("max-width:") catch {};
             writer.writeF32(size.width.size.max) catch {};
             writer.write("px;\n") catch {};
+        } else if (size.width.type == .max_percent) {
+            writer.write("max-width:") catch {};
+            writer.writeF32(size.width.size.max) catch {};
+            writer.write("%;\n") catch {};
         } else if (size.width.type == .min_percent) {
             writer.write("min-width:") catch {};
             writer.writeF32(size.width.size.min) catch {};
@@ -450,6 +454,10 @@ pub fn generateLayout(layout_ptr: *const Types.PackedLayout, writer: *Writer) vo
             writer.write("max-height:") catch {};
             writer.writeF32(size.height.size.max) catch {};
             writer.write("px;\n") catch {};
+        } else if (size.height.type == .max_percent) {
+            writer.write("max-height:") catch {};
+            writer.writeF32(size.height.size.max) catch {};
+            writer.write("%;\n") catch {};
         } else if (size.height.type == .min_percent) {
             writer.write("min-height:") catch {};
             writer.writeF32(size.height.size.min) catch {};

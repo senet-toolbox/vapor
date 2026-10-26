@@ -541,7 +541,7 @@ pub const ResizeEntry = struct {
     index: usize,
 };
 
-pub var global_resizer: ?ResizeObserver = undefined;
+pub var global_resizer: ?ResizeObserver = null;
 
 fn globalResizeCallback(_: ResizeEntry) void {
     Vapor.report.info("Resized code container", .{});
@@ -641,10 +641,8 @@ pub const ResizeObserver = struct {
     /// `callback_hash`.
     pub fn observeWithCallback(self: *ResizeObserver, item: Vapor.ObserverNode, callback_hash: ?u32) void {
         if (!isWasi) return;
-        self.observer_nodes.append(item) catch |err| {
-            Vapor.report.err("observe: could not record node, not observed: {any}", .{err});
-            return;
-        };
+        // `.onResize` calls this on every render, so it does not record the
+        // node in `observer_nodes`: that list only grew.
         const hash = hashKey(self.name);
         switch (item) {
             .uuid => |uuid| {

@@ -38,6 +38,8 @@ pub export fn init() void {
     Vapor.Page(.{ .route = "/hooks" }, hooksPage, null);
     Vapor.Page(.{ .route = "/styles" }, stylesPage, null);
     Vapor.Page(.{ .route = "/listeners" }, listenersPage, null);
+    Vapor.Page(.{ .route = "/resize" }, resizePage, null);
+    Vapor.Page(.{ .route = "/responsive" }, responsivePage, null);
     Vapor.Page(.{ .route = "/listen" }, listenPage, null);
     Vapor.Page(.{ .route = "/stale" }, stalePage, null);
     Vapor.Page(.{ .route = "/drag" }, dragPage, null);
@@ -842,4 +844,91 @@ fn newUserPage() void {
 // Registered as /error: what vapor renders for a path no page matches.
 fn notFound() void {
     Text("Not found").id("not-found").end();
+}
+
+// ── /resize : .onResize across removal and an element rebuilt under a new id
+
+var resize_shown = true;
+var resize_wide = false;
+var resize_alt_id = false;
+var resize_renders: u32 = 0;
+var resized_width: f32 = 0;
+
+fn sized(entry: Vapor.Kit.ResizeEntry) void {
+    resized_width = entry.width;
+    Vapor.cycle();
+}
+
+fn widenResized() void {
+    resize_wide = !resize_wide;
+}
+
+fn toggleResized() void {
+    resize_shown = !resize_shown;
+}
+
+fn swapResizedId() void {
+    resize_alt_id = !resize_alt_id;
+}
+
+fn rerenderResize() void {
+    resize_renders += 1;
+}
+
+fn resizePage() void {
+    Box().id("resize-page").children({
+        if (resize_shown) {
+            Box().id(if (resize_alt_id) "resized-b" else "resized-a")
+                .onResize(sized, .{})
+                .width(.px(if (resize_wide) 300 else 200))
+                .height(.px(20))
+                .end();
+        }
+        TextFmt("{d}", .{resized_width}).id("resized-width").end();
+        TextFmt("{d}", .{resize_renders}).id("resize-renders").end();
+        Button(widenResized, .{}).id("widen").children({
+            Text("Widen").end();
+        });
+        Button(toggleResized, .{}).id("toggle-resized").children({
+            Text("Toggle").end();
+        });
+        Button(swapResizedId, .{}).id("swap-resized").children({
+            Text("Swap").end();
+        });
+        Button(rerenderResize, .{}).id("rerender-resize").children({
+            Text("Render").end();
+        });
+    });
+}
+
+// ── /responsive : .hideOn and .showOn per screen size ─────────────────────
+
+fn responsivePage() void {
+    Box().id("responsive-page").children({
+        Box().id("mobile-only").showOn(.mobile).children({
+            Text("mobile").end();
+        });
+        Box().id("tablet-up").showOn(.tablet).children({
+            Text("tablet and up").end();
+        });
+        Box().id("desktop-only").showOn(.desktop).children({
+            Text("desktop").end();
+        });
+        // .hideOn and .responsive on the same screen size, in both orders.
+        Box().id("hidden-then-padded").hideOn(.mobile).responsive(.mobile, .{ .padding = .all(4) }).children({
+            Text("not on phones").end();
+        });
+        Box().id("padded-then-hidden").responsive(.mobile, .{ .padding = .all(4) }).hideOn(.mobile).children({
+            Text("not on phones either").end();
+        });
+        // Spacing and direction per screen size; a margin-only override keeps
+        // the padding.
+        Vapor.Stack().id("spaced").padding(.all(20)).responsive(.mobile, .{ .padding = .all(4), .direction = .row }).children({
+            Text("a").end();
+            Text("b").end();
+        });
+        Box().id("margined").padding(.all(20)).responsive(.mobile, .{ .margin = .all(6) }).children({
+            Text("m").end();
+        });
+    });
 }

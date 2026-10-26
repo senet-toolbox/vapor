@@ -338,6 +338,29 @@ Their JavaScript is not in the main runtime. When an app's wasm imports any of
 them, the runtime fetches `browser.min.js` first; apps that use none never
 download it.
 
+### Screen sizes
+
+Styles for one screen size go in `.responsive(platform, ...)`: `.mobile` is
+narrower than 768px, `.tablet` 768px and wider, `.desktop` 1024px and wider,
+and a wider size's rule wins where they overlap. `.hideOn(platform)` and
+`.showOn(platform)` show or hide an element by screen size:
+
+```zig
+Vapor.Button(openMenu, .{}).showOn(.mobile).children({ ... }); // phones only
+Vapor.Row().showOn(.tablet).children({ ... });                // the full nav
+Vapor.Stack()
+    .width(.percent(50))
+    .responsive(.mobile, .{ .size = .w(.percent(100)) })     // full width on phones
+    .children({ ... });
+```
+
+An override can change size, padding, margin, direction, gap, wrapping,
+scrolling and visual styles such as font size; it writes only what it sets.
+These are CSS, so they follow rotation and resizing, and a prerendered page
+is right on every screen before the app loads. Branching with
+`Vapor.isMobile()` works in the browser, but the static generator always
+answers false, so prerendered pages get the desktop branch.
+
 ### Knowing when the page is live
 
 Prerendered pages (`-Dgenerate`) are visible before the wasm has loaded, and a

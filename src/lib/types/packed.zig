@@ -14,6 +14,11 @@ pub const PackedResponsive = struct {
     mobile_visual: PackedVisual = .{},
     desktop_visual: PackedVisual = .{},
     tablet_visual: PackedVisual = .{},
+    // Padding and margin per screen size (mobile, desktop, tablet), each
+    // written only when that size sets it.
+    has_padding: [3]bool = .{ false, false, false },
+    has_margin: [3]bool = .{ false, false, false },
+    spacing: [3]PackedMarginsPaddings = .{ .{}, .{}, .{} },
 };
 
 pub const PackedCaret = packed struct {

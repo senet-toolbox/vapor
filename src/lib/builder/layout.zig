@@ -226,19 +226,60 @@ pub fn responsive(self: *const Self, platform: types.Platform, responsive_style:
     var responsive_val = self._responsive orelse blk: {
         break :blk types.Responsive{};
     };
-    switch (platform) {
-        .mobile => {
-            responsive_val.mobile = responsive_style;
-        },
-        .desktop => {
-            responsive_val.desktop = responsive_style;
-        },
-        .tablet => {
-            responsive_val.tablet = responsive_style;
-        },
+    const slot = responsiveSlot(&responsive_val, platform);
+    var style = responsive_style;
+    // Keeps a display `.hideOn`/`.showOn` set, whichever is called first.
+    if (style.flex_type == null) {
+        if (slot.*) |previous| style.flex_type = previous.flex_type;
     }
+    slot.* = style;
     new_self._responsive = responsive_val;
     return new_self;
+}
+
+fn responsiveSlot(r: *types.Responsive, platform: types.Platform) *?types.ResponsiveStyle {
+    return switch (platform) {
+        .mobile => &r.mobile,
+        .tablet => &r.tablet,
+        .desktop => &r.desktop,
+    };
+}
+
+fn displayOn(self: *const Self, platform: types.Platform, flex_type: types.FlexType) Self {
+    var n = self.*;
+    var r = n._responsive orelse types.Responsive{};
+    const slot = responsiveSlot(&r, platform);
+    var style = slot.* orelse types.ResponsiveStyle{};
+    style.flex_type = flex_type;
+    slot.* = style;
+    n._responsive = r;
+    return n;
+}
+
+/// Hides the element on `platform`'s screens: `.mobile` is narrower than
+/// 768px, `.tablet` 768px and wider, `.desktop` 1024px and wider. It is CSS,
+/// so a prerendered page is right on every screen before the app loads, and
+/// it follows rotation and resizing. Prefer it to branching on
+/// `Vapor.isMobile()`, which the static generator always answers false.
+pub fn hideOn(self: *const Self, platform: types.Platform) Self {
+    return displayOn(self, platform, .hidden);
+}
+
+/// Shows the element only on `platform`'s screens (see `hideOn`), e.g. a
+/// menu button `.showOn(.mobile)` and a full nav `.showOn(.tablet)`.
+pub fn showOn(self: *const Self, platform: types.Platform) Self {
+    const shown = if (self._flex_type == .hidden) types.FlexType.flex else self._flex_type;
+    switch (platform) {
+        .mobile => return displayOn(self, .tablet, .hidden),
+        .tablet => return displayOn(self, .mobile, .hidden),
+        .desktop => {
+            // Tablet's rule covers desktop screens too; desktop's comes later
+            // in the stylesheet and shows it again.
+            const below_mobile = displayOn(self, .mobile, .hidden);
+            const below_desktop = displayOn(&below_mobile, .tablet, .hidden);
+            return displayOn(&below_desktop, .desktop, shown);
+        },
+    }
 }
 
 /// Width and height together: `.size(.full)`, `.size(.squarePx(48))`.
@@ -273,7 +314,9 @@ pub fn width(self: *const Self, length: types.Sizing) Self {
 }
 
 /// Minimum width. Only `.px` and `.percent` sizes are supported; others are
-/// ignored.
+/// ignored. It takes the place of `.width` (one wins, the last called), so
+/// for a fixed width that never overflows its container use
+/// `.inlineStyle("max-width: 100%", .{})` beside `.width`.
 pub fn minWidth(self: *const Self, min: types.Sizing) Self {
     var n = self.*;
     const sizing: types.Sizing = switch (min.type) {
@@ -293,7 +336,9 @@ pub fn minWidth(self: *const Self, min: types.Sizing) Self {
 }
 
 /// Maximum width. Only `.px` and `.percent` sizes are supported; others are
-/// ignored.
+/// ignored. It takes the place of `.width` (one wins, the last called), so
+/// for a fixed width that never overflows its container use
+/// `.inlineStyle("max-width: 100%", .{})` beside `.width`.
 pub fn maxWidth(self: *const Self, max: types.Sizing) Self {
     var n = self.*;
     const sizing: types.Sizing = switch (max.type) {

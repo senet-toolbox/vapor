@@ -83,114 +83,12 @@ pub fn configureResponsive(ui_node: *UINode, style: *const Vapor.Style) u32 {
     var hash_r: u32 = 0;
 
     const responsive = style.responsive orelse return hash_r;
-    if (responsive.mobile) |s| {
-        if (ui_node.parent) |parent| {
-            if (parent.direction == .column) {
-                Configuration.packed_responsive.mobile_layout.parent_direction = .column;
-            }
-            if (parent.column_count) |count| {
-                if (parent.spacing) |spacing| {
-                    Configuration.packed_responsive.mobile_layout.column_count = count;
-                    if (spacing > count) {
-                        Configuration.packed_responsive.mobile_layout.column_spacing = @as(f32, @floatFromInt(spacing)) / @as(f32, @floatFromInt(count));
-                    } else {}
-                }
-            }
-        }
-
-        if (s.flex_type == .hidden) {
-            Configuration.packed_responsive.mobile_layout.flex = .hidden;
-        } else if (s.layout) |layout| {
-            if (layout.x == .in_line and layout.y == .in_line) {
-                Configuration.packed_responsive.mobile_layout.flex = .flow;
-                Configuration.packed_responsive.mobile_layout.layout = layout;
-            } else if (ui_node.text != null) {
-                Configuration.packed_responsive.mobile_layout.text_align = layout;
-            } else {
-                Configuration.packed_responsive.mobile_layout.flex = .flex;
-                Configuration.packed_responsive.mobile_layout.layout = layout;
-            }
-        } else if (ui_node.type == .FlexBox) {
-            Configuration.packed_responsive.mobile_layout.flex = .flex;
-        }
-
-        if (s.placement) |placement| Configuration.packed_responsive.mobile_layout.placement = placement;
-        if (s.size) |size| Configuration.packed_responsive.mobile_layout.size = size;
-        if (s.child_gap) |child_gap| Configuration.packed_responsive.mobile_layout.spacing = child_gap;
-        if (s.spacing) |spacing| Configuration.packed_responsive.mobile_layout.spacing = spacing;
-        if (s.direction) |direction| Configuration.packed_responsive.mobile_layout.direction = direction;
-        if (s.flex_wrap) |flex_wrap| Configuration.packed_responsive.mobile_layout.flex_wrap = flex_wrap;
-        if (s.scroll) |scroll| Configuration.packed_responsive.mobile_layout.scroll = scroll;
-        if (s.aspect_ratio) |aspect_ratio| Configuration.packed_responsive.mobile_layout.aspect_ratio = aspect_ratio;
-        Configuration.packed_responsive.flags_layout[0] = true;
-
-        if (s.visual) |visual| {
-            if (ui_node.type == .Button or ui_node.type == .ButtonCycle or ui_node.type == .CtxButton) {
-                if (!Configuration.packed_responsive.mobile_visual.has_border_thickness) {
-                    Configuration.packed_responsive.mobile_visual.has_border_thickness = true;
-                    Configuration.packed_responsive.mobile_visual.border_thickness = .all(0);
-                    Configuration.packed_responsive.mobile_visual.background = .{ .color = .{ .a = 0, .r = 0, .g = 0, .b = 0 }, .has_color = true };
-                }
-            }
-            Configuration.checkVisual(&visual, &Configuration.packed_responsive.mobile_visual);
-            Configuration.packed_responsive.flags_visual[0] = true;
-        }
-    }
-
-    if (responsive.desktop) |s| {
-        if (ui_node.parent) |parent| {
-            if (parent.direction == .column) {
-                Configuration.packed_responsive.desktop_layout.parent_direction = .column;
-            }
-            if (parent.column_count) |count| {
-                if (parent.spacing) |spacing| {
-                    Configuration.packed_responsive.desktop_layout.column_count = count;
-                    if (spacing > count) {
-                        Configuration.packed_responsive.desktop_layout.column_spacing = @as(f32, @floatFromInt(spacing)) / @as(f32, @floatFromInt(count));
-                    } else {}
-                }
-            }
-        }
-
-        if (s.flex_type == .hidden) {
-            Configuration.packed_responsive.desktop_layout.flex = .hidden;
-        } else if (s.layout) |layout| {
-            if (layout.x == .in_line and layout.y == .in_line) {
-                Configuration.packed_responsive.desktop_layout.flex = .flow;
-                Configuration.packed_responsive.desktop_layout.layout = layout;
-            } else if (ui_node.text != null) {
-                Configuration.packed_responsive.desktop_layout.text_align = layout;
-            } else {
-                Configuration.packed_responsive.desktop_layout.flex = .flex;
-                Configuration.packed_responsive.desktop_layout.layout = layout;
-            }
-        } else if (ui_node.type == .FlexBox) {
-            Configuration.packed_responsive.desktop_layout.flex = .flex;
-        }
-
-        if (s.placement) |placement| Configuration.packed_responsive.desktop_layout.placement = placement;
-        if (s.size) |size| Configuration.packed_responsive.desktop_layout.size = size;
-        if (s.child_gap) |child_gap| Configuration.packed_responsive.desktop_layout.spacing = child_gap;
-        if (s.spacing) |spacing| Configuration.packed_responsive.desktop_layout.spacing = spacing;
-        if (s.direction) |direction| Configuration.packed_responsive.desktop_layout.direction = direction;
-        if (s.flex_wrap) |flex_wrap| Configuration.packed_responsive.desktop_layout.flex_wrap = flex_wrap;
-        if (s.scroll) |scroll| Configuration.packed_responsive.desktop_layout.scroll = scroll;
-        if (s.aspect_ratio) |aspect_ratio| Configuration.packed_responsive.desktop_layout.aspect_ratio = aspect_ratio;
-        Configuration.packed_responsive.flags_layout[1] = true;
-
-        if (s.visual) |visual| {
-            if (ui_node.type == .Button or ui_node.type == .ButtonCycle or ui_node.type == .CtxButton) {
-                if (!Configuration.packed_responsive.desktop_visual.has_border_thickness) {
-                    Configuration.packed_responsive.desktop_visual.has_border_thickness = true;
-                    Configuration.packed_responsive.desktop_visual.border_thickness = .all(0);
-                    Configuration.packed_responsive.desktop_visual.background = .{ .color = .{ .a = 0, .r = 0, .g = 0, .b = 0 }, .has_color = true };
-                }
-            }
-
-            Configuration.checkVisual(&visual, &Configuration.packed_responsive.desktop_visual);
-            Configuration.packed_responsive.flags_visual[1] = true;
-        }
-    }
+    const r = &Configuration.packed_responsive;
+    // A Stack's column direction is in its style.
+    const direction = style.direction orelse ui_node.direction;
+    if (responsive.mobile) |*s| packResponsive(ui_node, s, direction, &r.mobile_layout, &r.mobile_visual, r, 0);
+    if (responsive.desktop) |*s| packResponsive(ui_node, s, direction, &r.desktop_layout, &r.desktop_visual, r, 1);
+    if (responsive.tablet) |*s| packResponsive(ui_node, s, direction, &r.tablet_layout, &r.tablet_visual, r, 2);
 
     hash_r = std.hash.XxHash32.hash(0, std.mem.asBytes(&Configuration.packed_responsive));
 
@@ -217,6 +115,84 @@ pub fn configureResponsive(ui_node: *UINode, style: *const Vapor.Style) u32 {
     }
 
     return hash_r;
+}
+
+/// Packs one screen size's overrides (`s`) into its layout and visual groups.
+fn packResponsive(
+    ui_node: *UINode,
+    s: *const types.ResponsiveStyle,
+    base_direction: types.Direction,
+    layout: *types.PackedLayout,
+    visual: *types.PackedVisual,
+    r: *types.PackedResponsive,
+    /// 0 mobile, 1 desktop, 2 tablet: the index of this size's flags.
+    i: usize,
+) void {
+    if (ui_node.parent) |parent| {
+        if (parent.direction == .column) {
+            layout.parent_direction = .column;
+        }
+        if (parent.column_count) |count| {
+            if (parent.spacing) |spacing| {
+                layout.column_count = count;
+                if (spacing > count) {
+                    layout.column_spacing = @as(f32, @floatFromInt(spacing)) / @as(f32, @floatFromInt(count));
+                }
+            }
+        }
+    }
+
+    // A display written here comes with a flex-direction, which is the
+    // element's own unless this screen size changes it below; it used to be
+    // `row`, so a Stack given any override lay out its children in a row.
+    layout.direction = base_direction;
+    if (s.layout) |l| {
+        if (l.x == .in_line and l.y == .in_line) {
+            layout.flex = .flow;
+            layout.layout = l;
+        } else if (ui_node.text != null) {
+            layout.text_align = l;
+        } else {
+            layout.flex = .flex;
+            layout.layout = l;
+        }
+    }
+    // A new direction is only written with a display.
+    if (s.direction != null and layout.flex == .default) layout.flex = .flex;
+    // An explicit display wins: `.hidden` hides on this screen size, any
+    // other shows the element again where a narrower size hid it.
+    if (s.flex_type) |flex_type| layout.flex = flex_type;
+
+    if (s.placement) |placement| layout.placement = placement;
+    if (s.size) |size| layout.size = size;
+    if (s.child_gap) |child_gap| layout.spacing = child_gap;
+    if (s.spacing) |spacing| layout.spacing = spacing;
+    if (s.direction) |direction| layout.direction = direction;
+    if (s.flex_wrap) |flex_wrap| layout.flex_wrap = flex_wrap;
+    if (s.scroll) |scroll| layout.scroll = scroll;
+    if (s.aspect_ratio) |aspect_ratio| layout.aspect_ratio = aspect_ratio;
+    r.flags_layout[i] = true;
+
+    if (s.padding) |padding| {
+        r.spacing[i].padding = padding;
+        r.has_padding[i] = true;
+    }
+    if (s.margin) |margin| {
+        r.spacing[i].margin = margin;
+        r.has_margin[i] = true;
+    }
+
+    if (s.visual) |v| {
+        if (ui_node.type == .Button or ui_node.type == .ButtonCycle or ui_node.type == .CtxButton) {
+            if (!visual.has_border_thickness) {
+                visual.has_border_thickness = true;
+                visual.border_thickness = .all(0);
+                visual.background = .{ .color = .{ .a = 0, .r = 0, .g = 0, .b = 0 }, .has_color = true };
+            }
+        }
+        Configuration.checkVisual(&v, visual);
+        r.flags_visual[i] = true;
+    }
 }
 
 /// Packs a node's position and anchor style and returns its hash.

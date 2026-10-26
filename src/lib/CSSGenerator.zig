@@ -265,6 +265,7 @@ fn writeCommonStyleResponsive(
                 writer.write("\n") catch {};
                 StyleWriter.generateVisual(&value_ptr.mobile_visual, &writer);
             }
+            writeResponsiveSpacing(value_ptr, 0, &writer);
 
             writer.write("}\n") catch {};
             gen.writeToGlobal();
@@ -281,6 +282,7 @@ fn writeCommonStyleResponsive(
                 writer.write("\n") catch {};
                 StyleWriter.generateVisual(&value_ptr.tablet_visual, &writer);
             }
+            writeResponsiveSpacing(value_ptr, 2, &writer);
 
             writer.write("}\n") catch {};
             gen.writeToGlobal();
@@ -296,6 +298,7 @@ fn writeCommonStyleResponsive(
                 writer.write("\n") catch {};
                 StyleWriter.generateVisual(&value_ptr.desktop_visual, &writer);
             }
+            writeResponsiveSpacing(value_ptr, 1, &writer);
 
             writer.write("}\n") catch {};
             gen.writeToGlobal();
@@ -381,4 +384,14 @@ pub fn getAnimations(gen: *Generator) []const u8 {
 /// Uses SIMD to check if a needle exists within a haystack.
 pub fn contains(haystack: []const u8, needle: []const u8) bool {
     return std.mem.indexOf(u8, haystack, needle) != null;
+}
+
+/// The padding and margin a screen size sets, inside its media query.
+fn writeResponsiveSpacing(value_ptr: anytype, i: usize, w: anytype) void {
+    if (value_ptr.has_padding[i]) {
+        StyleWriter.writePropValue("padding", .{ .tag = .padding, .data = .{ .padding = value_ptr.spacing[i].padding } }, w);
+    }
+    if (value_ptr.has_margin[i]) {
+        StyleWriter.writePropValue("margin", .{ .tag = .margin, .data = .{ .margin = value_ptr.spacing[i].margin } }, w);
+    }
 }

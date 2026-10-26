@@ -517,6 +517,8 @@ pub const ComponentBuilder = struct {
     pub const scroll = LayoutMethods.scroll;
     pub const showScrollBar = LayoutMethods.showScrollBar;
     pub const responsive = LayoutMethods.responsive;
+    pub const hideOn = LayoutMethods.hideOn;
+    pub const showOn = LayoutMethods.showOn;
 
     const AttributeMethods = @import("builder/attributes.zig");
     pub const id = AttributeMethods.id;

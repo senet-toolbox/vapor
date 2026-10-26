@@ -230,6 +230,13 @@ function makePage(cdp, origin) {
         throw new Error(`${err.message.replace(/ \(last: .*\)$/, "")} (is ${JSON.stringify(await text(id))})`);
       }
     },
+    // Resizes the page, as rotating a phone or dragging the window does.
+    async viewport(width, height) {
+      await cdp.send("Emulation.setDeviceMetricsOverride", { width, height, deviceScaleFactor: 1, mobile: false });
+    },
+    async resetViewport() {
+      await cdp.send("Emulation.clearDeviceMetricsOverride");
+    },
     async click(id) {
       const ok = await evaluate(`(() => { const e = document.getElementById(${JSON.stringify(id)}); if (!e) return false; e.click(); return true; })()`);
       if (!ok) throw new Error(`no element #${id} to click`);
@@ -401,10 +408,12 @@ const tests = {
     await p.waitFor(`!!document.getElementById("styled")`, "styles page");
     const rules = `[...document.styleSheets, ...document.adoptedStyleSheets].flatMap((s) => [...s.cssRules])`;
     const media = `${rules}.filter((r) => r.media && r.cssRules[0]?.selectorText.startsWith(".resp_")).map((r) => r.cssText.replace(/resp_\\w+/, "resp"))`;
-    // Both breakpoints of #responsive made it into the sheet.
+    // Both breakpoints of #responsive made it into the sheet, with only what
+    // they set (a display and direction used to come along and turned
+    // columns into rows).
     assertEqual(await p.evaluate(media), [
-      "@media (max-width: 767px) {\n  .resp { display: flex; flex-direction: row; gap: 4px; }\n}",
-      "@media (min-width: 1024px) {\n  .resp { display: flex; flex-direction: row; gap: 8px; }\n}",
+      "@media (max-width: 767px) {\n  .resp { gap: 4px; }\n}",
+      "@media (min-width: 1024px) {\n  .resp { gap: 8px; }\n}",
     ], "@media rules");
 
     const classOf = (id) => p.evaluate(`document.getElementById("${id}").className`);
@@ -658,6 +667,61 @@ const tests = {
     assertEqual(attrs, JSON.stringify(["password", "Go to page A", "Do nothing", "button"]), "types and labels");
     await p.type("name", "Ziggy");
     await p.waitForText("greeting", "Hello, Ziggy!");
+  },
+
+  async ".onResize follows its element, and a removed or rebuilt one leaves no stale observer"(p) {
+    // The runtime kept observing elements whose callback vapor had dropped,
+    // and wasm reported "Resize Ctx Callback Not found" for each of them.
+    await p.goto("/resize");
+    await p.waitForText("resized-width", "200");
+    await p.click("widen");
+    await p.waitForText("resized-width", "300");
+    // Rebuilt under a new id, then removed, then several renders later back.
+    await p.click("swap-resized");
+    await p.click("widen");
+    await p.waitForText("resized-width", "200");
+    await p.click("toggle-resized");
+    for (let i = 1; i <= 4; i++) {
+      await p.click("rerender-resize");
+      await p.waitForText("resize-renders", String(i));
+    }
+    await p.click("toggle-resized");
+    await p.click("widen");
+    await p.waitForText("resized-width", "300");
+    // Crossing the 768px breakpoint rerenders everything, which replaced the
+    // observed element after its callback was dropped.
+    try {
+      await p.viewport(600, 800);
+      await new Promise((r) => setTimeout(r, 300));
+    } finally {
+      await p.resetViewport();
+    }
+    await new Promise((r) => setTimeout(r, 300));
+    await p.click("widen");
+    await p.waitForText("resized-width", "200");
+    const errors = p.consoleMessages.filter((m) => m.includes("[ERROR]") || m.includes("not found"));
+    assertEqual(JSON.stringify(errors), "[]", "errors logged");
+  },
+
+  async ".hideOn and .showOn show an element on its screen sizes only"(p) {
+    const shown = `JSON.stringify(["mobile-only", "tablet-up", "desktop-only", "hidden-then-padded", "padded-then-hidden"].map((id) => getComputedStyle(document.getElementById(id)).display !== "none"))`;
+    const at = async (width) => {
+      await p.viewport(width, 800);
+      await p.goto("/responsive");
+      await p.waitForText("mobile-only", "mobile");
+      return p.evaluate(shown);
+    };
+    try {
+      assertEqual(await at(1280), JSON.stringify([false, true, true, true, true]), "shown at 1280px");
+      assertEqual(await at(900), JSON.stringify([false, true, false, true, true]), "shown at 900px");
+      assertEqual(await at(400), JSON.stringify([true, false, false, false, false]), "shown at 400px");
+      const spacing = `JSON.stringify((() => { const s = getComputedStyle(document.getElementById("spaced")); const m = getComputedStyle(document.getElementById("margined")); return [s.paddingTop, s.flexDirection, m.paddingTop, m.marginTop]; })())`;
+      assertEqual(await p.evaluate(spacing), JSON.stringify(["4px", "row", "20px", "6px"]), "spacing and direction at 400px");
+      await at(1280);
+      assertEqual(await p.evaluate(spacing), JSON.stringify(["20px", "column", "20px", "0px"]), "spacing and direction at 1280px");
+    } finally {
+      await p.resetViewport();
+    }
   },
 
   async "number fields show and write back their bound values"(p) {

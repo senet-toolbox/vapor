@@ -4,6 +4,47 @@ All notable changes to this project are documented here. This project follows
 [Semantic Versioning](https://semver.org/): breaking changes bump the major
 version and are listed with a migration note.
 
+## [3.5.0] — 2026-10-26
+
+Pages that work on phones: show and hide by screen size, and responsive
+styles that do what they say.
+
+### Added
+
+- `.hideOn(platform)` and `.showOn(platform)` hide or show an element by
+  screen size, in CSS, so prerendered pages are right on phones too. See
+  "Screen sizes" in the README.
+
+### Fixed
+
+- `.responsive(.tablet, ...)` did nothing: tablet overrides were never
+  packed. They now apply from 768px.
+- A responsive style could hide an element but not show it again; any
+  explicit `flex_type` now applies on its screen size.
+- Any responsive override on a Stack also wrote `display: flex;
+  flex-direction: row`, so on that screen size the column became a row
+  (a phone override of a column's width laid its sections side by side).
+  An override now writes only what it sets, keeping the element's
+  direction, and `.direction` alone takes effect.
+- Responsive `padding` and `margin` were accepted and ignored. They now
+  apply, each only when the screen size sets it.
+- `.maxWidth(.percent(n))` and `.maxHeight(.percent(n))` wrote nothing. They
+  now write `max-width`/`max-height`. Note that `width`, `minWidth` and
+  `maxWidth` share one slot (the last call wins); for a fixed width that
+  never overflows use `.inlineStyle("max-width: 100%", .{})`.
+- `.onResize` kept observing elements after they left the page, and wasm
+  logged "Resize Ctx Callback Not found" for them (e.g. after crossing the
+  768px breakpoint). The runtime now stops observing them.
+- `.onResize` on a prerendered page never fired: it observed the prerendered
+  element, which the app replaces when it takes the page over. Elements are
+  now observed once the render is on the page, and only once each.
+- `.onResize` recorded its element again on every render, in memory that is
+  never freed.
+- The shared observer behind `.onResize` was declared `undefined` instead of
+  `null`, so depending on the build it could count as already created and
+  never be made: no resize callback fired and the runtime warned
+  "ResizeObserver ... not found" (seen in ReleaseSmall builds).
+
 ## [3.4.1] — 2026-10-26
 
 ### Fixed

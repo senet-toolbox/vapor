@@ -65,17 +65,17 @@ pub export fn timeoutCtxFired(id: u32) callconv(.c) void {
     }
 }
 
-pub export fn resizeCallback(resize_callback: u32, object_ptr: ?*DynamicObject) callconv(.c) void {
-    if (object_ptr == null) {
+/// Runs the `.onResize` callback `resize_callback` with a resize entry.
+/// False when vapor no longer has it (a render stopped asking for it), so the
+/// runtime stops observing the element.
+pub export fn resizeCallback(resize_callback: u32, object_ptr: ?*DynamicObject) callconv(.c) bool {
+    const erased = Vapor.resize_callbacks.get(resize_callback) orelse return false;
+    const entry = object_ptr orelse {
         Vapor.report.err("Resize Entry is Null", .{});
-        return;
-    }
-    const erased = Vapor.resize_callbacks.get(resize_callback) orelse {
-        Vapor.report.err("Resize Ctx Callback Not found {any}", .{resize_callback});
-        return;
+        return true;
     };
-
-    erased.call(object_ptr.?);
+    erased.call(entry);
+    return true;
 }
 
 // --- Rendering & Tree Management ---
