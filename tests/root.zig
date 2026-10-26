@@ -1795,6 +1795,49 @@ test "testing: links, navigate and back move between pages" {
     try app.expectText("user", "user 42");
 }
 
+test "an unknown path renders the built-in not-found page" {
+    var app = try Vapor.testing.App.start(harness_app.init);
+    defer app.deinit();
+
+    try app.visit("/");
+    try app.visit("/nowhere");
+    try app.expectText("vapor-not-found-title", "Page not found");
+    try app.expectText("vapor-not-found-path", "Nothing lives at /nowhere.");
+
+    try app.click("vapor-not-found-back");
+    try std.testing.expectEqualStrings("/", app.path());
+    try std.testing.expect(app.exists("home"));
+
+    try app.visit("/nowhere");
+    try app.click("vapor-not-found-home");
+    try std.testing.expectEqualStrings("/", app.path());
+}
+
+const error_page_app = struct {
+    fn init() void {
+        Vapor.init(.{});
+        Vapor.Page(.{ .route = "/" }, home, null);
+        Vapor.Page(.{ .route = "/error" }, notFound, null);
+    }
+
+    fn home() void {
+        Vapor.Text("home").id("home").end();
+    }
+
+    fn notFound() void {
+        Vapor.Text("Custom 404").id("custom-404").end();
+    }
+};
+
+test "an app's /error page replaces the built-in not-found page" {
+    var app = try Vapor.testing.App.start(error_page_app.init);
+    defer app.deinit();
+
+    try app.visit("/nowhere");
+    try app.expectText("custom-404", "Custom 404");
+    try std.testing.expect(!app.exists("vapor-not-found"));
+}
+
 test "testing: the tree can be walked and written as HTML" {
     var app = try Vapor.testing.App.start(harness_app.init);
     defer app.deinit();

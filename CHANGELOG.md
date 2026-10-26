@@ -4,6 +4,24 @@ All notable changes to this project are documented here. This project follows
 [Semantic Versioning](https://semver.org/): breaking changes bump the major
 version and are listed with a migration note.
 
+## [3.3.0] — 2026-10-26
+
+Unknown paths show a not-found page instead of an empty one.
+
+### Added
+
+- A path no page matches now renders a built-in not-found page — "Page not
+  found", the path, and Go back and Home — instead of an empty page. It
+  renders inside the app's layouts and takes their text colour. An app's
+  `/error` page still replaces it. Its elements have ids
+  (`vapor-not-found`, `-back`, `-home`, ...) for tests.
+
+### Changed
+
+- An unmatched path logs a warning ("No page matches ...") instead of two
+  errors; a missing `/error` page is logged as info, since the built-in page
+  covers it.
+
 ## [3.2.2] — 2026-10-23
 
 The static generator compiles apps that use animation frames or text-field

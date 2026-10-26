@@ -155,9 +155,9 @@ pub fn generateHtml(route: []const u8, dir: []const u8) void {
     Vapor.nodes_with_events.clearRetainingCapacity();
 
     const old_route_op = Vapor.router.searchRoute(route) orelse blk: {
-        Vapor.report.err("No Route found", .{});
+        Vapor.report.warn("No page matches {s}", .{route});
         break :blk Vapor.router.searchRoute("/root/error") orelse {
-            Vapor.report.err("No Error Route found", .{});
+            Vapor.report.info("No /error page registered; showing the built-in not-found page", .{});
             Vapor.status.valid_url = false;
             break :blk null;
         };

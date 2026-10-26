@@ -543,9 +543,33 @@ pub fn resetStatus() void {
     status = .{};
 }
 
-/// The empty page rendered when no route matches, not even `/error`.
+/// The page rendered when no route matches and the app has no `/error` page:
+/// it says the page was not found and offers Go back and Home. Register a
+/// page at `/error` to replace it. It renders inside the app's layouts and
+/// takes its text colour from them, so it fits a light or a dark theme.
 pub fn DefaultPage() void {
-    Components.Builder(.pure).Stack().children({});
+    const UI = Components.Builder(.pure);
+    const line = types.Color.rgba(128, 128, 128, 0.4);
+
+    UI.Stack().id("vapor-not-found").width(.full).layout(.top_center).padding(.xy(16, 96)).children({
+        UI.Stack().layout(.top_center).spacing(12).maxWidth(.px(480)).children({
+            UI.Text("404").id("vapor-not-found-status").font(14, 600, null).opacity(0.6).end();
+            UI.Heading(1, "Page not found").id("vapor-not-found-title").font(28, 700, null).end();
+            UI.TextFmt("Nothing lives at {s}.", .{Navigation.currentPath()}).id("vapor-not-found-path").font(16, 400, null).opacity(0.7).end();
+            UI.Row().spacing(8).mt(12).children({
+                UI.Button(Navigation.back, .{}).id("vapor-not-found-back")
+                    .padding(.xy(16, 8)).border(.solid(.all(1), line, .all(6)))
+                    .background(.transparent).inherit(&.{.text_color}).pointer().children({
+                    UI.Text("Go back").font(14, 500, null).end();
+                });
+                UI.Link(.{ .url = "/" }).id("vapor-not-found-home")
+                    .padding(.xy(16, 8)).border(.solid(.all(1), line, .all(6)))
+                    .inherit(&.{.text_color}).noDecoration().children({
+                    UI.Text("Home").font(14, 500, null).end();
+                });
+            });
+        });
+    });
 }
 
 pub var old_ctx_op: ?*UIContext = null;
@@ -570,9 +594,9 @@ pub fn renderCycle(route_ptr: [*:0]u8) !void {
     }
 
     const old_route_op = router.searchRoute(route) orelse blk: {
-        report.err("No Route found", .{});
+        report.warn("No page matches {s}", .{route});
         break :blk router.searchRoute("/root/error") orelse {
-            report.err("No Error Route found", .{});
+            report.info("No /error page registered; showing the built-in not-found page", .{});
             status.valid_url = false;
             break :blk null;
         };

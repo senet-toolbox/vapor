@@ -246,7 +246,8 @@ Vapor.Page(.{ .route = "/users/:id" }, UserPage, null);
 Vapor.Page(.{ .route = "/users/:id/edit" }, EditUserPage, null);
 // in UserPage's render: Vapor.routeParam("id") -> "42" on /users/42
 
-// Rendered for any path no page matches.
+// Rendered for any path no page matches. Without one, Vapor shows a built-in
+// "Page not found" page with Go back and Home.
 Vapor.Page(.{ .route = "/error" }, NotFoundPage, null);
 
 // Wrap a route subtree in shared chrome.
@@ -424,7 +425,7 @@ CSS, `fetch`, timers and the hooks the runtime runs on the DOM (`onMount`,
 their values, so they render on the client from `release/app.html`, a copy of
 `template.html`. Configure the host to serve `app.html` for paths with no
 file (e.g. Netlify `/* /app.html 200`); unknown paths then render your
-`/error` page.
+`/error` page, or the built-in not-found page if you have none.
 
 ## Build options
 
