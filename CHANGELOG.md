@@ -4,6 +4,14 @@ All notable changes to this project are documented here. This project follows
 [Semantic Versioning](https://semver.org/): breaking changes bump the major
 version and are listed with a migration note.
 
+## [3.4.1] — 2026-10-26
+
+### Fixed
+
+- The package left out tools/release.zig, so `addRelease` failed in apps
+  that fetch vapor ("tools/release.zig file_hash FileNotFound"). It is now
+  part of the package.
+
 ## [3.4.0] — 2026-10-26
 
 A release build for deploying, with files named by their contents; and
