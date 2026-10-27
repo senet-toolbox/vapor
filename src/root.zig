@@ -343,4 +343,6 @@ test {
     _ = @import("lib/storage.zig");
     _ = @import("lib/element.zig");
     _ = @import("lib/utils.zig");
+    _ = @import("lib/components.zig");
+    _ = @import("lib/text_field.zig");
 }

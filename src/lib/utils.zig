@@ -439,3 +439,36 @@ test "hashToBase62 encodes zero as \"0\"" {
     var out: [6]u8 = undefined;
     try std.testing.expectEqualStrings("0", out[0..hashToBufferBase62(0, &out)]);
 }
+
+/// Fails unless `Builder` declares an inline method for each of `Methods`'
+/// methods (functions taking `*const Builder` first), with the same
+/// parameters and result. Editors (ZLS) complete the arguments of a method
+/// declared on the builder, not of one aliased from another file.
+pub fn expectWrapsMethods(comptime Builder: type, comptime Methods: type) !void {
+    inline for (@typeInfo(Methods).@"struct".decls) |decl| {
+        const Method = @TypeOf(@field(Methods, decl.name));
+        const method = switch (@typeInfo(Method)) {
+            .@"fn" => |f| f,
+            else => continue,
+        };
+        if (method.params.len == 0 or method.params[0].type != *const Builder) continue;
+        if (!@hasDecl(Builder, decl.name)) {
+            std.debug.print("{s} has no method {s}\n", .{ @typeName(Builder), decl.name });
+            return error.MissingMethod;
+        }
+        const wrapper = switch (@typeInfo(@TypeOf(@field(Builder, decl.name)))) {
+            .@"fn" => |f| f,
+            else => return error.MissingMethod,
+        };
+        const same = comptime wrapper.calling_convention == .@"inline" and
+            wrapper.params.len == method.params.len and
+            wrapper.return_type == method.return_type and
+            for (wrapper.params, method.params) |a, b| {
+                if (a.type != b.type or a.is_generic != b.is_generic or a.is_noalias != b.is_noalias) break false;
+            } else true;
+        if (!same) {
+            std.debug.print("{s}.{s} is not an inline method with the parameters of the one it calls\n", .{ @typeName(Builder), decl.name });
+            return error.MethodMismatch;
+        }
+    }
+}

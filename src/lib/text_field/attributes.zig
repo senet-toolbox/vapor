@@ -1,18 +1,12 @@
 //! TextFieldBuilder methods for ids and ARIA attributes.
+//! Declared and documented as inline methods on TextFieldBuilder
+//! (text_field.zig), so editors complete their arguments; those call these.
 
 const TextFieldMod = @import("../text_field.zig");
 const Self = TextFieldMod.TextFieldBuilder;
 const Vapor = @import("../vapor.zig");
 const Accessibility = @import("../accessibility.zig").Accessibility;
 
-/// Gives the field a stable identity, the same as `.id()` on the
-/// element builders.
-///
-/// The generated uuid encodes the child's position, so a field that
-/// moves is seen by the reconciler as a delete plus an insert. `_id`
-/// also travels through `end()` into the style, which is where
-/// `Configuration` picks it up; setting the uuid here as well means the
-/// identity is established as soon as the caller asks for it.
 pub fn id(self: *const Self, element_id: []const u8) Self {
     var new_self: Self = self.*;
     new_self._id = element_id;
@@ -20,14 +14,12 @@ pub fn id(self: *const Self, element_id: []const u8) Self {
     return new_self;
 }
 
-/// Set full accessibility config
 pub fn a11y(self: *const Self, accessibility: Accessibility) Self {
     var new_self: Self = self.*;
     new_self._accessibility = accessibility;
     return new_self;
 }
 
-/// Shorthand: just set aria-label
 pub fn ariaLabel(self: *const Self, label: []const u8) Self {
     var new_self: Self = self.*;
     var acc = new_self._accessibility orelse Accessibility{};
@@ -36,7 +28,6 @@ pub fn ariaLabel(self: *const Self, label: []const u8) Self {
     return new_self;
 }
 
-/// Shorthand: set role
 pub fn role(self: *const Self, r: Accessibility.Role) Self {
     var new_self: Self = self.*;
     var acc = new_self._accessibility orelse Accessibility{};
@@ -45,7 +36,6 @@ pub fn role(self: *const Self, r: Accessibility.Role) Self {
     return new_self;
 }
 
-/// Shorthand: aria-expanded
 pub fn ariaExpanded(self: *const Self, expanded: bool) Self {
     var new_self: Self = self.*;
     var acc = new_self._accessibility orelse Accessibility{};
@@ -54,7 +44,6 @@ pub fn ariaExpanded(self: *const Self, expanded: bool) Self {
     return new_self;
 }
 
-/// Shorthand: aria-selected
 pub fn ariaSelected(self: *const Self, selected: bool) Self {
     var new_self: Self = self.*;
     var acc = new_self._accessibility orelse Accessibility{};
@@ -63,7 +52,6 @@ pub fn ariaSelected(self: *const Self, selected: bool) Self {
     return new_self;
 }
 
-/// Shorthand: aria-controls
 pub fn ariaControls(self: *const Self, uuid: []const u8) Self {
     var new_self: Self = self.*;
     var acc = new_self._accessibility orelse Accessibility{};
@@ -72,7 +60,6 @@ pub fn ariaControls(self: *const Self, uuid: []const u8) Self {
     return new_self;
 }
 
-/// Shorthand: aria-activedescendant
 pub fn ariaActiveDescendant(self: *const Self, uuid: ?[]const u8) Self {
     var new_self: Self = self.*;
     var acc = new_self._accessibility orelse Accessibility{};
@@ -81,7 +68,6 @@ pub fn ariaActiveDescendant(self: *const Self, uuid: ?[]const u8) Self {
     return new_self;
 }
 
-/// Shorthand: aria-hidden
 pub fn ariaHidden(self: *const Self, hidden_val: bool) Self {
     var new_self: Self = self.*;
     var acc = new_self._accessibility orelse Accessibility{};
@@ -90,7 +76,6 @@ pub fn ariaHidden(self: *const Self, hidden_val: bool) Self {
     return new_self;
 }
 
-/// Shorthand: tabindex
 pub fn tabIndex(self: *const Self, index: i16) Self {
     var new_self: Self = self.*;
     var acc = new_self._accessibility orelse Accessibility{};

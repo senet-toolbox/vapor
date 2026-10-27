@@ -1,5 +1,7 @@
 //! The `TextField`/`TextArea` constructors and the methods for the field's
 //! value: `.bind`, `.placeholder`, `.val`, `.config`.
+//! Declared and documented as inline methods on TextFieldBuilder
+//! (text_field.zig), so editors complete their arguments; those call these.
 
 const TextFieldMod = @import("../text_field.zig");
 const Self = TextFieldMod.TextFieldBuilder;
@@ -126,8 +128,6 @@ pub fn TextField(textfield_type: types.InputTypes) Self {
     }
 }
 
-/// Hint shown while the field is empty: a string, or a number for `.int` and
-/// `.float` fields.
 pub fn placeholder(self: *const Self, value: anytype) Self {
     var new_self: Self = self.*;
     var text_field_params = new_self._text_field_params orelse {
@@ -214,15 +214,12 @@ pub fn placeholder(self: *const Self, value: anytype) Self {
     return new_self;
 }
 
-/// The form field name (`name` attribute) a `Form` submits it under.
 pub fn fieldName(self: *const Self, name: []const u8) Self {
     var new_self: Self = self.*;
     new_self._name = name;
     return new_self;
 }
 
-/// Marks the field required. Only `.radio` fields support it so far; for other
-/// kinds it is ignored.
 pub fn required(self: *const Self, value: bool) Self {
     var new_self: Self = self.*;
     if (self._elem_type != .TextField and self._elem_type != .TextArea) {
@@ -242,7 +239,6 @@ pub fn required(self: *const Self, value: bool) Self {
     return new_self;
 }
 
-/// Initial text of the field. Not kept in sync; use `.bind` for that.
 pub fn valStr(self: *const Self, value: []const u8) Self {
     var new_self: Self = self.*;
     if (self._elem_type != .TextField and self._elem_type != .TextArea) {
@@ -285,7 +281,6 @@ pub fn valStr(self: *const Self, value: []const u8) Self {
     return new_self;
 }
 
-/// Shows the value `value` points to.
 pub fn val(self: *const Self, value: anytype) Self {
     var new_self: Self = self.*;
     if (self._elem_type != .TextField and self._elem_type != .TextArea) {
@@ -397,9 +392,6 @@ pub fn val(self: *const Self, value: anytype) Self {
     return new_self;
 }
 
-/// Two-way binding: shows the value `value` points to and writes the user's
-/// edits back to it. The pointee's type must match the field (`[]const u8` for
-/// text kinds, an integer for `.int`, a float for `.float`).
 pub fn bind(self: *const Self, value: anytype) Self {
     var new_self: Self = self.*;
     if (self._elem_type != .TextField and self._elem_type != .TextArea) {
@@ -536,8 +528,6 @@ pub fn bind(self: *const Self, value: anytype) Self {
     return new_self;
 }
 
-/// Length limits (`min`, `max`) for `.string` and `.int` fields; ignored for
-/// other kinds.
 pub fn config(self: *const Self, text_field_config: types.TextFieldConfig) Self {
     var new_self: Self = self.*;
     var text_field_params = new_self._text_field_params orelse {

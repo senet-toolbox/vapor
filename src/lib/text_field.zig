@@ -82,102 +82,481 @@ pub const TextFieldBuilder = struct {
         return node;
     }
 
+    // Each method is declared here and calls its body in text_field/. An alias
+    // (`pub const width = StyleMethods.width;`) would be shorter, but editors
+    // (ZLS) then complete none of its arguments. A test checks each body has
+    // its method here.
     const StyleMethods = @import("text_field/style.zig");
-    pub const ellipsis = StyleMethods.ellipsis;
-    pub const scroll = StyleMethods.scroll;
-    pub const fontWeight = StyleMethods.fontWeight;
-    pub const textColor = StyleMethods.textColor;
-    pub const fontSize = StyleMethods.fontSize;
-    pub const fontFamily = StyleMethods.fontFamily;
-    pub const animationEnter = StyleMethods.animationEnter;
-    pub const animation = StyleMethods.animation;
-    pub const animationExit = StyleMethods.animationExit;
-    pub const interaction = StyleMethods.interaction;
-    pub const whiteSpace = StyleMethods.whiteSpace;
-    pub const style = StyleMethods.style;
-    pub const font = StyleMethods.font;
-    pub const bold = StyleMethods.bold;
-    pub const pos = StyleMethods.pos;
-    pub const zIndex = StyleMethods.zIndex;
-    pub const blur = StyleMethods.blur;
-    pub const layout = StyleMethods.layout;
-    pub const center = StyleMethods.center;
-    pub const background = StyleMethods.background;
-    pub const shadow = StyleMethods.shadow;
-    pub const layer = StyleMethods.layer;
-    pub const wrap = StyleMethods.wrap;
-    pub const textDecoration = StyleMethods.textDecoration;
-    pub const hoverScale = StyleMethods.hoverScale;
-    pub const outline = StyleMethods.outline;
-    pub const caret = StyleMethods.caret;
-    pub const resize = StyleMethods.resize;
-    pub const hoverBackground = StyleMethods.hoverBackground;
-    pub const pointer = StyleMethods.pointer;
-    pub const noDecoration = StyleMethods.noDecoration;
-    pub const hoverText = StyleMethods.hoverText;
-    pub const spacing = StyleMethods.spacing;
-    pub const padding = StyleMethods.padding;
-    pub const pl = StyleMethods.pl;
-    pub const pr = StyleMethods.pr;
-    pub const pt = StyleMethods.pt;
-    pub const pb = StyleMethods.pb;
-    pub const padX = StyleMethods.padX;
-    pub const padY = StyleMethods.padY;
-    pub const cursor = StyleMethods.cursor;
-    pub const margin = StyleMethods.margin;
-    pub const mt = StyleMethods.mt;
-    pub const mb = StyleMethods.mb;
-    pub const ml = StyleMethods.ml;
-    pub const mr = StyleMethods.mr;
-    pub const my = StyleMethods.my;
-    pub const mx = StyleMethods.mx;
-    pub const size = StyleMethods.size;
-    pub const hw = StyleMethods.hw;
-    pub const width = StyleMethods.width;
-    pub const height = StyleMethods.height;
-    pub const border = StyleMethods.border;
-    pub const radius = StyleMethods.radius;
-    pub const duration = StyleMethods.duration;
-    pub const direction = StyleMethods.direction;
-    pub const class = StyleMethods.class;
-    pub const inlineStyle = StyleMethods.inlineStyle;
+    /// Truncates overflowing text with "…". Text elements only; ignored (with a
+    /// warning) elsewhere.
+    pub inline fn ellipsis(self: *const Self, value: types.Ellipsis) Self {
+        return StyleMethods.ellipsis(self, value);
+    }
+
+    /// Overflow behaviour on each axis, e.g. `.scroll(.{ .y = .scroll })`.
+    pub inline fn scroll(self: *const Self, scroll_type: types.Scroll) Self {
+        return StyleMethods.scroll(self, scroll_type);
+    }
+
+    /// Font weight: 100 to 900.
+    pub inline fn fontWeight(self: *const Self, value: u16) Self {
+        return StyleMethods.fontWeight(self, value);
+    }
+
+    /// Text colour.
+    pub inline fn textColor(self: *const Self, color: ?Color) Self {
+        return StyleMethods.textColor(self, color);
+    }
+
+    /// Font size in pixels.
+    pub inline fn fontSize(self: *const Self, font_size: u8) Self {
+        return StyleMethods.fontSize(self, font_size);
+    }
+
+    /// CSS font family, e.g. `"Inter, sans-serif"`.
+    pub inline fn fontFamily(self: *const Self, font_family: []const u8) Self {
+        return StyleMethods.fontFamily(self, font_family);
+    }
+
+    /// Plays the registered animation named `animation_tag` when the element first
+    /// appears. `null` leaves it unchanged.
+    pub inline fn animationEnter(self: *const Self, animation_tag: ?[]const u8) Self {
+        return StyleMethods.animationEnter(self, animation_tag);
+    }
+
+    /// Plays the registered animation named `animation_tag` (see `Vapor.Animation`).
+    /// `null` leaves it unchanged.
+    pub inline fn animation(self: *const Self, animation_tag: ?[]const u8) Self {
+        return StyleMethods.animation(self, animation_tag);
+    }
+
+    /// Plays the registered animation named `animation_tag` before the element is
+    /// removed; removal waits for it to finish.
+    pub inline fn animationExit(self: *const Self, animation_tag: ?[]const u8) Self {
+        return StyleMethods.animationExit(self, animation_tag);
+    }
+
+    /// Styles for interaction states: hover, focus and focus-within.
+    pub inline fn interaction(self: *const Self, interactive: types.Interactive) Self {
+        return StyleMethods.interaction(self, interactive);
+    }
+
+    /// How whitespace and line breaks in the text are handled (CSS `white-space`).
+    pub inline fn whiteSpace(self: *const Self, value: types.WhiteSpace) Self {
+        return StyleMethods.whiteSpace(self, value);
+    }
+
+    /// This function takes a const pointer to a Style Struct, and returns the body function callback
+    /// This function is static, so any styles added via chaining methods will not be applied
+    pub inline fn style(self: *const Self, style_ptr: *const Vapor.Style) Self {
+        return StyleMethods.style(self, style_ptr);
+    }
+
+    /// Size in pixels, weight and colour in one call: `.font(16, 600, .black)`.
+    pub inline fn font(self: *const Self, font_size: u8, weight: ?u16, color: ?Color) Self {
+        return StyleMethods.font(self, font_size, weight, color);
+    }
+
+    /// Font weight 700.
+    pub inline fn bold(self: *const Self) Self {
+        return StyleMethods.bold(self);
+    }
+
+    /// Positioning: `.pos(.{ .type = .absolute, .top = .px(0), .right = .px(0) })`.
+    /// Keeps a z-index set with `zIndex`.
+    pub inline fn pos(self: *const Self, position: types.Position) Self {
+        return StyleMethods.pos(self, position);
+    }
+
+    /// Stacking order. `null` removes it.
+    pub inline fn zIndex(self: *const Self, z_index: ?i16) Self {
+        return StyleMethods.zIndex(self, z_index);
+    }
+
+    /// Gaussian blur radius in pixels. `null` removes it.
+    pub inline fn blur(self: *const Self, value: ?u8) Self {
+        return StyleMethods.blur(self, value);
+    }
+
+    /// How children are aligned on both axes, e.g. `.layout(.center)`.
+    pub inline fn layout(self: *const Self, value: types.Layout) Self {
+        return StyleMethods.layout(self, value);
+    }
+
+    /// Centres the children on both axes. Same as `.layout(.center)`.
+    pub inline fn center(self: *const Self) Self {
+        return StyleMethods.center(self);
+    }
+
+    /// Background colour: a literal or a theme colour. For a gradient, use `.layer`.
+    pub inline fn background(self: *const Self, value: types.Color) Self {
+        return StyleMethods.background(self, value);
+    }
+
+    /// Box shadow.
+    pub inline fn shadow(self: *const Self, value: types.Shadow) Self {
+        return StyleMethods.shadow(self, value);
+    }
+
+    /// A patterned background layer: grid, dots, lines or gradient.
+    pub inline fn layer(self: *const Self, value: types.BackgroundLayer) Self {
+        return StyleMethods.layer(self, value);
+    }
+
+    /// Whether children wrap onto new lines when they do not fit.
+    pub inline fn wrap(self: *const Self, value: types.FlexWrap) Self {
+        return StyleMethods.wrap(self, value);
+    }
+
+    /// Underline, overline or line-through, with its style and colour.
+    pub inline fn textDecoration(self: *const Self, value: types.TextDecoration) Self {
+        return StyleMethods.textDecoration(self, value);
+    }
+
+    /// Grows the element slightly (to 104%) while hovered.
+    pub inline fn hoverScale(self: *const Self) Self {
+        return StyleMethods.hoverScale(self);
+    }
+
+    /// Outline style and colour; unlike a border, it takes no space.
+    pub inline fn outline(self: *const Self, value: types.Outline, color: ?Color) Self {
+        return StyleMethods.outline(self, value, color);
+    }
+
+    /// Shape of the text cursor.
+    pub inline fn caret(self: *const Self, value: types.Caret) Self {
+        return StyleMethods.caret(self, value);
+    }
+
+    /// Whether the user can resize the field: `.none`, `.both`, `.horizontal`,
+    /// `.vertical`.
+    pub inline fn resize(self: *const Self, value: types.Resize) Self {
+        return StyleMethods.resize(self, value);
+    }
+
+    /// Background colour while hovered.
+    pub inline fn hoverBackground(self: *const Self, color: types.Color) Self {
+        return StyleMethods.hoverBackground(self, color);
+    }
+
+    /// Pointer cursor, as for something clickable.
+    pub inline fn pointer(self: *const Self) Self {
+        return StyleMethods.pointer(self);
+    }
+
+    /// Removes text decoration, e.g. a link's underline.
+    pub inline fn noDecoration(self: *const Self) Self {
+        return StyleMethods.noDecoration(self);
+    }
+
+    /// Text colour while hovered.
+    pub inline fn hoverText(self: *const Self, color: types.Color) Self {
+        return StyleMethods.hoverText(self, color);
+    }
+
+    /// Gap between children, in pixels.
+    pub inline fn spacing(self: *const Self, value: u8) Self {
+        return StyleMethods.spacing(self, value);
+    }
+
+    /// Inner spacing on every side: `.padding(.all(16))`,
+    /// `.padding(.{ .left = 12, .top = 4 })`. Replaces all four sides, so set it
+    /// before `.pl`, `.padX` and the other one-side shorthands.
+    pub inline fn padding(self: *const Self, value: types.Padding) Self {
+        return StyleMethods.padding(self, value);
+    }
+
+    /// Left padding in pixels; keeps the other sides.
+    pub inline fn pl(self: *const Self, value: u8) Self {
+        return StyleMethods.pl(self, value);
+    }
+
+    /// Right padding in pixels; keeps the other sides.
+    pub inline fn pr(self: *const Self, value: u8) Self {
+        return StyleMethods.pr(self, value);
+    }
+
+    /// Top padding in pixels; keeps the other sides.
+    pub inline fn pt(self: *const Self, value: u8) Self {
+        return StyleMethods.pt(self, value);
+    }
+
+    /// Bottom padding in pixels; keeps the other sides.
+    pub inline fn pb(self: *const Self, value: u8) Self {
+        return StyleMethods.pb(self, value);
+    }
+
+    /// Left and right padding in pixels; keeps the top and bottom.
+    pub inline fn padX(self: *const Self, value: u8) Self {
+        return StyleMethods.padX(self, value);
+    }
+
+    /// Top and bottom padding in pixels; keeps the left and right.
+    pub inline fn padY(self: *const Self, value: u8) Self {
+        return StyleMethods.padY(self, value);
+    }
+
+    /// Mouse cursor shown over the element.
+    pub inline fn cursor(self: *const Self, value: types.Cursor) Self {
+        return StyleMethods.cursor(self, value);
+    }
+
+    /// Outer spacing on every side: `.margin(.all(8))`, `.margin(.{ .top = 4 })`.
+    /// Replaces all four sides, so set it before `.mt`, `.mx` and the other
+    /// one-side shorthands.
+    pub inline fn margin(self: *const Self, value: types.Margin) Self {
+        return StyleMethods.margin(self, value);
+    }
+
+    /// Top margin in pixels (negative allowed); keeps the other sides.
+    pub inline fn mt(self: *const Self, value: i16) Self {
+        return StyleMethods.mt(self, value);
+    }
+
+    /// Bottom margin in pixels (negative allowed); keeps the other sides.
+    pub inline fn mb(self: *const Self, value: i16) Self {
+        return StyleMethods.mb(self, value);
+    }
+
+    /// Left margin in pixels (negative allowed); keeps the other sides.
+    pub inline fn ml(self: *const Self, value: i16) Self {
+        return StyleMethods.ml(self, value);
+    }
+
+    /// Right margin in pixels (negative allowed); keeps the other sides.
+    pub inline fn mr(self: *const Self, value: i16) Self {
+        return StyleMethods.mr(self, value);
+    }
+
+    /// Top and bottom margin in pixels; keeps the left and right.
+    pub inline fn my(self: *const Self, value: i16) Self {
+        return StyleMethods.my(self, value);
+    }
+
+    /// Left and right margin in pixels; keeps the top and bottom.
+    pub inline fn mx(self: *const Self, value: i16) Self {
+        return StyleMethods.mx(self, value);
+    }
+
+    /// Width and height together: `.size(.full)`, `.size(.squarePx(48))`.
+    pub inline fn size(self: *const Self, dim: types.Size) Self {
+        return StyleMethods.size(self, dim);
+    }
+
+    /// Height, then width.
+    pub inline fn hw(self: *const Self, height_value: types.Sizing, width_value: types.Sizing) Self {
+        return StyleMethods.hw(self, height_value, width_value);
+    }
+
+    /// Width: `.width(.px(320))`, `.width(.percent(50))`, `.width(.expand)` (fill the
+    /// available space), ...
+    pub inline fn width(self: *const Self, length: types.Sizing) Self {
+        return StyleMethods.width(self, length);
+    }
+
+    /// Height, with the same sizes as `width`.
+    pub inline fn height(self: *const Self, length: types.Sizing) Self {
+        return StyleMethods.height(self, length);
+    }
+
+    /// Border thickness, colour, radius and style together.
+    pub inline fn border(self: *const Self, value: types.Border) Self {
+        return StyleMethods.border(self, value);
+    }
+
+    /// Corner radius; keeps the other border settings.
+    pub inline fn radius(self: *const Self, value: types.BorderRadius) Self {
+        return StyleMethods.radius(self, value);
+    }
+
+    /// Transition duration in milliseconds. Replaces any `.transition(...)`.
+    pub inline fn duration(self: *const Self, value: u32) Self {
+        return StyleMethods.duration(self, value);
+    }
+
+    /// Main axis for the children: `.row` or `.column`.
+    pub inline fn direction(self: *const Self, value: types.Direction) Self {
+        return StyleMethods.direction(self, value);
+    }
+
+    /// Adds a CSS class, for rules you inject yourself.
+    pub inline fn class(self: *const Self, class_name: []const u8) Self {
+        return StyleMethods.class(self, class_name);
+    }
+
+    /// Raw CSS for the element's `style` attribute, formatted like `std.fmt`:
+    /// `.inlineStyle("grid-area: {s};", .{area})`. Prefer the typed methods; this is
+    /// the escape hatch.
+    pub inline fn inlineStyle(self: *const Self, comptime fmt: []const u8, args: anytype) Self {
+        return StyleMethods.inlineStyle(self, fmt, args);
+    }
 
     const FieldMethods = @import("text_field/value.zig");
     pub const TextArea = FieldMethods.TextArea;
     pub const TextField = FieldMethods.TextField;
-    pub const placeholder = FieldMethods.placeholder;
-    pub const fieldName = FieldMethods.fieldName;
-    pub const required = FieldMethods.required;
-    pub const valStr = FieldMethods.valStr;
-    pub const val = FieldMethods.val;
-    pub const bind = FieldMethods.bind;
-    pub const config = FieldMethods.config;
+    /// Hint shown while the field is empty: a string, or a number for `.int` and
+    /// `.float` fields.
+    pub inline fn placeholder(self: *const Self, value: anytype) Self {
+        return FieldMethods.placeholder(self, value);
+    }
+
+    /// The form field name (`name` attribute) a `Form` submits it under.
+    pub inline fn fieldName(self: *const Self, name: []const u8) Self {
+        return FieldMethods.fieldName(self, name);
+    }
+
+    /// Marks the field required. Only `.radio` fields support it so far; for other
+    /// kinds it is ignored.
+    pub inline fn required(self: *const Self, value: bool) Self {
+        return FieldMethods.required(self, value);
+    }
+
+    /// Initial text of the field. Not kept in sync; use `.bind` for that.
+    pub inline fn valStr(self: *const Self, value: []const u8) Self {
+        return FieldMethods.valStr(self, value);
+    }
+
+    /// Shows the value `value` points to.
+    pub inline fn val(self: *const Self, value: anytype) Self {
+        return FieldMethods.val(self, value);
+    }
+
+    /// Two-way binding: shows the value `value` points to and writes the user's
+    /// edits back to it. The pointee's type must match the field (`[]const u8` for
+    /// text kinds, an integer for `.int`, a float for `.float`).
+    pub inline fn bind(self: *const Self, value: anytype) Self {
+        return FieldMethods.bind(self, value);
+    }
+
+    /// Length limits (`min`, `max`) for `.string` and `.int` fields; ignored for
+    /// other kinds.
+    pub inline fn config(self: *const Self, text_field_config: types.TextFieldConfig) Self {
+        return FieldMethods.config(self, text_field_config);
+    }
 
     const EventMethods = @import("text_field/events.zig");
-    pub const focus = EventMethods.focus;
-    pub const onFocus = EventMethods.onFocus;
-    pub const onBlur = EventMethods.onBlur;
-    pub const onScroll = EventMethods.onScroll;
-    pub const onEvent = EventMethods.onEvent;
-    pub const onMount = EventMethods.onMount;
-    pub const onChange = EventMethods.onChange;
-    pub const onKeyDown = EventMethods.onKeyDown;
-    pub const onHover = EventMethods.onHover;
-    pub const onLeave = EventMethods.onLeave;
-    pub const onHoverCtx = EventMethods.onHoverCtx;
-    pub const ref = EventMethods.ref;
+    /// Focuses the field once it is on the page.
+    pub inline fn focus(self: *const Self) Self {
+        return EventMethods.focus(self);
+    }
+
+    /// Calls `cb` with the event when the element gains focus.
+    pub inline fn onFocus(self: *const Self, cb: fn (*Vapor.Event) void) Self {
+        return EventMethods.onFocus(self, cb);
+    }
+
+    /// Calls `cb` with the event when the element loses focus.
+    pub inline fn onBlur(self: *const Self, cb: fn (*Vapor.Event) void) Self {
+        return EventMethods.onBlur(self, cb);
+    }
+
+    /// Calls `callback` with `args` and the event when the field scrolls.
+    pub inline fn onScroll(self: *const Self, callback: anytype, args: anytype) Self {
+        return EventMethods.onScroll(self, callback, args);
+    }
+
+    /// Calls `func` with `args` and the event whenever `event` fires on the element:
+    /// `.onEvent(.keydown, onKey, .{&state})`.
+    pub inline fn onEvent(self: *const Self, event: types.EventType, func: anytype, args: anytype) *const Self {
+        return EventMethods.onEvent(self, event, func, args);
+    }
+
+    /// Calls `callback` with `args` once the element is on the page.
+    pub inline fn onMount(self: *const Self, callback: anytype, args: anytype) *const Self {
+        return EventMethods.onMount(self, callback, args);
+    }
+
+    /// Calls `func` with `args` and then the event whenever the element's value
+    /// changes (the DOM `input` event).
+    pub inline fn onChange(self: *const Self, func: anytype, args: anytype) Self {
+        return EventMethods.onChange(self, func, args);
+    }
+
+    /// Calls `cb` with the event on every key press in the field.
+    pub inline fn onKeyDown(self: *const Self, cb: fn (*Vapor.Event) void) Self {
+        return EventMethods.onKeyDown(self, cb);
+    }
+
+    /// Calls `cb` with the event when the pointer enters the field.
+    pub inline fn onHover(self: *const Self, cb: fn (*Vapor.Event) void) Self {
+        return EventMethods.onHover(self, cb);
+    }
+
+    /// Calls `cb` with the event when the pointer leaves the field.
+    pub inline fn onLeave(self: *const Self, cb: fn (*Vapor.Event) void) Self {
+        return EventMethods.onLeave(self, cb);
+    }
+
+    /// Calls `cb` with `args` and the event when the pointer enters the element
+    /// (mouseenter).
+    pub inline fn onHoverCtx(self: *const Self, cb: anytype, args: anytype) Self {
+        return EventMethods.onHoverCtx(self, cb, args);
+    }
+
+    /// Fills `element` with a handle to this element, for reading its size, scroll
+    /// position or attributes after it is on the page. Start `element` as `.{}`,
+    /// never `undefined`: the render reads its other fields (styles set through it).
+    pub inline fn ref(self: *const Self, element: *Element) Self {
+        return EventMethods.ref(self, element);
+    }
 
     const AttributeMethods = @import("text_field/attributes.zig");
-    pub const id = AttributeMethods.id;
-    pub const a11y = AttributeMethods.a11y;
-    pub const ariaLabel = AttributeMethods.ariaLabel;
-    pub const role = AttributeMethods.role;
-    pub const ariaExpanded = AttributeMethods.ariaExpanded;
-    pub const ariaSelected = AttributeMethods.ariaSelected;
-    pub const ariaControls = AttributeMethods.ariaControls;
-    pub const ariaActiveDescendant = AttributeMethods.ariaActiveDescendant;
-    pub const ariaHidden = AttributeMethods.ariaHidden;
-    pub const tabIndex = AttributeMethods.tabIndex;
+    /// Gives the field a stable identity, the same as `.id()` on the
+    /// element builders.
+    ///
+    /// The generated uuid encodes the child's position, so a field that
+    /// moves is seen by the reconciler as a delete plus an insert. `_id`
+    /// also travels through `end()` into the style, which is where
+    /// `Configuration` picks it up; setting the uuid here as well means the
+    /// identity is established as soon as the caller asks for it.
+    pub inline fn id(self: *const Self, element_id: []const u8) Self {
+        return AttributeMethods.id(self, element_id);
+    }
+
+    /// Set full accessibility config
+    pub inline fn a11y(self: *const Self, accessibility: Accessibility) Self {
+        return AttributeMethods.a11y(self, accessibility);
+    }
+
+    /// Shorthand: just set aria-label
+    pub inline fn ariaLabel(self: *const Self, label: []const u8) Self {
+        return AttributeMethods.ariaLabel(self, label);
+    }
+
+    /// Shorthand: set role
+    pub inline fn role(self: *const Self, r: Accessibility.Role) Self {
+        return AttributeMethods.role(self, r);
+    }
+
+    /// Shorthand: aria-expanded
+    pub inline fn ariaExpanded(self: *const Self, expanded: bool) Self {
+        return AttributeMethods.ariaExpanded(self, expanded);
+    }
+
+    /// Shorthand: aria-selected
+    pub inline fn ariaSelected(self: *const Self, selected: bool) Self {
+        return AttributeMethods.ariaSelected(self, selected);
+    }
+
+    /// Shorthand: aria-controls
+    pub inline fn ariaControls(self: *const Self, uuid: []const u8) Self {
+        return AttributeMethods.ariaControls(self, uuid);
+    }
+
+    /// Shorthand: aria-activedescendant
+    pub inline fn ariaActiveDescendant(self: *const Self, uuid: ?[]const u8) Self {
+        return AttributeMethods.ariaActiveDescendant(self, uuid);
+    }
+
+    /// Shorthand: aria-hidden
+    pub inline fn ariaHidden(self: *const Self, hidden_val: bool) Self {
+        return AttributeMethods.ariaHidden(self, hidden_val);
+    }
+
+    /// Shorthand: tabindex
+    pub inline fn tabIndex(self: *const Self, index: i16) Self {
+        return AttributeMethods.tabIndex(self, index);
+    }
 
     /// Finishes the field: merges its style, attaches the bind/change handler and
     /// configures the node.
@@ -446,5 +825,12 @@ comptime {
             // Export it with its own name
             @export(&val, .{ .name = decl.name });
         }
+    }
+}
+
+test "every chainable method is declared on the builder" {
+    const B = TextFieldBuilder;
+    inline for (.{ B.StyleMethods, B.FieldMethods, B.EventMethods, B.AttributeMethods }) |Methods| {
+        try utils.expectWrapsMethods(B, Methods);
     }
 }

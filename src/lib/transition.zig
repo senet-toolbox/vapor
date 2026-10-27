@@ -117,18 +117,18 @@ fn cssName(comptime tag: []const u8) []const u8 {
 
 /// What `.look` animates.
 pub const look_properties = [_][]const u8{
-    "color",           "background-color", "border-color",   "border-radius",
-    "outline-color",   "outline-width",    "outline-offset", "text-decoration-color",
-    "fill",            "stroke",           "opacity",        "box-shadow",
-    "transform",       "translate",        "scale",          "rotate",
-    "filter",          "backdrop-filter",
+    "color",         "background-color", "border-color",   "border-radius",
+    "outline-color", "outline-width",    "outline-offset", "text-decoration-color",
+    "fill",          "stroke",           "opacity",        "box-shadow",
+    "transform",     "translate",        "scale",          "rotate",
+    "filter",        "backdrop-filter",
 };
 
 /// What `.layout` animates.
 pub const layout_properties = [_][]const u8{
-    "width",  "height", "min-width", "max-width",    "min-height", "max-height",
-    "padding", "margin", "gap",      "border-width", "top",        "right",
-    "bottom", "left",
+    "width",   "height", "min-width", "max-width",    "min-height", "max-height",
+    "padding", "margin", "gap",       "border-width", "top",        "right",
+    "bottom",  "left",
 };
 
 pub const TransitionState = packed union {

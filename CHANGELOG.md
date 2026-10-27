@@ -4,6 +4,18 @@ All notable changes to this project are documented here. This project follows
 [Semantic Versioning](https://semver.org/): breaking changes bump the major
 version and are listed with a migration note.
 
+## [3.7.1] — 2026-10-27
+
+### Fixed
+
+- Editors (ZLS) completed no arguments of the builder's methods since 3.0
+  (`.width(.`, `.pos(.{ .`, `.layout(.`, `.transition(.{ .timing = .`): the
+  methods were aliases of functions in `builder/` and `text_field/`, which
+  ZLS does not treat as methods. Each is now an inline method on
+  `ComponentBuilder` / `TextFieldBuilder` that calls its body there, with
+  its documentation; the compiled app is unchanged. A test checks every
+  body has its method.
+
 ## [3.7.0] — 2026-10-27
 
 ### Added
