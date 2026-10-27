@@ -373,6 +373,10 @@ function loadTheme() {
 }
 
 export const styleSheet = new CSSStyleSheet();
+/** The screen-size (@media) rules, in a sheet of their own after
+ * `styleSheet`: they must win over a class's base rule, which can be added
+ * later, when an element first appears after a render. */
+export const responsiveSheet = new CSSStyleSheet();
 export let breadcrumbs = [];
 
 export let currentPath;
@@ -695,20 +699,26 @@ function readAllRenderCommands(baseOffset, count) {
   return commands;
 }
 
-// Create ONE global stylesheet
-document.adoptedStyleSheets = [...document.adoptedStyleSheets, styleSheet];
+// The app's stylesheets, after any the page links.
+document.adoptedStyleSheets = [...document.adoptedStyleSheets, styleSheet, responsiveSheet];
 
 function clearCSS() {
   styleSheet.replaceSync("");
+  responsiveSheet.replaceSync("");
+}
+
+/** The sheet a rule belongs in: @media rules after all the others. */
+function sheetFor(rule) {
+  return rule instanceof CSSMediaRule ? responsiveSheet : styleSheet;
 }
 
 export function injectCSS(cssString) {
-  const existingRules = Array.from(styleSheet.cssRules)
-    .map((rule) => rule.cssText)
-    .join("\n");
-
-  const finalCSS = `${existingRules}\n${cssString}`;
-  styleSheet.replaceSync(finalCSS);
+  const parsed = new CSSStyleSheet();
+  parsed.replaceSync(cssString);
+  for (const rule of parsed.cssRules) {
+    const sheet = sheetFor(rule);
+    sheet.insertRule(rule.cssText, sheet.cssRules.length);
+  }
   rebuildCacheFromStylesheet();
 }
 
@@ -720,11 +730,13 @@ export function rebuildCacheFromStylesheet() {
     if (rule.selectorText) {
       // The full selector, so ".intr_123" and ".intr_123:hover" are separate.
       styleRuleCache.set(rule.selectorText, i);
-    } else if (rule.cssRules?.[0]?.selectorText) {
-      // A responsive class's @media rule, cached under the class itself.
-      const selector = rule.cssRules[0].selectorText;
-      if (!styleRuleCache.has(selector)) styleRuleCache.set(selector, i);
     }
+  }
+  // A responsive class's @media rules, cached under the class itself. Only
+  // `has` reads these; no rule in this sheet is replaced in place.
+  for (let i = 0; i < responsiveSheet.cssRules.length; i++) {
+    const selector = responsiveSheet.cssRules[i].cssRules?.[0]?.selectorText;
+    if (selector && !styleRuleCache.has(selector)) styleRuleCache.set(selector, i);
   }
 }
 

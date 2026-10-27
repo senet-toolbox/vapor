@@ -33,6 +33,19 @@ export fn getTransformsLen() usize {
     return transform_style.len;
 }
 
+/// A screen size's padding and margin, when it sets them; as the page's
+/// stylesheet writes them (CSSGenerator).
+fn writeResponsiveSpacing(value_ptr: anytype, i: usize, w: *Writer) void {
+    if (value_ptr.has_padding[i]) {
+        writePropValue("padding", .{ .tag = .padding, .data = .{ .padding = value_ptr.spacing[i].padding } }, w);
+    }
+    if (value_ptr.has_margin[i]) {
+        writePropValue("margin", .{ .tag = .margin, .data = .{ .margin = value_ptr.spacing[i].margin } }, w);
+    }
+}
+
+/// The CSS of a node's `resp_` class, for an element that first appears
+/// after the page loaded: one @media rule per screen size it sets.
 pub export fn getResponsiveStyle(ptr: ?*UINode) ?[*]const u8 {
     const node_ptr = ptr orelse return null;
     const packed_field_ptrs = node_ptr.packed_field_ptrs orelse return null;
@@ -56,6 +69,7 @@ pub export fn getResponsiveStyle(ptr: ?*UINode) ?[*]const u8 {
             writer.write("\n") catch {};
             StyleCompiler.generateVisual(&value_ptr.mobile_visual, &writer);
         }
+        writeResponsiveSpacing(value_ptr, 0, &writer);
 
         writer.write("}\n") catch {};
         writer.write("}\n") catch {};
@@ -76,6 +90,7 @@ pub export fn getResponsiveStyle(ptr: ?*UINode) ?[*]const u8 {
             writer.write("\n") catch {};
             StyleCompiler.generateVisual(&value_ptr.tablet_visual, &writer);
         }
+        writeResponsiveSpacing(value_ptr, 2, &writer);
 
         writer.write("}\n") catch {};
         writer.write("}\n") catch {};
@@ -95,6 +110,7 @@ pub export fn getResponsiveStyle(ptr: ?*UINode) ?[*]const u8 {
             writer.write("\n") catch {};
             StyleCompiler.generateVisual(&value_ptr.desktop_visual, &writer);
         }
+        writeResponsiveSpacing(value_ptr, 1, &writer);
 
         writer.write("}\n") catch {};
         writer.write("}\n") catch {};

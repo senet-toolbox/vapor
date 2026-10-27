@@ -4,6 +4,18 @@ All notable changes to this project are documented here. This project follows
 [Semantic Versioning](https://semver.org/): breaking changes bump the major
 version and are listed with a migration note.
 
+## [3.5.2] — 2026-10-27
+
+### Fixed
+
+- Screen-size styles (`.responsive`, `.hideOn`, `.showOn`) did not apply to
+  an element that first appeared after a render, such as a tab's content
+  opened by a click, when its base classes were new to the page: their
+  rules were added after its @media rules and won. @media rules now live in
+  a stylesheet of their own after the others.
+- Such elements also lost their screen-size `padding` and `margin`: the
+  runtime's copy of the responsive CSS did not write them.
+
 ## [3.5.1] — 2026-10-27
 
 ### Fixed

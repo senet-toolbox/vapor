@@ -5,6 +5,7 @@
 import {
   wasmInstance,
   styleSheet,
+  responsiveSheet,
   readWasmString,
   rebuildCacheFromStylesheet,
 } from "./runtime.js";
@@ -39,9 +40,11 @@ export function batchRemoveTombStones() {
   }
 
   // Back to front, so deleting a rule does not shift the ones still to visit.
-  for (let i = styleSheet.cssRules.length - 1; i >= 0; i--) {
-    if (toRemove.has(ruleClass(styleSheet.cssRules[i]))) {
-      styleSheet.deleteRule(i);
+  for (const sheet of [styleSheet, responsiveSheet]) {
+    for (let i = sheet.cssRules.length - 1; i >= 0; i--) {
+      if (toRemove.has(ruleClass(sheet.cssRules[i]))) {
+        sheet.deleteRule(i);
+      }
     }
   }
 
@@ -103,12 +106,14 @@ function addGeneratedRule(nodePtr, className, [, read, len, pseudo]) {
   const css = readCss(read(nodePtr), len);
   const selector = `.${className}`;
   if (pseudo === null) {
-    // One @media rule per breakpoint; insertRule takes a single rule.
-    const index = styleSheet.cssRules.length;
+    // One @media rule per breakpoint; insertRule takes a single rule. They
+    // go in the sheet after the base rules, so they win over a base rule
+    // added after them.
+    const index = responsiveSheet.cssRules.length;
     const parsed = new CSSStyleSheet();
     parsed.replaceSync(css);
     for (const rule of parsed.cssRules) {
-      styleSheet.insertRule(rule.cssText, styleSheet.cssRules.length);
+      responsiveSheet.insertRule(rule.cssText, responsiveSheet.cssRules.length);
     }
     styleRuleCache.set(selector, index);
   } else {

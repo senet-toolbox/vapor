@@ -904,8 +904,27 @@ fn resizePage() void {
 
 // ── /responsive : .hideOn and .showOn per screen size ─────────────────────
 
+var late_shown = false;
+
+fn showLate() void {
+    late_shown = true;
+}
+
 fn responsivePage() void {
     Box().id("responsive-page").children({
+        // Appears after a render, with base classes no element had before:
+        // its screen-size rules must still win over them.
+        Button(showLate, .{}).id("show-late").children({
+            Text("Show").end();
+        });
+        if (late_shown) {
+            Box().id("late-hidden").width(.px(123)).padding(.all(11)).hideOn(.mobile).children({
+                Text("late").end();
+            });
+            Box().id("late-padded").width(.px(124)).padding(.all(21)).responsive(.mobile, .{ .padding = .all(3) }).children({
+                Text("late padded").end();
+            });
+        }
         Box().id("mobile-only").showOn(.mobile).children({
             Text("mobile").end();
         });

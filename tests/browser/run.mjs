@@ -237,6 +237,12 @@ function makePage(cdp, origin) {
     async resetViewport() {
       await cdp.send("Emulation.clearDeviceMetricsOverride");
     },
+    // Forgets the tab's back/forward entries. Chrome keeps at most 50, so
+    // after the many navigations of earlier tests history.length stops
+    // growing.
+    async resetHistory() {
+      await cdp.send("Page.resetNavigationHistory");
+    },
     async click(id) {
       const ok = await evaluate(`(() => { const e = document.getElementById(${JSON.stringify(id)}); if (!e) return false; e.click(); return true; })()`);
       if (!ok) throw new Error(`no element #${id} to click`);
@@ -703,6 +709,21 @@ const tests = {
     assertEqual(JSON.stringify(errors), "[]", "errors logged");
   },
 
+  async "screen-size styles apply to elements that appear after a click"(p) {
+    // Their @media rules went into the sheet before the element's new base
+    // rules, which then won; and the runtime wrote no responsive padding.
+    try {
+      await p.viewport(400, 800);
+      await p.goto("/responsive");
+      await p.click("show-late");
+      await p.waitFor(`!!document.getElementById("late-hidden")`, "the late elements");
+      const state = `JSON.stringify([getComputedStyle(document.getElementById("late-hidden")).display, getComputedStyle(document.getElementById("late-padded")).paddingTop])`;
+      assertEqual(await p.evaluate(state), JSON.stringify(["none", "3px"]), "at 400px");
+    } finally {
+      await p.resetViewport();
+    }
+  },
+
   async "an Svg whose markup changes is redrawn in place, not nested"(p) {
     // The new <svg> went inside the old one, which kept the old viewBox.
     await p.goto("/svg");
@@ -866,6 +887,7 @@ const tests = {
   },
 
   async "a link click adds exactly one history entry"(p) {
+    await p.resetHistory();
     await p.goto("/a");
     await p.waitFor(`!!document.getElementById("to-b")`, "page A");
     const before = await p.evaluate(`history.length`);
