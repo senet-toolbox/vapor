@@ -218,15 +218,22 @@ Vapor.Stack().id(panel_ids[tab]).children({   // a name per tab
 ### Transitions
 
 `.duration(ms)`, or a `.transition(...)` that names no property, animates how
-an element looks: colours, opacity, shadow, corners, transform and filters. It does not
-animate size, position or spacing, which would otherwise animate whenever an
-element is reused for other content or the window crosses a breakpoint. Name
-what should animate, or `.all` for everything:
+an element looks: colours, opacity, shadow, corners, transform and filters
+(`.look`). It does not animate size, position or spacing, which would otherwise
+animate whenever an element is reused for other content or the window crosses a
+breakpoint. Name what should animate instead:
 
 ```zig
-.transition(.{ .properties = &.{ .width, .opacity }, .duration = 200 })
-.transition(.{ .properties = &.{.all}, .duration = 200 })
+.transition(.{ .properties = &.{ .look, .width }, .duration = 200 }) // looks, and width
+.transition(.{ .properties = &.{ .opacity, .border_radius }, .duration = 200 })
+.transition(.{ .properties = &.{.layout}, .duration = 200 }) // size, spacing and place
+.transition(.{ .properties = &.{.all}, .duration = 200 }) // everything
 ```
+
+Each property is its CSS name in snake_case: `.border_radius` animates
+`border-radius`, `.stroke_dashoffset` animates `stroke-dashoffset`. `.look`,
+`.layout` and `.all` are groups; a property in two of the ones you list is
+animated once.
 
 ### Events
 

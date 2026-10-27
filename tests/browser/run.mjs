@@ -588,6 +588,13 @@ const tests = {
     // A named property is written as CSS names it, and .all is everything.
     const props = await p.evaluate(`["named-box", "all-box"].map((id) => getComputedStyle(document.getElementById(id)).transitionProperty).join(" | ")`);
     assertEqual(props, "background-color | all", "named transitions");
+    // Groups expand, and a name in two of them is written once.
+    const groups = await p.evaluate(`["look-width-box", "layout-box"].map((id) => getComputedStyle(document.getElementById(id)).transitionProperty.split(", "))`);
+    const [lookWidth, layout] = groups;
+    assert(lookWidth.includes("border-radius") && lookWidth.includes("width"), `look + width: ${lookWidth}`);
+    assertEqual(lookWidth.filter((n) => n === "transform").length, 1, "transform written once");
+    assert(!lookWidth.includes("height"), `look + width animates height: ${lookWidth}`);
+    assert(layout.includes("padding") && layout.includes("gap") && !layout.includes("opacity"), `layout: ${layout}`);
     await p.click("transition-toggle");
   },
 

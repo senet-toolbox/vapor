@@ -4,59 +4,131 @@ const std = @import("std");
 const TimingFunction = @import("Animation.zig").Easing;
 const Vapor = @import("vapor.zig");
 
+/// What a transition animates. Each property is its CSS name in snake_case
+/// (`.border_radius` is `border-radius`); `.look`, `.layout` and `.all` are
+/// groups of them.
 pub const TransitionProperty = enum(u8) {
-    linear,
-    opacity,
-    x_position,
-    y_position,
-    width,
-    height,
-    rotation,
-    scale,
-    background_color,
-    border_color,
-    transform,
-    top,
-    bottom,
-    left,
-    right,
-    none,
-    cx,
-    d,
-    cy,
-    padding,
-    background,
-    border,
-    color,
-    /// Every property, size and position included.
+    // Groups
+    /// How an element looks, never its size or place: colours, opacity,
+    /// shadow, corners, transform and filters. What `.duration(ms)` animates.
+    look,
+    /// Size, spacing and place: width and height (and their limits),
+    /// padding, margin, gap, border width, and top/right/bottom/left.
+    layout,
+    /// Every property.
     all,
 
-    /// The CSS property name.
-    pub fn css(self: TransitionProperty) []const u8 {
+    // How it looks
+    color,
+    background_color,
+    border_color,
+    border_radius,
+    outline_color,
+    outline_width,
+    outline_offset,
+    text_decoration_color,
+    opacity,
+    box_shadow,
+    transform,
+    translate,
+    scale,
+    rotate,
+    filter,
+    backdrop_filter,
+    clip_path,
+
+    // Size and place
+    width,
+    height,
+    min_width,
+    max_width,
+    min_height,
+    max_height,
+    padding,
+    margin,
+    gap,
+    border_width,
+    top,
+    right,
+    bottom,
+    left,
+
+    // Text
+    font_size,
+    line_height,
+    letter_spacing,
+
+    // SVG
+    fill,
+    stroke,
+    stroke_width,
+    stroke_dasharray,
+    stroke_dashoffset,
+    cx,
+    cy,
+    r,
+    d,
+
+    // Shorthands
+    background,
+    border,
+
+    /// Deprecated: the same as `.look`.
+    none,
+    /// Deprecated: a timing, not a property. The same as `.all`.
+    linear,
+    /// Deprecated: use `.translate`.
+    x_position,
+    /// Deprecated: use `.translate`.
+    y_position,
+    /// Deprecated: use `.rotate`.
+    rotation,
+
+    /// The CSS properties this animates: one, or a group's.
+    pub fn names(self: TransitionProperty) []const []const u8 {
         return switch (self) {
-            .x_position, .y_position => "translate",
-            .rotation => "rotate",
-            .background_color => "background-color",
-            .border_color => "border-color",
-            // Named by no property, what `none` animates is written by the
-            // style compiler.
-            .none, .linear => "all",
-            else => @tagName(self),
+            .look, .none => &look_properties,
+            .layout => &layout_properties,
+            .all, .linear => &.{"all"},
+            .x_position, .y_position => &.{"translate"},
+            .rotation => &.{"rotate"},
+            inline else => |p| &.{comptime cssName(@tagName(p))},
         };
+    }
+
+    /// Deprecated: use `names`. A group's name is `all`.
+    pub fn css(self: TransitionProperty) []const u8 {
+        const all = self.names();
+        return if (all.len == 1) all[0] else "all";
     }
 };
 
-/// What a transition that names no property (`.duration(ms)`, or
-/// `.transition(.{})`) animates: how an element looks, never its size or
-/// place. An element reused for other content, or a screen-size change,
-/// would otherwise animate its layout. Name the properties, or `.all`, to
-/// animate those.
+/// `snake_case` to `kebab-case`.
+fn cssName(comptime tag: []const u8) []const u8 {
+    comptime {
+        var name: [tag.len]u8 = tag[0..tag.len].*;
+        for (&name) |*c| {
+            if (c.* == '_') c.* = '-';
+        }
+        const final = name;
+        return &final;
+    }
+}
+
+/// What `.look` animates.
 pub const look_properties = [_][]const u8{
-    "color",           "background-color", "border-color",  "border-radius",
+    "color",           "background-color", "border-color",   "border-radius",
     "outline-color",   "outline-width",    "outline-offset", "text-decoration-color",
     "fill",            "stroke",           "opacity",        "box-shadow",
     "transform",       "translate",        "scale",          "rotate",
     "filter",          "backdrop-filter",
+};
+
+/// What `.layout` animates.
+pub const layout_properties = [_][]const u8{
+    "width",  "height", "min-width", "max-width",    "min-height", "max-height",
+    "padding", "margin", "gap",      "border-width", "top",        "right",
+    "bottom", "left",
 };
 
 pub const TransitionState = packed union {
@@ -97,8 +169,8 @@ pub const PackedTransition = packed struct {
 
 // Main Transition struct - holds all transition data
 pub const Transition = struct {
-    /// `.none` animates `look_properties`; `.all` animates everything.
-    properties: []const TransitionProperty = &.{.none},
+    /// What animates; `.look` unless named.
+    properties: []const TransitionProperty = &.{.look},
     duration: u32 = 300, // default 300ms
     timing: TimingFunction = .ease,
     delay: u32 = 0,

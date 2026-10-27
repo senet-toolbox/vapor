@@ -798,6 +798,8 @@ fn transitionPage() void {
             .end();
         Box().id("named-box").transition(.{ .properties = &.{.background_color}, .duration = 120 }).end();
         Box().id("all-box").transition(.{ .properties = &.{.all}, .duration = 120 }).end();
+        Box().id("look-width-box").transition(.{ .properties = &.{ .look, .transform, .width }, .duration = 120 }).end();
+        Box().id("layout-box").transition(.{ .properties = &.{.layout}, .duration = 120 }).end();
     });
 }
 

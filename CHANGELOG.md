@@ -4,6 +4,30 @@ All notable changes to this project are documented here. This project follows
 [Semantic Versioning](https://semver.org/): breaking changes bump the major
 version and are listed with a migration note.
 
+## [3.7.0] — 2026-10-27
+
+### Added
+
+- Transition groups: `.look` (what `.duration(ms)` animates), `.layout`
+  (width and height and their limits, padding, margin, gap, border width,
+  top/right/bottom/left) and `.all`. Combine them with single properties:
+  `&.{ .look, .width }`.
+- Transition properties named after their CSS property in snake_case,
+  among them `.border_radius`, `.box_shadow`, `.outline_width`, `.translate`,
+  `.rotate`, `.filter`, `.clip_path`, `.margin`, `.gap`, `.min_width`,
+  `.font_size`, `.stroke_dashoffset` and `.r`.
+- `TransitionProperty.names()`, the CSS properties one animates.
+
+### Changed
+
+- A property listed twice, directly or through a group, is written once.
+
+### Deprecated
+
+- `.none` (use `.look`), `.linear` (use `.all`), `.x_position` and
+  `.y_position` (use `.translate`), `.rotation` (use `.rotate`), and
+  `TransitionProperty.css()` (use `names()`). They work as before.
+
 ## [3.6.1] — 2026-10-27
 
 ### Fixed

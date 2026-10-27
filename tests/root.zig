@@ -1902,3 +1902,35 @@ test "a timeout that re-arms itself stays scheduled" {
     Vapor.lib.runTimeout(Vapor.lib.hashKey("rearm"));
     try std.testing.expectEqual(@as(u32, 3), Rearm.runs);
 }
+
+test "transition properties are written with their CSS names" {
+    const P = Vapor.Types.TransitionProperty;
+    const one = struct {
+        fn name(p: P) []const u8 {
+            const names = p.names();
+            std.debug.assert(names.len == 1);
+            return names[0];
+        }
+    }.name;
+    try std.testing.expectEqualStrings("border-radius", one(.border_radius));
+    try std.testing.expectEqualStrings("stroke-dashoffset", one(.stroke_dashoffset));
+    try std.testing.expectEqualStrings("width", one(.width));
+    try std.testing.expectEqualStrings("translate", one(.x_position));
+    try std.testing.expectEqualStrings("rotate", one(.rotation));
+    try std.testing.expectEqualStrings("all", one(.all));
+    // The default animates how an element looks, never its size.
+    const look = P.look.names();
+    try std.testing.expectEqual(look, P.none.names());
+    for (look) |name| {
+        try std.testing.expect(!std.mem.eql(u8, name, "width"));
+        try std.testing.expect(!std.mem.eql(u8, name, "height"));
+    }
+    // Every property but the groups names exactly one.
+    inline for (@typeInfo(P).@"enum".fields) |field| {
+        const p: P = @enumFromInt(field.value);
+        switch (p) {
+            .look, .none, .layout => {},
+            else => try std.testing.expectEqual(@as(usize, 1), p.names().len),
+        }
+    }
+}

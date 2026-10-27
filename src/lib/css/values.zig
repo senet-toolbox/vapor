@@ -1,5 +1,6 @@
 //! Writes individual style values (enums, sizes, colours) as CSS.
 
+const std = @import("std");
 const Writer = @import("../Writer.zig");
 const Types = @import("../types.zig");
 const Alignment = Types.Alignment;
@@ -15,7 +16,6 @@ const TransformOrigin = Types.TransformOrigin;
 const Vapor = @import("../vapor.zig");
 const ListStyle = Types.ListStyle;
 const PackedTransition = Types.PackedTransition;
-const Transition = @import("../transition.zig");
 const Outline = Types.Outline;
 const Cursor = Types.Cursor;
 
@@ -521,14 +521,19 @@ fn writeTransitionItem(name: []const u8, style: PackedTransition, first: *bool, 
 fn transitionStyleToCSS(style: PackedTransition, writer: *Writer) void {
     const properties = Vapor.packed_transitions.get(style.properties_ptr) orelse return;
     var first = true;
-    for (properties) |p| {
-        if (p == .none) {
-            // No property named: how the element looks, not its layout.
-            for (Transition.look_properties) |name| writeTransitionItem(name, style, &first, writer);
-        } else {
-            writeTransitionItem(p.css(), style, &first, writer);
+    for (properties, 0..) |p, i| {
+        for (p.names()) |name| {
+            // `.look` with `.transform`, say, names transform twice.
+            if (!namedBefore(properties[0..i], name)) writeTransitionItem(name, style, &first, writer);
         }
     }
+}
+
+fn namedBefore(properties: []const Types.TransitionProperty, name: []const u8) bool {
+    for (properties) |p| {
+        for (p.names()) |n| if (std.mem.eql(u8, n, name)) return true;
+    }
+    return false;
 }
 
 // Function to convert Cursor enum to a CSS string
