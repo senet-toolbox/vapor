@@ -4,6 +4,14 @@ All notable changes to this project are documented here. This project follows
 [Semantic Versioning](https://semver.org/): breaking changes bump the major
 version and are listed with a migration note.
 
+## [3.6.1] — 2026-10-27
+
+### Fixed
+
+- `.duration(ms)` stopped animating rounded corners in 3.6.0: `border-radius`
+  (and `outline-width`, `outline-offset`) are back among what it animates.
+  They change how an element looks, not its size.
+
 ## [3.6.0] — 2026-10-27
 
 ### Changed

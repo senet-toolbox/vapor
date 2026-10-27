@@ -218,7 +218,7 @@ Vapor.Stack().id(panel_ids[tab]).children({   // a name per tab
 ### Transitions
 
 `.duration(ms)`, or a `.transition(...)` that names no property, animates how
-an element looks: colours, opacity, shadow, transform and filters. It does not
+an element looks: colours, opacity, shadow, corners, transform and filters. It does not
 animate size, position or spacing, which would otherwise animate whenever an
 element is reused for other content or the window crosses a breakpoint. Name
 what should animate, or `.all` for everything:

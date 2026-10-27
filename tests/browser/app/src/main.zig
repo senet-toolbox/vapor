@@ -793,6 +793,7 @@ fn transitionPage() void {
             .width(.px(if (transition_wide) 300 else 60))
             .height(.px(20))
             .background(if (transition_wide) .hex("#000000") else .hex("#ffffff"))
+            .radius(.all(if (transition_wide) 10 else 0))
             .duration(300)
             .end();
         Box().id("named-box").transition(.{ .properties = &.{.background_color}, .duration = 120 }).end();

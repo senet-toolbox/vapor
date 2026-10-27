@@ -572,7 +572,8 @@ const tests = {
       const out = []; const t0 = performance.now();
       const tick = () => {
         const e = document.getElementById("duration-box");
-        out.push([Math.round(e.getBoundingClientRect().width), getComputedStyle(e).backgroundColor]);
+        const style = getComputedStyle(e);
+        out.push([Math.round(e.getBoundingClientRect().width), style.backgroundColor, parseFloat(style.borderTopLeftRadius)]);
         if (performance.now() - t0 < 200) requestAnimationFrame(tick); else done(out);
       };
       requestAnimationFrame(tick);
@@ -582,6 +583,8 @@ const tests = {
     assert(!seen.some(([w]) => w > 70 && w < 290), `the width animated: ${seen.map(([w]) => w).join(" ")}`);
     const between = seen.filter(([, c]) => c !== "rgb(255, 255, 255)" && c !== "rgb(0, 0, 0)");
     assert(between.length > 0, "the background jumped instead of animating");
+    // Rounding corners changes how it looks, not its size.
+    assert(seen.some(([, , r]) => r > 0 && r < 10), `the corners jumped: ${seen.map(([, , r]) => r).join(" ")}`);
     // A named property is written as CSS names it, and .all is everything.
     const props = await p.evaluate(`["named-box", "all-box"].map((id) => getComputedStyle(document.getElementById(id)).transitionProperty).join(" | ")`);
     assertEqual(props, "background-color | all", "named transitions");

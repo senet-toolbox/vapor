@@ -52,10 +52,11 @@ pub const TransitionProperty = enum(u8) {
 /// would otherwise animate its layout. Name the properties, or `.all`, to
 /// animate those.
 pub const look_properties = [_][]const u8{
-    "color",                "background-color", "border-color", "outline-color",
-    "text-decoration-color", "fill",            "stroke",       "opacity",
-    "box-shadow",           "transform",        "translate",    "scale",
-    "rotate",               "filter",           "backdrop-filter",
+    "color",           "background-color", "border-color",  "border-radius",
+    "outline-color",   "outline-width",    "outline-offset", "text-decoration-color",
+    "fill",            "stroke",           "opacity",        "box-shadow",
+    "transform",       "translate",        "scale",          "rotate",
+    "filter",          "backdrop-filter",
 };
 
 pub const TransitionState = packed union {
