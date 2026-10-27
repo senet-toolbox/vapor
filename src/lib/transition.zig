@@ -28,6 +28,34 @@ pub const TransitionProperty = enum(u8) {
     background,
     border,
     color,
+    /// Every property, size and position included.
+    all,
+
+    /// The CSS property name.
+    pub fn css(self: TransitionProperty) []const u8 {
+        return switch (self) {
+            .x_position, .y_position => "translate",
+            .rotation => "rotate",
+            .background_color => "background-color",
+            .border_color => "border-color",
+            // Named by no property, what `none` animates is written by the
+            // style compiler.
+            .none, .linear => "all",
+            else => @tagName(self),
+        };
+    }
+};
+
+/// What a transition that names no property (`.duration(ms)`, or
+/// `.transition(.{})`) animates: how an element looks, never its size or
+/// place. An element reused for other content, or a screen-size change,
+/// would otherwise animate its layout. Name the properties, or `.all`, to
+/// animate those.
+pub const look_properties = [_][]const u8{
+    "color",                "background-color", "border-color", "outline-color",
+    "text-decoration-color", "fill",            "stroke",       "opacity",
+    "box-shadow",           "transform",        "translate",    "scale",
+    "rotate",               "filter",           "backdrop-filter",
 };
 
 pub const TransitionState = packed union {
@@ -68,6 +96,7 @@ pub const PackedTransition = packed struct {
 
 // Main Transition struct - holds all transition data
 pub const Transition = struct {
+    /// `.none` animates `look_properties`; `.all` animates everything.
     properties: []const TransitionProperty = &.{.none},
     duration: u32 = 300, // default 300ms
     timing: TimingFunction = .ease,

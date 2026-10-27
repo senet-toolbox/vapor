@@ -861,17 +861,13 @@ export async function render() {
             return;
           }
 
-          // Nothing pending: DOM is final. Wait for paint, then measure.
-          if (wasmInstance.hasLayoutFunctions()) {
-            requestAnimationFrame(() => {
-              requestAnimationFrame(() => {
-                wasmInstance.onLayoutCallback();
-              });
-            });
-          }
+          runLayoutCallbacks();
         });
       } else {
         refreshNodePointers(wasmInstance.getRenderUINodeRootPtr());
+        // The render a hook deferred onLayout to may change nothing (a
+        // chart measuring the size it already had); the callbacks still run.
+        if (!state.isRenderScheduled) runLayoutCallbacks();
       }
     } else {
       debug("Grain Rerender");
@@ -880,6 +876,16 @@ export async function render() {
     reportCrash(error);
     console.error("An error occurred during the render cycle:", error);
   }
+}
+
+/** Runs the onLayout callbacks once the DOM is final and painted. */
+function runLayoutCallbacks() {
+  if (!wasmInstance.hasLayoutFunctions()) return;
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      wasmInstance.onLayoutCallback();
+    });
+  });
 }
 
 function removeAnimatedNodeTree(el) {

@@ -563,6 +563,31 @@ const tests = {
     assertEqual(await p.evaluate(`document.getElementById("transition-box").style.transition`), "", "inline transition");
   },
 
+  async ".duration animates how an element looks, not its size"(p) {
+    // It wrote `transition: 300ms ease`, which is every property: an
+    // element reused for other content animated its old size into its new.
+    await p.goto("/transition");
+    await p.waitFor(`document.getElementById("duration-box")?.getBoundingClientRect().width === 60`, "the narrow box");
+    const sample = p.evaluate(`new Promise((done) => {
+      const out = []; const t0 = performance.now();
+      const tick = () => {
+        const e = document.getElementById("duration-box");
+        out.push([Math.round(e.getBoundingClientRect().width), getComputedStyle(e).backgroundColor]);
+        if (performance.now() - t0 < 200) requestAnimationFrame(tick); else done(out);
+      };
+      requestAnimationFrame(tick);
+    })`);
+    await p.click("transition-toggle");
+    const seen = await sample;
+    assert(!seen.some(([w]) => w > 70 && w < 290), `the width animated: ${seen.map(([w]) => w).join(" ")}`);
+    const between = seen.filter(([, c]) => c !== "rgb(255, 255, 255)" && c !== "rgb(0, 0, 0)");
+    assert(between.length > 0, "the background jumped instead of animating");
+    // A named property is written as CSS names it, and .all is everything.
+    const props = await p.evaluate(`["named-box", "all-box"].map((id) => getComputedStyle(document.getElementById(id)).transitionProperty).join(" | ")`);
+    assertEqual(props, "background-color | all", "named transitions");
+    await p.click("transition-toggle");
+  },
+
   async "navigating to a page does not animate the elements it reuses"(p) {
     await p.goto("/transition");
     await p.waitFor(`document.getElementById("transition-box")?.getBoundingClientRect().width === 60`, "the narrow box");
@@ -722,6 +747,14 @@ const tests = {
     } finally {
       await p.resetViewport();
     }
+  },
+
+  async "onLayout runs when the render it waited for changes nothing"(p) {
+    // A mount hook asked for another render; onLayout waited for it, and
+    // that render, changing nothing, never ran the callbacks.
+    await p.goto("/layout");
+    await p.click("show-layout");
+    await p.waitForText("layout-runs", "1");
   },
 
   async "an Svg whose markup changes is redrawn in place, not nested"(p) {

@@ -41,6 +41,7 @@ pub export fn init() void {
     Vapor.Page(.{ .route = "/resize" }, resizePage, null);
     Vapor.Page(.{ .route = "/responsive" }, responsivePage, null);
     Vapor.Page(.{ .route = "/svg" }, svgPage, null);
+    Vapor.Page(.{ .route = "/layout" }, layoutPage, null);
     Vapor.Page(.{ .route = "/listen" }, listenPage, null);
     Vapor.Page(.{ .route = "/stale" }, stalePage, null);
     Vapor.Page(.{ .route = "/drag" }, dragPage, null);
@@ -786,6 +787,16 @@ fn transitionPage() void {
         });
         transitionBox(if (transition_wide) 300 else 60);
         morphBox(60);
+        // `.duration` alone animates how it looks, not its size.
+        Box()
+            .id("duration-box")
+            .width(.px(if (transition_wide) 300 else 60))
+            .height(.px(20))
+            .background(if (transition_wide) .hex("#000000") else .hex("#ffffff"))
+            .duration(300)
+            .end();
+        Box().id("named-box").transition(.{ .properties = &.{.background_color}, .duration = 120 }).end();
+        Box().id("all-box").transition(.{ .properties = &.{.all}, .duration = 120 }).end();
     });
 }
 
@@ -971,5 +982,41 @@ fn svgPage() void {
         Button(widenSvg, .{}).id("widen-svg").children({
             Text("Widen").end();
         });
+    });
+}
+
+// ── /layout : onLayout runs when the render it waits for changes nothing ──
+
+var layout_shown = false;
+var layout_runs: u32 = 0;
+
+/// Asks for another render that changes nothing, as a chart does when it
+/// measures the size it already had.
+fn rerenderOnMount() void {
+    Vapor.cycle();
+}
+
+fn layoutRan() void {
+    layout_runs += 1;
+    Vapor.cycle();
+}
+
+fn showLayoutBox() void {
+    layout_shown = true;
+    Vapor.onLayout(layoutRan, .{});
+}
+
+fn layoutPage() void {
+    Box().id("layout-page").children({
+        Button(showLayoutBox, .{}).id("show-layout").children({
+            Text("Show").end();
+        });
+        if (layout_shown) {
+            Box().id("layout-box").children({
+                Vapor.onMount(rerenderOnMount, .{});
+                Text("box").end();
+            });
+        }
+        TextFmt("{d}", .{layout_runs}).id("layout-runs").end();
     });
 }

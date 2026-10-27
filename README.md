@@ -202,6 +202,32 @@ CSS transition) when something above it changes.
 The value also becomes the element's DOM id, so it must be unique in the
 document.
 
+The same goes for **branches that render different content in one place**,
+such as a tab's panel or a page's step. Unnamed, the second branch's elements
+take the first's names, so the reconciler restyles the old elements into the
+new content instead of building it, and any transition on them animates the
+change. Name each branch's root and its content is built fresh, while
+renders of the same branch keep reusing their elements:
+
+```zig
+Vapor.Stack().id(panel_ids[tab]).children({   // a name per tab
+    switch (tab) { ... }
+});
+```
+
+### Transitions
+
+`.duration(ms)`, or a `.transition(...)` that names no property, animates how
+an element looks: colours, opacity, shadow, transform and filters. It does not
+animate size, position or spacing, which would otherwise animate whenever an
+element is reused for other content or the window crosses a breakpoint. Name
+what should animate, or `.all` for everything:
+
+```zig
+.transition(.{ .properties = &.{ .width, .opacity }, .duration = 200 })
+.transition(.{ .properties = &.{.all}, .duration = 200 })
+```
+
 ### Events
 
 Attach handlers where the element is built. They are part of the render:

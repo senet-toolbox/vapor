@@ -4,6 +4,35 @@ All notable changes to this project are documented here. This project follows
 [Semantic Versioning](https://semver.org/): breaking changes bump the major
 version and are listed with a migration note.
 
+## [3.6.0] — 2026-10-27
+
+### Changed
+
+- `.duration(ms)`, and a `.transition(...)` that names no property, now
+  animate how an element looks (colours, opacity, shadow, transform,
+  filters) instead of every property. Size, position and spacing no longer
+  animate by default: they did whenever an element was reused for other
+  content (switching tabs animated the old tab's sizes into the new one's)
+  or the window crossed a breakpoint. To keep the old behaviour, name the
+  properties, or use `.transition(.{ .properties = &.{.all}, .duration = ms })`.
+  See "Transitions" in the README.
+
+### Added
+
+- `TransitionProperty.all`, to animate every property.
+- README: give each branch that renders different content in one place
+  (a tab's panel) an `.id()`, so its content is built rather than restyled.
+
+### Fixed
+
+- A transition naming `.background_color`, `.border_color`, `.rotation` or
+  the position properties wrote an invalid CSS name, and the browser
+  dropped the whole transition.
+- `onLayout` callbacks were lost when a mount hook asked for another render
+  that changed nothing (as a chart does when it measures the size it already
+  had): they waited for that render, which never ran them. Keyboard focus
+  that tabs move with `onLayout` stayed behind.
+
 ## [3.5.2] — 2026-10-27
 
 ### Fixed

@@ -15,6 +15,7 @@ const TransformOrigin = Types.TransformOrigin;
 const Vapor = @import("../vapor.zig");
 const ListStyle = Types.ListStyle;
 const PackedTransition = Types.PackedTransition;
+const Transition = @import("../transition.zig");
 const Outline = Types.Outline;
 const Cursor = Types.Cursor;
 
@@ -506,30 +507,26 @@ fn outlineStyleToCSS(outline: Outline, writer: anytype) !void {
     try writeMappedString(Outline, outline, &outline_map, writer);
 }
 
+/// One "<property> <duration>ms <timing>" of a transition list.
+fn writeTransitionItem(name: []const u8, style: PackedTransition, first: *bool, writer: *Writer) void {
+    if (!first.*) writer.write(", ") catch return;
+    first.* = false;
+    writer.write(name) catch return;
+    writer.write(" ") catch return;
+    writer.writeU32(style.duration) catch return;
+    writer.write("ms ") catch return;
+    writer.write(style.timing.toCss()) catch return;
+}
+
 fn transitionStyleToCSS(style: PackedTransition, writer: *Writer) void {
     const properties = Vapor.packed_transitions.get(style.properties_ptr) orelse return;
-    for (properties, 0..) |p, i| {
-        switch (p) {
-            .none => {
-                writer.writeU32(style.duration) catch return;
-                writer.write("ms ") catch return;
-                // try writeMappedString(TimingFunction, style.timing, &timing_function_map, writer);
-                const css = style.timing.toCss();
-                writer.write(css) catch return;
-            },
-            else => {
-                const tag_name = @tagName(p);
-                writer.write(tag_name) catch return;
-                writer.write(" ") catch return;
-                writer.writeU32(style.duration) catch return;
-                writer.write("ms ") catch return;
-                // try writeMappedString(TimingFunction, style.timing, &timing_function_map, writer);
-                const css = style.timing.toCss();
-                writer.write(css) catch return;
-            },
-        }
-        if (i < properties.len - 1) {
-            writer.write(", ") catch return;
+    var first = true;
+    for (properties) |p| {
+        if (p == .none) {
+            // No property named: how the element looks, not its layout.
+            for (Transition.look_properties) |name| writeTransitionItem(name, style, &first, writer);
+        } else {
+            writeTransitionItem(p.css(), style, &first, writer);
         }
     }
 }
