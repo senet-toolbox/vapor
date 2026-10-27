@@ -117,6 +117,11 @@ export let tStyle = 0,
  * @param {HTMLElement} element - The element to set up
  * @param {Object} renderCmd - The render command
  */
+// Attributes vapor sets on an Svg element, which its markup does not own.
+function keepsSvgAttribute(name) {
+  return name === "id" || name === "class" || name === "style" || name === "role" || name === "tabindex" || name.startsWith("data-") || name.startsWith("aria-");
+}
+
 export function setupElement(element, uinode) {
   if (state.initial_render && uinode.styleId.length > 0) {
     const inlineStylePtr = wasmInstance.getInlineStyle(uinode.offset);
@@ -210,8 +215,17 @@ export function updateElement(element, uinode, force = false) {
       const svgString = readWasmString(uinode.textPtr, uinode.textLen);
       const cleanSvg = svgString.replace(/^\s+|\s+$/g, "");
       const parser = new DOMParser();
-      const doc = parser.parseFromString(cleanSvg, "image/svg+xml");
-      element.innerHTML = doc.documentElement.outerHTML;
+      const fresh = parser.parseFromString(cleanSvg, "image/svg+xml").documentElement;
+      // The element is the <svg> itself: it takes the new markup's attributes
+      // and children. Setting its innerHTML nested the new <svg> in the old
+      // one, which kept the old viewBox and scaled the drawing.
+      for (const name of element.getAttributeNames()) {
+        if (!keepsSvgAttribute(name) && !fresh.hasAttribute(name)) element.removeAttribute(name);
+      }
+      for (const name of fresh.getAttributeNames()) {
+        if (!keepsSvgAttribute(name)) element.setAttribute(name, fresh.getAttribute(name));
+      }
+      element.replaceChildren(...fresh.childNodes);
     } else if (
       uinode.elemType === COMPONENT_TYPES.LINK ||
       uinode.elemType === COMPONENT_TYPES.REDIRECT_LINK

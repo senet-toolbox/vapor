@@ -703,6 +703,16 @@ const tests = {
     assertEqual(JSON.stringify(errors), "[]", "errors logged");
   },
 
+  async "an Svg whose markup changes is redrawn in place, not nested"(p) {
+    // The new <svg> went inside the old one, which kept the old viewBox.
+    await p.goto("/svg");
+    const state = `JSON.stringify((() => { const s = document.getElementById("drawing"); return [s.tagName, s.getAttribute("viewBox"), s.getAttribute("preserveAspectRatio"), s.querySelectorAll("svg").length, s.firstElementChild?.id]; })())`;
+    assertEqual(await p.evaluate(state), JSON.stringify(["svg", "0 0 200 100", "none", 0, "dot"]), "first drawing");
+    await p.click("widen-svg");
+    await p.waitFor(`!!document.getElementById("wide-rect")`, "the new drawing");
+    assertEqual(await p.evaluate(state), JSON.stringify(["svg", "0 0 400 100", null, 0, "wide-rect"]), "redrawn");
+  },
+
   async ".hideOn and .showOn show an element on its screen sizes only"(p) {
     const shown = `JSON.stringify(["mobile-only", "tablet-up", "desktop-only", "hidden-then-padded", "padded-then-hidden"].map((id) => getComputedStyle(document.getElementById(id)).display !== "none"))`;
     const at = async (width) => {

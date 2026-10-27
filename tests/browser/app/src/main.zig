@@ -40,6 +40,7 @@ pub export fn init() void {
     Vapor.Page(.{ .route = "/listeners" }, listenersPage, null);
     Vapor.Page(.{ .route = "/resize" }, resizePage, null);
     Vapor.Page(.{ .route = "/responsive" }, responsivePage, null);
+    Vapor.Page(.{ .route = "/svg" }, svgPage, null);
     Vapor.Page(.{ .route = "/listen" }, listenPage, null);
     Vapor.Page(.{ .route = "/stale" }, stalePage, null);
     Vapor.Page(.{ .route = "/drag" }, dragPage, null);
@@ -929,6 +930,27 @@ fn responsivePage() void {
         });
         Box().id("margined").padding(.all(20)).responsive(.mobile, .{ .margin = .all(6) }).children({
             Text("m").end();
+        });
+    });
+}
+
+// ── /svg : an Svg whose markup changes ─────────────────────────────────────
+
+var svg_wide = false;
+
+fn widenSvg() void {
+    svg_wide = !svg_wide;
+}
+
+fn svgPage() void {
+    Box().id("svg-page").children({
+        Vapor.Svg(.{ .svg = if (svg_wide)
+            \\<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 100"><rect id="wide-rect" width="400" height="100"/></svg>
+        else
+            \\<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 100" preserveAspectRatio="none"><circle id="dot" r="10"/></svg>
+        }).id("drawing").end();
+        Button(widenSvg, .{}).id("widen-svg").children({
+            Text("Widen").end();
         });
     });
 }

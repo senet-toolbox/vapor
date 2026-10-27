@@ -4,6 +4,15 @@ All notable changes to this project are documented here. This project follows
 [Semantic Versioning](https://semver.org/): breaking changes bump the major
 version and are listed with a migration note.
 
+## [3.5.1] — 2026-10-27
+
+### Fixed
+
+- An `Svg` whose markup changed was redrawn inside the old `<svg>`, which
+  kept the old `viewBox` and scaled the new drawing to fit it. Charts that
+  measure their box and redraw (opaque's Chart) were drawn too small. The
+  element now takes the new markup's attributes and children in place.
+
 ## [3.5.0] — 2026-10-26
 
 Pages that work on phones: show and hide by screen size, and responsive
