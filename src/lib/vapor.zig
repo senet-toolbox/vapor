@@ -316,6 +316,7 @@ pub fn init(config: VaporConfig) void {
 
     Components.text_string_table = .init(allocator);
     Accessibility.a11y_map = .init(allocator);
+    Accessibility.attribute_map = .init(allocator);
 
     string_table = StringTable.init(allocator);
     storage_table = StorageTable.init(allocator);
@@ -705,6 +706,7 @@ pub fn renderCycle(route_ptr: [*:0]u8) !void {
     changed_route = false;
     class_cache.batchRemove();
     Accessibility.a11y_map.prune(null);
+    Accessibility.attribute_map.prune(null);
     Components.text_string_table.prune(Components.dropText);
     element_registry.prune(null);
     button_callbacks.prune(null);

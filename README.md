@@ -235,6 +235,36 @@ Each property is its CSS name in snake_case: `.border_radius` animates
 `.layout` and `.all` are groups; a property in two of the ones you list is
 animated once.
 
+### Opening and closing — `Collapse`
+
+`Vapor.Collapse(open)` is a box that slides open to its content's height,
+whatever that is, and shut to nothing, over 150ms. Shut, its content is out of
+the tab order and hidden from screen readers. Style it like a `Box`: the calls
+apply to the content, so its padding folds away too.
+
+```zig
+Vapor.Collapse(item.is_open)
+    .padding(.all(12))
+    .children({
+        Vapor.Text(item.answer).end();
+    });
+```
+
+### Other attributes — `.attribute()`
+
+For an HTML attribute vapor has no call for, such as `data-*`, `title` or
+`inputmode`. It is written in prerendered pages too, follows state, and goes
+away when a render leaves it out. Roles and `aria-*` belong in `.a11y`, which
+checks them; event handlers (`on*`), `id`, `class`, `style`, `href` and `src`
+are refused, as they have their own calls.
+
+```zig
+Vapor.Box()
+    .attribute("data-state", if (open) "open" else "closed")
+    .attribute("title", "Drag to reorder")
+    .children({ ... });
+```
+
 ### Events
 
 Attach handlers where the element is built. They are part of the render:

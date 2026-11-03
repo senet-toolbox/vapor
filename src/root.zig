@@ -75,6 +75,7 @@ pub const cycle = lib.cycle;
 // Containers: finish with `.children({ ... })`.
 
 pub const Box = PureComponent.Box;
+pub const Collapse = PureComponent.Collapse;
 pub const Row = PureComponent.Row;
 pub const Stack = PureComponent.Stack;
 pub const Center = PureComponent.Center;

@@ -6,8 +6,11 @@ const Writer = @import("Writer.zig");
 const UINode = @import("UITree.zig").UINode;
 const utils = @import("utils.zig");
 const NodeTable = @import("node_table.zig").NodeTable;
+const Attribute = @import("types.zig").Attribute;
 
 pub var a11y_map: NodeTable(Accessibility) = undefined;
+/// Each element's `.attribute` pairs, written beside its ARIA attributes.
+pub var attribute_map: NodeTable([]const Attribute) = undefined;
 
 // In your exports or wherever you expose to JS
 
@@ -15,14 +18,48 @@ var a11y_string_ptr: [*]const u8 = undefined;
 var a11y_string_len: u32 = 0;
 
 export fn getAccessibilityAttributes(ui_node: *UINode) usize {
-    if (a11y_map.get(utils.hashKey(ui_node.uuid))) |acc| {
-        const str = toAttributeString(acc);
-        a11y_string_ptr = str.ptr;
-        a11y_string_len = @intCast(str.len);
-        return @intFromPtr(str.ptr);
+    const str = nodeAttributeString(ui_node);
+    a11y_string_ptr = str.ptr;
+    a11y_string_len = @intCast(str.len);
+    return if (str.len > 0) @intFromPtr(str.ptr) else 0;
+}
+
+/// The element's ARIA and `.attribute` attributes as an HTML attribute
+/// string (` role="dialog" data-kind="box"`), values escaped. The runtime
+/// parses it the same way, so both reach the page alike.
+pub fn nodeAttributeString(ui_node: *const UINode) []const u8 {
+    const key = utils.hashKey(ui_node.uuid);
+    writer.init(&buffer);
+    if (a11y_map.get(key)) |acc| writeAttributes(acc) catch return "";
+    if (attribute_map.get(key)) |attrs| {
+        for (attrs) |attr| {
+            writer.write(" ") catch return "";
+            writer.write(attr.name) catch return "";
+            writer.write("=\"") catch return "";
+            writeValue(attr.value) catch return "";
+            writer.write("\"") catch return "";
+        }
     }
-    a11y_string_len = 0;
-    return 0;
+    return writer.buffer[0..writer.pos];
+}
+
+/// Writes `text` with the characters that would end or break an attribute
+/// value escaped.
+fn writeValue(text: []const u8) !void {
+    var start: usize = 0;
+    for (text, 0..) |c, i| {
+        const entity = switch (c) {
+            '&' => "&amp;",
+            '<' => "&lt;",
+            '>' => "&gt;",
+            '"' => "&quot;",
+            else => continue,
+        };
+        if (i > start) try writer.write(text[start..i]);
+        try writer.write(entity);
+        start = i + 1;
+    }
+    if (start < text.len) try writer.write(text[start..]);
 }
 
 export fn getAccessibilityAttributesLen() u32 {
@@ -42,19 +79,19 @@ pub fn writeAttributes(self: Accessibility) !void {
     // Labeling
     if (self.label) |l| {
         try writer.write(" aria-label=\"");
-        try writer.write(l); // Escape quotes in label
+        try writeValue(l);
         try writer.write("\"");
     }
 
     if (self.labelled_by) |l| {
         try writer.write(" aria-labelledby=\"");
-        try writer.write(l);
+        try writeValue(l);
         try writer.write("\"");
     }
 
     if (self.described_by) |d| {
         try writer.write(" aria-describedby=\"");
-        try writer.write(d);
+        try writeValue(d);
         try writer.write("\"");
     }
 
@@ -106,25 +143,25 @@ pub fn writeAttributes(self: Accessibility) !void {
     // Relationships
     if (self.controls) |c| {
         try writer.write(" aria-controls=\"");
-        try writer.write(c);
+        try writeValue(c);
         try writer.write("\"");
     }
 
     if (self.owns) |o| {
         try writer.write(" aria-owns=\"");
-        try writer.write(o);
+        try writeValue(o);
         try writer.write("\"");
     }
 
     if (self.active_descendant) |ad| {
         try writer.write(" aria-activedescendant=\"");
-        try writer.write(ad);
+        try writeValue(ad);
         try writer.write("\"");
     }
 
     if (self.flow_to) |f| {
         try writer.write(" aria-flowto=\"");
-        try writer.write(f);
+        try writeValue(f);
         try writer.write("\"");
     }
 
@@ -193,7 +230,7 @@ pub fn writeAttributes(self: Accessibility) !void {
 
     if (self.value_text) |v| {
         try writer.write(" aria-valuetext=\"");
-        try writer.write(v);
+        try writeValue(v);
         try writer.write("\"");
     }
 

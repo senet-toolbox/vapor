@@ -48,6 +48,8 @@ pub export fn init() void {
     Vapor.Page(.{ .route = "/mount-off" }, mountOffPage, null);
     Vapor.Page(.{ .route = "/once" }, oncePage, null);
     Vapor.Page(.{ .route = "/aria" }, ariaPage, null);
+    Vapor.Page(.{ .route = "/attrs" }, attrsPage, null);
+    Vapor.Page(.{ .route = "/collapse" }, collapsePage, null);
     Vapor.Page(.{ .route = "/focus-any" }, focusAnyPage, null);
     Vapor.Page(.{ .route = "/timeout" }, timeoutPage, null);
     Vapor.Page(.{ .route = "/transition" }, transitionPage, null);
@@ -676,6 +678,57 @@ fn ariaPage() void {
         Button(toggleAria, .{}).id("aria-toggle").children({
             Text("Toggle").end();
         });
+    });
+}
+
+// ── /attrs : .attribute sets any attribute, and follows state ─────────────
+
+var attrs_on = true;
+
+fn toggleAttrs() void {
+    attrs_on = !attrs_on;
+}
+
+fn attrsPage() void {
+    Box().id("attrs-page").children({
+        var target = Box()
+            .id("attrs-target")
+            .attribute("data-kind", "box")
+            .attribute("title", if (attrs_on) "on" else "off")
+            .attribute("data-quote", "say \"hi\" & <bye>");
+        // Written only while on: it goes away when a render leaves it out.
+        if (attrs_on) target = target.attribute("data-only-on", "yes");
+        target.children({
+            Text("Target").end();
+        });
+        Button(toggleAttrs, .{}).id("attrs-toggle").children({
+            Text("Toggle").end();
+        });
+    });
+}
+
+// ── /collapse : Collapse animates to its content's height ─────────────────
+
+var collapse_open = false;
+
+fn toggleCollapse() void {
+    collapse_open = !collapse_open;
+}
+
+fn collapsePage() void {
+    Vapor.Stack().id("collapse-page").children({
+        Button(toggleCollapse, .{}).id("collapse-toggle").children({
+            Text("Toggle").end();
+        });
+        Vapor.Collapse(collapse_open).id("collapse-content").padding(.all(16)).spacing(8).direction(.column).children({
+            Text("First line of the panel").id("collapse-first").end();
+            Text("Second line").end();
+            Text("Third line").end();
+            Button(noop, .{}).id("collapse-inner-button").children({
+                Text("Inside").end();
+            });
+        });
+        Text("After the panel").id("collapse-after").end();
     });
 }
 

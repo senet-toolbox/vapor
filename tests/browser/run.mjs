@@ -516,6 +516,58 @@ const tests = {
     await p.waitFor(`${disabled} === "true"`, "aria-disabled to come back");
   },
 
+  async ".attribute sets any attribute, prerendered too, and follows state"(p) {
+    await p.goto("/attrs");
+    const attr = (name) => `document.getElementById("attrs-target")?.getAttribute(${JSON.stringify(name)})`;
+    await p.waitFor(`${attr("data-kind")} === "box"`, "data-kind to be set");
+    assertEqual(await p.evaluate(attr("title")), "on", "title follows state");
+    assertEqual(await p.evaluate(attr("data-quote")), 'say "hi" & <bye>', "a value with quotes and markup arrives as written");
+    assertEqual(await p.evaluate(attr("data-only-on")), "yes", "a conditional attribute while it applies");
+    if (staticMode) {
+      const html = await p.evaluate(`fetch("/attrs").then((r) => r.text())`);
+      assert(html.includes('data-kind="box"'), "the prerendered page carries the attribute");
+    }
+    await p.click("attrs-toggle");
+    await p.waitFor(`${attr("title")} === "off"`, "title to change with state");
+    assertEqual(await p.evaluate(attr("data-only-on")), null, "an attribute a render leaves out is removed");
+    assertEqual(await p.evaluate(attr("data-kind")), "box", "the others stay");
+    await p.click("attrs-toggle");
+    await p.waitFor(`${attr("data-only-on")} === "yes"`, "the conditional attribute to come back");
+  },
+
+  async "Collapse opens to its content's height and shuts, moving only itself"(p) {
+    await p.goto("/collapse");
+    const box = (id) => `document.getElementById(${JSON.stringify(id)}).getBoundingClientRect()`;
+    const content = `document.getElementById("collapse-content")`;
+    // The animating wrapper, around the box that clips the content.
+    const wrapper = `${content}.parentElement.parentElement`;
+    const height = `${wrapper}.getBoundingClientRect().height`;
+    const full = `${content}.scrollHeight`;
+    // Closed: no height, and what's inside is out of reach.
+    assertEqual(await p.evaluate(height), 0, "closed, it has no height");
+    assertEqual(await p.evaluate(`getComputedStyle(${wrapper}).visibility`), "hidden", "closed, its content is hidden");
+    const toggleBottom = await p.evaluate(`${box("collapse-toggle")}.bottom`);
+    assert(Math.abs((await p.evaluate(`${box("collapse-after")}.top`)) - toggleBottom) < 1, "what follows sits right under the toggle");
+
+    await p.click("collapse-toggle");
+    // Part way: taller than nothing, shorter than its content; the first line
+    // already sits where it will end up.
+    await p.waitFor(`${height} > 1 && ${height} < ${full} - 1`, "the height to animate");
+    const firstMid = await p.evaluate(`${box("collapse-first")}.top`);
+    await p.waitFor(`Math.abs(${height} - ${full}) < 1`, "the height to reach the content's");
+    assert(await p.evaluate(full) > 80, "the content is its lines and padding, not one line");
+    assertEqual(await p.evaluate(`${box("collapse-first")}.top`), firstMid, "the content does not move while it opens");
+    assertEqual(await p.evaluate(`getComputedStyle(${wrapper}).visibility`), "visible", "open, its content shows");
+    const after = await p.evaluate(`${box("collapse-after")}.top`), bottom = await p.evaluate(`${wrapper}.getBoundingClientRect().bottom`);
+    assert(Math.abs(after - bottom) < 1, `what follows moves down under it (${after} vs ${bottom})`);
+
+    await p.click("collapse-toggle");
+    await p.waitFor(`${height} === 0`, "the height to go back to nothing");
+    await p.waitFor(`getComputedStyle(${wrapper}).visibility === "hidden"`, "the content to be hidden once shut");
+    const focused = await p.evaluate(`(() => { const b = document.getElementById("collapse-inner-button"); b.focus(); return document.activeElement === b; })()`);
+    assert(!focused, "a shut panel's button can't take focus");
+  },
+
   async "Element.focus focuses any element, not only text fields"(p) {
     await p.goto("/focus-any");
     await p.click("focus-any-go");

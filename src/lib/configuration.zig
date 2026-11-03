@@ -152,13 +152,7 @@ pub fn configure(ui_ctx: *UIContext, elem_decl: ElemDecl) *UINode {
         }
     }
 
-    if (elem_decl.accessibility) |accessibility| {
-        Accessibility.a11y_map.put(hashKey(current_open.uuid), accessibility) catch |err| {
-            Vapor.report.err("Error adding accessibility {any}", .{err});
-        };
-        current_open.accessibility = true;
-        current_open.finger_print +%= hashKey(Accessibility.toAttributeString(accessibility));
-    }
+    recordAttributes(current_open, elem_decl);
 
     current_open.href = elem_decl.href;
     current_open.type = elem_decl.elem_type;
@@ -470,13 +464,7 @@ pub fn configureByNode(ui_node: ?*UINode, elem_decl: ElemDecl) *UINode {
         current_open.hover_style_fields = hover_style_fields;
     }
 
-    if (elem_decl.accessibility) |accessibility| {
-        Accessibility.a11y_map.put(hashKey(current_open.uuid), accessibility) catch |err| {
-            Vapor.report.err("Error adding accessibility {any}", .{err});
-        };
-        current_open.accessibility = true;
-        current_open.finger_print +%= hashKey(Accessibility.toAttributeString(accessibility));
-    }
+    recordAttributes(current_open, elem_decl);
 
     current_open.href = elem_decl.href;
     current_open.src = elem_decl.src;
@@ -770,13 +758,7 @@ pub fn configurePlainByNode(ui_node: ?*UINode, elem_decl: ElemDecl) *UINode {
         }
     }
 
-    if (elem_decl.accessibility) |accessibility| {
-        Accessibility.a11y_map.put(hashKey(current_open.uuid), accessibility) catch |err| {
-            Vapor.report.err("Error adding accessibility {any}", .{err});
-        };
-        current_open.accessibility = true;
-        current_open.finger_print +%= hashKey(Accessibility.toAttributeString(accessibility));
-    }
+    recordAttributes(current_open, elem_decl);
 
     current_open.href = elem_decl.href;
     current_open.src = elem_decl.src;
@@ -827,4 +809,33 @@ fn foldClassIntoStyleHash(node: *UINode) void {
     if (node.style_hash == 0) return;
     const class = node.class orelse return;
     node.style_hash +%= hashKey(class);
+}
+
+/// Keeps the element's ARIA and `.attribute` attributes for the runtime and
+/// the prerenderer to write, and folds them into its fingerprint so a change
+/// to any of them, or one going away, updates the element.
+fn recordAttributes(current_open: *UINode, elem_decl: ElemDecl) void {
+    const key = hashKey(current_open.uuid);
+    if (elem_decl.accessibility) |accessibility| {
+        Accessibility.a11y_map.put(key, accessibility) catch |err| {
+            Vapor.report.err("Error adding accessibility {any}", .{err});
+        };
+        current_open.accessibility = true;
+        current_open.finger_print +%= hashKey(Accessibility.toAttributeString(accessibility));
+    } else {
+        // Read beside the attributes below, so an earlier render's must go.
+        _ = Accessibility.a11y_map.fetchRemove(key);
+    }
+    if (elem_decl.attributes) |attributes| {
+        Accessibility.attribute_map.put(key, attributes) catch |err| {
+            Vapor.report.err("Error adding attributes {any}", .{err});
+        };
+        current_open.accessibility = true;
+        for (attributes) |attr| {
+            current_open.finger_print +%= hashKey(attr.name);
+            current_open.finger_print +%= hashKey(attr.value) *% 31;
+        }
+    } else {
+        _ = Accessibility.attribute_map.fetchRemove(key);
+    }
 }

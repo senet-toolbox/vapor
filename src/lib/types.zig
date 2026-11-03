@@ -848,6 +848,12 @@ pub const ButtonType = enum {
     button,
 };
 
+/// An HTML attribute set with `.attribute(name, value)`.
+pub const Attribute = struct {
+    name: []const u8,
+    value: []const u8,
+};
+
 pub const ElementDeclaration = struct {
     hooks: HooksIds = .{},
     style: ?*const Style = null,
@@ -874,6 +880,8 @@ pub const ElementDeclaration = struct {
     hover_style_fields: ?[]const StyleFields = null,
     inlineStyle: ?[]const u8 = null,
     accessibility: ?Accessibility = null,
+    /// Set with `.attribute`, in call order.
+    attributes: ?[]const Attribute = null,
     can_have_children: bool = true,
     src: ?[]const u8 = null,
     morph: bool = false,

@@ -43,6 +43,31 @@ pub fn Box() Self {
     return Self{ ._ui_node = ui_node, ._elem_type = .FlexBox, ._returns_close = true };
 }
 
+/// A box whose content slides open and shut: while `open` it is as tall as
+/// its content, whatever that is; closed it has no height and its content is
+/// hidden from screen readers and the tab order. Changing `open` animates the
+/// height over 150ms, without moving what's inside. Style it like a `Box`;
+/// the calls apply to the content box, so its padding folds away too.
+///
+///     Vapor.Collapse(item.is_open).padding(.all(12)).children({ ... });
+pub fn Collapse(open: bool) Self {
+    // A one-row grid whose row goes from 0fr to 1fr animates to the content's
+    // height. Its one item may shrink below its content (min-height: 0) and
+    // clips what doesn't fit; the content box inside it, which the builder
+    // styles, keeps its full height, padding included.
+    const wrapper = Components.createNode(.{ .state_type = Self._state_type, .elem_type = .FlexBox });
+    const clip = Components.createNode(.{ .state_type = Self._state_type, .elem_type = .FlexBox });
+    const ui_node = Components.createNode(.{ .state_type = Self._state_type, .elem_type = .FlexBox });
+    return Self{
+        ._ui_node = ui_node,
+        ._elem_type = .FlexBox,
+        ._returns_close = true,
+        ._collapse = wrapper,
+        ._collapse_clip = clip,
+        ._collapse_open = open,
+    };
+}
+
 /// A flex container laid out as a row. Same as `Box`.
 pub fn Row() Self {
     const ui_node = Components.createNode(.{ .state_type = Self._state_type, .elem_type = .FlexBox });

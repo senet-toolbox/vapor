@@ -30,7 +30,8 @@ pub fn child(self: *const Self, item: anytype) void {
 
     const elem_decl = self.makeElemDecl(null, &mutable_style, inline_style);
     Vapor.LifeCycle.configure(elem_decl);
-    return Vapor.LifeCycle.close({});
+    Vapor.LifeCycle.close({});
+    closeCollapse(self);
 }
 
 pub fn items(self: *const Self, nodes: anytype) void {
@@ -46,11 +47,15 @@ pub fn items(self: *const Self, nodes: anytype) void {
     var mutable_style = Components.mergeStyles(self.getStyleMergeParams(true, false));
     const elem_decl = self.makeElemDecl(null, &mutable_style, inline_style);
     Vapor.LifeCycle.configure(elem_decl);
-    return Vapor.LifeCycle.close({});
+    Vapor.LifeCycle.close({});
+    closeCollapse(self);
 }
 
 pub fn children(self: *const Self, _: void) void {
-    if (self._used_style) return Vapor.LifeCycle.close({});
+    if (self._used_style) {
+        Vapor.LifeCycle.close({});
+        return closeCollapse(self);
+    }
     var mutable_style = Components.mergeStyles(self.getStyleMergeParams(true, false));
 
     var inline_style = self._inlineStyle;
@@ -59,10 +64,38 @@ pub fn children(self: *const Self, _: void) void {
             inline_style = el.coalesceAttributesAndInline(inline_style) catch break :blk;
         }
     }
-
     const elem_decl = self.makeElemDecl(null, &mutable_style, inline_style);
     Vapor.LifeCycle.configure(elem_decl);
-    return Vapor.LifeCycle.close({});
+    Vapor.LifeCycle.close({});
+    closeCollapse(self);
+}
+
+/// Configures and closes a `Collapse`'s clipping box and wrapper, once its
+/// content box is closed. The wrapper is a one-row grid whose row animates
+/// between 0fr and 1fr; the clipping box, its one item, may shrink below
+/// its content and clips it. Closed,
+/// the wrapper turns invisible once the row has shrunk, which takes its
+/// content out of the tab order and away from screen readers.
+fn closeCollapse(self: *const Self) void {
+    if (self._collapse == null) return;
+    const clip = Self{
+        ._ui_node = self._collapse_clip,
+        ._elem_type = .FlexBox,
+        ._returns_close = true,
+        ._inlineStyle = "min-height: 0; overflow: hidden;",
+    };
+    clip.close();
+    const inline_style = if (self._collapse_open)
+        "display: grid; width: 100%; grid-template-rows: 1fr; visibility: visible; transition: grid-template-rows 150ms ease-in-out, visibility 0s;"
+    else
+        "display: grid; width: 100%; grid-template-rows: 0fr; visibility: hidden; transition: grid-template-rows 150ms ease-in-out, visibility 0s 150ms;";
+    const wrapper = Self{
+        ._ui_node = self._collapse,
+        ._elem_type = .FlexBox,
+        ._returns_close = true,
+        ._inlineStyle = inline_style,
+    };
+    wrapper.close();
 }
 
 /// Internal: copies a node's rendered fields for `clone`.
@@ -116,7 +149,10 @@ pub fn clone(self: *const Self) void {
 }
 
 pub fn close(self: *const Self) void {
-    if (self._used_style) return Vapor.LifeCycle.close({});
+    if (self._used_style) {
+        Vapor.LifeCycle.close({});
+        return closeCollapse(self);
+    }
     var mutable_style = Components.mergeStyles(self.getStyleMergeParams(true, false));
 
     var inline_style = self._inlineStyle;
@@ -125,17 +161,17 @@ pub fn close(self: *const Self) void {
             inline_style = el.coalesceAttributesAndInline(inline_style) catch break :blk;
         }
     }
-
     const elem_decl = self.makeElemDecl(null, &mutable_style, inline_style);
     Vapor.LifeCycle.configure(elem_decl);
-    return Vapor.LifeCycle.close({});
+    Vapor.LifeCycle.close({});
+    closeCollapse(self);
 }
 
 pub fn end(self: *const Self) void {
     const ui_node = self._ui_node orelse @panic("vapor: builder has no node");
     if (self._used_style) {
         if (ui_node.can_have_children) LifeCycle.close({});
-        return;
+        return closeCollapse(self);
     }
     var mutable_style = Components.mergeStyles(self.getStyleMergeParams(false, true));
     var text: ?[]const u8 = self._text;
@@ -151,6 +187,7 @@ pub fn end(self: *const Self) void {
     const elem_decl = self.makeElemDecl(text, &mutable_style, inline_style);
     _ = Vapor.current_ctx.configureByNode(self._ui_node, elem_decl);
     if (ui_node.can_have_children) LifeCycle.close({});
+    closeCollapse(self);
 }
 
 pub fn getUUID(self: *const Self) []const u8 {

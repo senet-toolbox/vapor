@@ -184,12 +184,9 @@ fn writeAllProps(ui_node: *UINode) void {
         writeOptionalProp(" class", ui_node.class);
     }
 
-    if (ui_node.accessibility) blk: {
-        const acc = Accessibility.a11y_map.get(hashKey(ui_node.uuid)) orelse {
-            break :blk;
-        };
-        writeOptionalProp("aria-label", acc.label);
-    }
+    // Its role, aria-* and `.attribute` attributes, already escaped, so the
+    // page reads right before the app takes over.
+    if (ui_node.accessibility) emit(Accessibility.nodeAttributeString(ui_node));
 
     if (ui_node.type != .Graphic and ui_node.type != .Icon) {
         if (ui_node.type == .Image) {

@@ -144,6 +144,16 @@ export function attachElementListeners(element, renderCmd) {
 // render leaves out (aria-disabled once it is false, say) can be removed.
 const appliedA11y = new WeakMap();
 
+/** Undoes the escaping vapor gives attribute values. */
+function unescapeAttribute(value) {
+  if (!value.includes("&")) return value;
+  return value
+    .replaceAll("&quot;", '"')
+    .replaceAll("&lt;", "<")
+    .replaceAll("&gt;", ">")
+    .replaceAll("&amp;", "&");
+}
+
 export function applyAccessibility(element, offset, hasAccessibility = true) {
   // A prerendered element carries attributes the runtime never recorded;
   // its role and aria-* attributes came from accessibility all the same.
@@ -156,12 +166,13 @@ export function applyAccessibility(element, offset, hasAccessibility = true) {
   const len = ptr === 0 ? 0 : wasmInstance.getAccessibilityAttributesLen();
   if (len > 0) {
     const attrString = readWasmString(ptr, len);
-    // The string looks like: ' role="dialog" aria-modal="true" aria-label="Search"'
+    // The string looks like: ' role="dialog" aria-label="Say &quot;hi&quot;"';
+    // values are escaped as in HTML, so a quote can't end one early.
     const attrRegex = /(\S+)="([^"]*)"/g;
     let match;
     while ((match = attrRegex.exec(attrString)) !== null) {
       const [, name, value] = match;
-      element.setAttribute(name, value);
+      element.setAttribute(name, unescapeAttribute(value));
       current.add(name);
     }
   }

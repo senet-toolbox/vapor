@@ -4,6 +4,28 @@ All notable changes to this project are documented here. This project follows
 [Semantic Versioning](https://semver.org/): breaking changes bump the major
 version and are listed with a migration note.
 
+## [3.8.0] — 2026-11-02
+
+### Added
+
+- `Vapor.Collapse(open)`: a box that animates open to its content's height,
+  whatever it is, and shut to nothing, without moving its content. Shut, its
+  content leaves the tab order and screen readers. Builder calls style the
+  content, so padding folds away too.
+
+### Fixed
+
+- `.attribute(name, value)` set nothing: it scheduled a DOM call by an
+  internal id the element didn't have. Attributes are now kept on the element
+  and written with its ARIA attributes: in prerendered pages, on creation,
+  and on every update, where one a render leaves out is removed. It returns
+  the builder, like the other calls, so several chain. Event handlers (`on*`)
+  and `id`, `class`, `style`, `href` and `src` are refused.
+- Prerendered pages carry every ARIA attribute, not only `aria-label`; roles
+  and states used to arrive only once the app started.
+- ARIA values with quotes or `<` (`aria-label`, `aria-valuetext`, the id
+  references) are escaped; a quote in one cut it short.
+
 ## [3.7.1] — 2026-10-27
 
 ### Fixed

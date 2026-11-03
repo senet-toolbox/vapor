@@ -352,6 +352,12 @@ pub const ComponentBuilder = struct {
     _aspect_ratio: ?types.AspectRatio = null,
     _persisted_text: bool = false,
     _accessibility: ?Accessibility = null,
+    _attributes: ?[]const types.Attribute = null,
+    /// Set by `Collapse`: the wrapper that animates this content box open
+    /// and closed, the box between them that clips it, and whether it is open.
+    _collapse: ?*UINode = null,
+    _collapse_clip: ?*UINode = null,
+    _collapse_open: bool = false,
     _column_count: ?u8 = null,
     _edges: ?[]const u8 = null,
     _responsive: ?types.Responsive = null,
@@ -428,6 +434,7 @@ pub const ComponentBuilder = struct {
             .hover_style_fields = self._hover_style_fields,
             .inlineStyle = inline_style,
             .accessibility = self._accessibility,
+            .attributes = self._attributes,
             .src = self._src,
             .morph = self._morph,
             .target = self._target,
@@ -444,6 +451,7 @@ pub const ComponentBuilder = struct {
     pub const Heading = ElementConstructors.Heading;
     pub const Video = ElementConstructors.Video;
     pub const Box = ElementConstructors.Box;
+    pub const Collapse = ElementConstructors.Collapse;
     pub const Row = ElementConstructors.Row;
     pub const Layer = ElementConstructors.Layer;
     pub const Table = ElementConstructors.Table;
@@ -720,9 +728,13 @@ pub const ComponentBuilder = struct {
         return AttributeMethods.anchorSource(self, name);
     }
 
-    /// Sets the DOM attribute `attribute_name` once the element is on the page. Both
-    /// strings must stay valid until then (literals, or frame allocations).
-    pub inline fn attribute(self: *const Self, attribute_name: []const u8, value: []const u8) *const Self {
+    /// Sets an HTML attribute, such as `data-*`, `title` or `inputmode`, in the
+    /// page and in a prerendered page. Call it once per attribute; one a render
+    /// leaves out is removed. Both strings must last the render (literals, or
+    /// frame allocations). Not for event handlers (`on*`), nor `id`, `class`,
+    /// `style`, `href` or `src`, which have their own calls; for roles and
+    /// `aria-*`, `.a11y` is checked.
+    pub inline fn attribute(self: *const Self, attribute_name: []const u8, value: []const u8) Self {
         return AttributeMethods.attribute(self, attribute_name, value);
     }
 
