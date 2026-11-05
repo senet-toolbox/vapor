@@ -226,12 +226,6 @@ pub export fn getVisualStyle(ptr: ?*UINode, visual_type: u8) ?[*]const u8 {
         if (interactive.has_hover_transform) {
             writePropValue("transform", .{ .tag = .transform_type, .data = .{ .transform_type = interactive.hover_transform } }, &writer);
         }
-    } else if (visual_type == 1) {
-        const focus = interactive.focus;
-        StyleCompiler.generateVisual(&focus, &writer);
-    } else if (visual_type == 2) {
-        const focus_within = interactive.focus_within;
-        StyleCompiler.generateVisual(&focus_within, &writer);
     }
     // Null-terminate the string
     const len: usize = writer.pos;

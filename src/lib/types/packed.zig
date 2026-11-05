@@ -206,10 +206,6 @@ pub const PackedInteractive = struct {
     hover: PackedVisual = .{},
     has_hover_position: bool = false,
     hover_position: PackedPosition = .{},
-    has_focus: bool = false,
-    focus: PackedVisual = .{},
-    has_focus_within: bool = false,
-    focus_within: PackedVisual = .{},
     has_hover_transform: bool = false,
     hover_transform: PackedTransform = .{},
 };

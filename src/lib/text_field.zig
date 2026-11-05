@@ -136,11 +136,6 @@ pub const TextFieldBuilder = struct {
         return StyleMethods.animationExit(self, animation_tag);
     }
 
-    /// Styles for interaction states: hover, focus and focus-within.
-    pub inline fn interaction(self: *const Self, interactive: types.Interactive) Self {
-        return StyleMethods.interaction(self, interactive);
-    }
-
     /// How whitespace and line breaks in the text are handled (CSS `white-space`).
     pub inline fn whiteSpace(self: *const Self, value: types.WhiteSpace) Self {
         return StyleMethods.whiteSpace(self, value);

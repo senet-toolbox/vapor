@@ -136,8 +136,6 @@ pub const Interactive = struct {
     hover_layout: ?types.Layout = null,
     hover_position: ?types.Position = null,
     hover: ?Visual = null,
-    focus: ?Visual = null,
-    focus_within: ?Visual = null,
     cursor: ?types.Cursor = null,
 };
 

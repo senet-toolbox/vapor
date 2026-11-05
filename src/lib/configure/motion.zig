@@ -160,13 +160,6 @@ pub fn configureInteractive(ui_node: *UINode, style: *const Vapor.Style) u32 {
         if (hover_position.z_index) |z_index| Configuration.packed_interactive.hover_position.z_index = z_index;
     }
 
-    if (interactive.focus) |focus| {
-        var packed_focus: types.PackedVisual = .{};
-        checkVisual(&focus, &packed_focus);
-        Configuration.packed_interactive.has_focus = true;
-        Configuration.packed_interactive.focus = packed_focus;
-    }
-
     hash_i = std.hash.XxHash32.hash(0, std.mem.asBytes(&Configuration.packed_interactive));
 
     if (interactive.hover) |hover| {

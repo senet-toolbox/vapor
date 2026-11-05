@@ -176,12 +176,6 @@ pub fn scale(self: *const Self, value: f16) Self {
     return n;
 }
 
-pub fn interaction(self: *const Self, interactive: types.Interactive) Self {
-    var n = self.*;
-    n._interactive = interactive;
-    return n;
-}
-
 pub fn textColor(self: *const Self, color: ?Color) Self {
     var n = self.*;
     var v = n._visual orelse types.Visual{};

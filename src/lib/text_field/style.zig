@@ -83,12 +83,6 @@ pub fn animationExit(self: *const Self, animation_tag: ?[]const u8) Self {
     return new_self;
 }
 
-pub fn interaction(self: *const Self, interactive: types.Interactive) Self {
-    var new_self: Self = self.*;
-    new_self._interactive = interactive;
-    return new_self;
-}
-
 pub fn whiteSpace(self: *const Self, value: types.WhiteSpace) Self {
     var n = self.*;
     var v = n._visual orelse types.Visual{};

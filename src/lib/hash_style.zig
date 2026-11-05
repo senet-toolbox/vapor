@@ -259,8 +259,6 @@ fn hashInteractive(hasher: *std.hash.XxHash32, interactive: *const Interactive) 
     }
 
     if (interactive.hover) |h| hashVisual(hasher, &h);
-    if (interactive.focus) |f| hashVisual(hasher, &f);
-    if (interactive.focus_within) |fw| hashVisual(hasher, &fw);
 }
 
 fn hashTransition(hasher: *std.hash.XxHash32, t: *const Transition) void {

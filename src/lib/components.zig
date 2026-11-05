@@ -987,11 +987,6 @@ pub const ComponentBuilder = struct {
         return StyleMethods.style(self, style_ptr);
     }
 
-    /// Styles for interaction states: hover, focus and focus-within.
-    pub inline fn interaction(self: *const Self, interactive: types.Interactive) Self {
-        return StyleMethods.interaction(self, interactive);
-    }
-
     /// Raw CSS for the element's `style` attribute, formatted like `std.fmt`:
     /// `.inlineStyle("grid-area: {s};", .{area})`. Prefer the typed methods; this is
     /// the escape hatch.

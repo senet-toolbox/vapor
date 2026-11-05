@@ -4,6 +4,17 @@ All notable changes to this project are documented here. This project follows
 [Semantic Versioning](https://semver.org/): breaking changes bump the major
 version and are listed with a migration note.
 
+## [3.9.0] — 2026-11-05
+
+### Removed
+
+- `.interaction(...)` on elements and text fields. Its hover styles are
+  what `.hover(...)`, `.hoverScale()`, `.hoverBackground(...)` and
+  `.hoverText(...)` set; its focus styles never reached the page.
+- `Interactive.focus` and `Interactive.focus_within`, which wrote no CSS:
+  the runtime only ever asked for the hover styles. A `Style` with
+  `.interactive = .{ .hover = ... }` works as before.
+
 ## [3.8.0] — 2026-11-02
 
 ### Added
