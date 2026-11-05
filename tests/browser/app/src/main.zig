@@ -178,6 +178,14 @@ fn cond() void {
         Text("Stable").id("stable").end();
         Text("Unkeyed after").end();
     });
+    // A Null() placeholder holds the place of what isn't shown; what comes
+    // before it must still stay before what comes after.
+    Box().id("null-page").children({
+        Text("Before").end();
+        if (show_banner) Text("Shown").end() else Vapor.Null();
+        Vapor.Null();
+        Text("After").end();
+    });
 }
 
 // ── /hide : .hidden(false) shows the element again ─────────────────────────

@@ -4,6 +4,19 @@ All notable changes to this project are documented here. This project follows
 [Semantic Versioning](https://semver.org/): breaking changes bump the major
 version and are listed with a migration note.
 
+## [3.9.1] — 2026-11-05
+
+### Fixed
+
+- An element followed by a `Vapor.Null()` placeholder was put after all
+  its siblings: it was placed before the next sibling's element, and a
+  placeholder has none. It now goes before the next sibling that has one.
+  A menu or drawer that rendered `Null()` while shut moved the elements
+  before it to the end of their parent.
+- An `Anchor` with no room on its side, such as a dropdown near the bottom
+  of the window, was slid back into view over the element it hangs from.
+  It now flips to the other side.
+
 ## [3.9.0] — 2026-11-05
 
 ### Removed

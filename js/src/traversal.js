@@ -393,14 +393,19 @@ function getLayerRoot(layerKind) {
   return id ? document.getElementById(id) : null;
 }
 
-function getValidAnchor(parent, nextUinode) {
-  if (!nextUinode) return null;
-  const nextId = nextUinode[0]?.id;
-  if (!nextId) return null;
-  const candidate = document.getElementById(nextId);
-  // Only use it if it's actually a child of the parent we're inserting into
-  if (candidate && candidate.parentNode === parent) {
-    return candidate;
+/**
+ * The element to insert the sibling before `from` ahead of: the first sibling
+ * from `from` on that has an element in `parent`. Siblings are placed last
+ * to first, so those after are already in place; one with no element (a
+ * `Null()` placeholder) or in another parent (a layer) is passed over, or
+ * what comes before it would be put at the end.
+ */
+function getValidAnchor(parent, uinodes, from) {
+  for (let j = from; j < uinodes.length; j++) {
+    const nextId = uinodes[j][0]?.id;
+    if (!nextId) continue;
+    const candidate = document.getElementById(nextId);
+    if (candidate && candidate.parentNode === parent) return candidate;
   }
   return null;
 }
@@ -490,7 +495,7 @@ export function traverseUINodes(parent, parentUINode) {
         adoptPrerendered(prerendered, element);
 
         // Append to parent
-        const anchor = getValidAnchor(parent, uinodes[i + 1]);
+        const anchor = getValidAnchor(parent, uinodes, i + 1);
         placeElement(element, parent, anchor, uinode);
 
         traverseUINodes(element, child_ptr);
@@ -512,7 +517,7 @@ export function traverseUINodes(parent, parentUINode) {
         // t5 += performance.now() - s;
 
         // Append to parent
-        const anchor = getValidAnchor(parent, uinodes[i + 1]);
+        const anchor = getValidAnchor(parent, uinodes, i + 1);
         placeElement(element, parent, anchor, uinode);
 
         traverseUINodes(element, child_ptr);
@@ -548,7 +553,7 @@ export function traverseUINodes(parent, parentUINode) {
           }
         } else {
           // Normal node: reposition within parent if needed
-          const anchor = getValidAnchor(parent, uinodes[i + 1]);
+          const anchor = getValidAnchor(parent, uinodes, i + 1);
 
           let actualNextSibling = element.nextSibling;
           while (actualNextSibling?.dataset?.removing) {

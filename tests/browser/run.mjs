@@ -365,6 +365,19 @@ const tests = {
     assertEqual(await p.evaluate(contents), ["Toggle", "Stable", "Unkeyed after"], "without banner");
   },
 
+  async "a Null() placeholder keeps its siblings in order"(p) {
+    await p.goto("/cond");
+    await p.waitFor(`!!document.getElementById("null-page")`, "cond page");
+    const contents = `[...document.getElementById("null-page").children].map((c) => c.textContent.trim())`;
+    assertEqual(await p.evaluate(contents), ["Before", "After"], "first render");
+    await p.click("toggle");
+    await p.waitFor(`${contents}.length === 3`, "the shown text to appear");
+    assertEqual(await p.evaluate(contents), ["Before", "Shown", "After"], "shown");
+    await p.click("toggle");
+    await p.waitFor(`${contents}.length === 2`, "the shown text to go");
+    assertEqual(await p.evaluate(contents), ["Before", "After"], "hidden again");
+  },
+
   async ".hidden(false) shows an element .hidden(true) hid"(p) {
     await p.goto("/hide");
     await p.waitFor(`!!document.getElementById("panel")`, "hide page");

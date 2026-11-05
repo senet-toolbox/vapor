@@ -353,7 +353,9 @@ pub fn generateLayout(layout_ptr: *const Types.PackedLayout, writer: *Writer) vo
     if (placement != .none) {
         writer.write("position: fixed; position-area: ") catch {};
         writer.write(placement.toPositionArea()) catch {};
-        writer.write("; ") catch {};
+        // With no room on its side, it goes to the other side; without
+        // this the browser slides it back into view, over its anchor.
+        writer.write("; position-try-fallbacks: flip-block, flip-inline, flip-block flip-inline; ") catch {};
     }
 
     // Alignment
