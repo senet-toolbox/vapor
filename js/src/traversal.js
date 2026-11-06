@@ -251,6 +251,16 @@ export function updateElement(element, uinode, force = false) {
     }
     // Also when it has none now: attributes from an earlier render go.
     applyAccessibility(element, uinode.offset, uinode.accessibility);
+    // A link's own label (Link's aria_label) goes too, unless set again;
+    // an accessibility label, applied above, wins as on creation.
+    if (
+      (uinode.elemType === COMPONENT_TYPES.LINK ||
+        uinode.elemType === COMPONENT_TYPES.REDIRECT_LINK) &&
+      !element.hasAttribute("aria-label")
+    ) {
+      const label = wasmInstance.getAriaLabel(uinode.offset);
+      if (label) element.ariaLabel = readWasmString(label, wasmInstance.getAriaLabelLen());
+    }
   }
 
   // This means that the style hash has changed and we need to update

@@ -346,4 +346,5 @@ test {
     _ = @import("lib/utils.zig");
     _ = @import("lib/components.zig");
     _ = @import("lib/text_field.zig");
+    _ = @import("lib/navigation.zig");
 }

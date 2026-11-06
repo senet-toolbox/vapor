@@ -55,13 +55,28 @@ pub fn openTab(url: []const u8) void {
     if (isWasi) Wasm.windowOpenWasm(url.ptr, url.len);
 }
 
-/// The current URL path, e.g. "/users/42".
+/// The current URL path, e.g. "/users/42", without a trailing slash: a
+/// server that adds one ("/users/42/") reaches the same page, and the path
+/// compares equal to the route's. `getWindowPath()` is the URL's as it is.
 pub fn currentPath() []const u8 {
-    if (isWasi) return std.mem.span(Wasm.getWindowInformationWasm());
+    if (isWasi) return withoutTrailingSlash(std.mem.span(Wasm.getWindowInformationWasm()));
     const prefix = "/root";
     if (!std.mem.startsWith(u8, Vapor.current_route, prefix)) return Vapor.current_route;
     const rest = Vapor.current_route[prefix.len..];
     return if (rest.len == 0) "/" else rest;
+}
+
+fn withoutTrailingSlash(path: []const u8) []const u8 {
+    var end = path.len;
+    while (end > 1 and path[end - 1] == '/') end -= 1;
+    return path[0..end];
+}
+
+test "currentPath drops a trailing slash but keeps the root" {
+    try std.testing.expectEqualStrings("/ui/components/menu", withoutTrailingSlash("/ui/components/menu/"));
+    try std.testing.expectEqualStrings("/ui/components/menu", withoutTrailingSlash("/ui/components/menu"));
+    try std.testing.expectEqualStrings("/", withoutTrailingSlash("/"));
+    try std.testing.expectEqualStrings("/a", withoutTrailingSlash("/a//"));
 }
 
 /// The URL's query string with its leading "?", or `null` if it has none.

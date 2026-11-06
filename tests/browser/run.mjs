@@ -773,6 +773,9 @@ const tests = {
     assertEqual(attrs, JSON.stringify(["password", "Go to page A", "Do nothing", "button"]), "types and labels");
     await p.type("name", "Ziggy");
     await p.waitForText("greeting", "Hello, Ziggy!");
+    // Updated in place, the link keeps its label.
+    await p.waitFor(`document.getElementById("labelled-link").getAttribute("href") === "/b"`, "the link's new URL");
+    assertEqual(await p.evaluate(`document.getElementById("labelled-link").getAttribute("aria-label")`), "Go to page A", "the updated link's label");
   },
 
   async ".onResize follows its element, and a removed or rebuilt one leaves no stale observer"(p) {
@@ -1005,6 +1008,32 @@ const tests = {
     assertEqual((await p.evaluate(`history.length`)) - before, 1, "history entries added");
     await p.evaluate(`history.back()`);
     await p.waitFor(`location.pathname === "/a" && !!document.getElementById("page-a")`, "one back press returns to A");
+  },
+
+  async "back and forward move through the pages without adding entries"(p) {
+    await p.resetHistory();
+    await p.goto("/a");
+    await p.waitFor(`!!document.getElementById("to-b")`, "page A");
+    const before = await p.evaluate(`history.length`);
+    await p.click("to-b");
+    await p.waitFor(`!!document.getElementById("page-b")`, "page B");
+    await p.evaluate(`history.back()`);
+    await p.waitFor(`location.pathname === "/a" && !!document.getElementById("page-a")`, "back to A");
+    await sleep(100);
+    assertEqual((await p.evaluate(`history.length`)) - before, 1, "entries after going back");
+    await p.evaluate(`history.forward()`);
+    await p.waitFor(`location.pathname === "/b" && !!document.getElementById("page-b")`, "forward to B again");
+  },
+
+  async "a link to another page opens it at the top"(p) {
+    await p.goto("/a");
+    await p.waitFor(`!!document.getElementById("to-b-bottom")`, "page A");
+    await p.evaluate(`window.scrollTo(0, document.documentElement.scrollHeight)`);
+    await p.waitFor(`window.scrollY > 500`, "page A scrolled down");
+    await p.evaluate(`document.getElementById("to-b-bottom").click()`);
+    await p.waitFor(`!!document.getElementById("page-b")`, "page B");
+    await sleep(100);
+    assertEqual(await p.evaluate(`window.scrollY`), 0, "page B's scroll position");
   },
 
   async "an ordinary session leaves the console empty"(p) {

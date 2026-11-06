@@ -4,6 +4,24 @@ All notable changes to this project are documented here. This project follows
 [Semantic Versioning](https://semver.org/): breaking changes bump the major
 version and are listed with a migration note.
 
+## [3.9.2] — 2026-11-06
+
+### Fixed
+
+- A link to another page opened it where the last one was scrolled to. It
+  now opens at the top, as a page load does; a link to a `#hash` still
+  goes to its element.
+- The back button added a history entry for the page it went back to, so
+  Forward did nothing. Going back, and rerendering on a screen-size
+  change, no longer push an entry.
+- `currentPath()` kept a trailing slash: on a server that redirects
+  `/docs/intro` to `/docs/intro/`, it matched no route path, so a menu
+  that marks the current page marked nothing. It now drops it.
+  `getWindowPath()` still gives the URL's path as it is.
+- A `Link`'s `aria_label` was removed the first time the link was updated,
+  such as a link reused by the next page: the accessibility attributes,
+  written on every update, took it out. It is now written again.
+
 ## [3.9.1] — 2026-11-05
 
 ### Fixed

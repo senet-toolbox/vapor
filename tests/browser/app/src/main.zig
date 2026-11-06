@@ -412,7 +412,8 @@ fn input() void {
         // What the runtime sets when it creates an element, which a
         // prerendered page has to end up with too.
         TextField(.password).id("secret").bind(&secret).end();
-        Link(.{ .url = "/a", .aria_label = "Go to page A" }).id("labelled-link").children({
+        // Its URL follows the name, so typing updates the link in place.
+        Link(.{ .url = if (name.len > 0) "/b" else "/a", .aria_label = "Go to page A" }).id("labelled-link").children({
             Text("A").end();
         });
         Button(noop, .{}).id("labelled-button").ariaLabel("Do nothing").children({
@@ -473,6 +474,11 @@ fn pageA() void {
         for (0..50) |i| {
             TextFmt("A row {d}", .{i}).end();
         }
+        // Reached by scrolling down: the page it opens starts at the top.
+        Box().height(.px(2000)).children({});
+        Link(.{ .url = "/b" }).id("to-b-bottom").children({
+            Text("Go to B from the bottom").end();
+        });
     });
 }
 
@@ -485,6 +491,8 @@ fn pageB() void {
         for (0..50) |i| {
             TextFmt("B row {d}", .{i}).end();
         }
+        // Tall enough that it could open scrolled down.
+        Box().height(.px(2000)).children({});
     });
 }
 

@@ -168,8 +168,15 @@ function markReady() {
   window.dispatchEvent(new Event("vapor:ready"));
 }
 
+/**
+ * Renders the page at `navigatedPath`. Going to another page pushes a
+ * history entry for it and starts it at the top, as a page load does; the
+ * back button, which has already moved the URL, and a rerender of the same
+ * page do neither.
+ */
 export const rerenderRoute = (navigatedPath) => {
   currentPath = window.location.pathname;
+  const newPage = navigatedPath !== currentPath;
 
   for (const [key, handler] of afterHooksHandlers.entries()) {
     const pathEnd = key.indexOf("-");
@@ -191,10 +198,11 @@ export const rerenderRoute = (navigatedPath) => {
     }
   }
 
-  window.history.pushState({}, "", navigatedPath);
+  if (newPage) window.history.pushState({}, "", navigatedPath);
 
   wasmInstance.forceRerender();
   render();
+  if (newPage) window.scrollTo(0, 0);
 };
 
 export const navToRoute = (string) => {
