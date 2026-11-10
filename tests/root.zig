@@ -1796,6 +1796,10 @@ test "testing: links, navigate and back move between pages" {
 }
 
 test "an unknown path renders the built-in not-found page" {
+    // Each unknown path warns "No page matches"; expected here, so kept
+    // out of the test output.
+    std.testing.log_level = .err;
+    defer std.testing.log_level = .warn;
     var app = try Vapor.testing.App.start(harness_app.init);
     defer app.deinit();
 
@@ -1830,6 +1834,10 @@ const error_page_app = struct {
 };
 
 test "an app's /error page replaces the built-in not-found page" {
+    // Each unknown path warns "No page matches"; expected here, so kept
+    // out of the test output.
+    std.testing.log_level = .err;
+    defer std.testing.log_level = .warn;
     var app = try Vapor.testing.App.start(error_page_app.init);
     defer app.deinit();
 
