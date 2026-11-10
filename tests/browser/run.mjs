@@ -586,14 +586,19 @@ const tests = {
     assertEqual(await p.evaluate(attr("title")), "on", "title follows state");
     assertEqual(await p.evaluate(attr("data-quote")), 'say "hi" & <bye>', "a value with quotes and markup arrives as written");
     assertEqual(await p.evaluate(attr("data-only-on")), "yes", "a conditional attribute while it applies");
+    const field = (name) => `document.getElementById("attrs-field")?.getAttribute(${JSON.stringify(name)})`;
+    assertEqual(await p.evaluate(field("inputmode")), "numeric", "a text field's attribute");
+    assertEqual(await p.evaluate(field("autocomplete")), "one-time-code", "a text field's attribute that follows state");
     if (staticMode) {
       const html = await p.evaluate(`fetch("/attrs").then((r) => r.text())`);
       assert(html.includes('data-kind="box"'), "the prerendered page carries the attribute");
+      assert(html.includes('inputmode="numeric"'), "the prerendered page carries the text field's attribute");
     }
     await p.click("attrs-toggle");
     await p.waitFor(`${attr("title")} === "off"`, "title to change with state");
     assertEqual(await p.evaluate(attr("data-only-on")), null, "an attribute a render leaves out is removed");
     assertEqual(await p.evaluate(attr("data-kind")), "box", "the others stay");
+    await p.waitFor(`${field("autocomplete")} === "off"`, "the text field's attribute to follow state");
     await p.click("attrs-toggle");
     await p.waitFor(`${attr("data-only-on")} === "yes"`, "the conditional attribute to come back");
   },

@@ -66,6 +66,7 @@ pub const TextFieldBuilder = struct {
     _inlineStyle: ?[]const u8 = null,
     _class: ?[]const u8 = null,
     _accessibility: ?Accessibility = null,
+    _attributes: ?[]const types.Attribute = null,
 
     // Extract to helper:
     fn getOrCreateNode(self: *const Self, new_self: *Self) *UINode {
@@ -531,6 +532,14 @@ pub const TextFieldBuilder = struct {
         return AttributeMethods.ariaLabel(self, label);
     }
 
+    /// Sets an HTML attribute, such as `inputmode` or `autocomplete`, as
+    /// `.attribute` does on the element builders: in the page and in a
+    /// prerendered page, once per attribute, and not for `on*`, `id`,
+    /// `class`, `style`, `href` or `src`.
+    pub inline fn attribute(self: *const Self, attribute_name: []const u8, value: []const u8) Self {
+        return AttributeMethods.attribute(self, attribute_name, value);
+    }
+
     /// Shorthand: set role
     pub inline fn role(self: *const Self, r: Accessibility.Role) Self {
         return AttributeMethods.role(self, r);
@@ -609,6 +618,7 @@ pub const TextFieldBuilder = struct {
             .name = self._name,
             .inlineStyle = self._inlineStyle,
             .accessibility = self._accessibility,
+            .attributes = self._attributes,
         };
 
         if (self._text_field_params) |params| {

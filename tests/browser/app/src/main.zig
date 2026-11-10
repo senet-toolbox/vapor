@@ -754,6 +754,11 @@ fn attrsPage() void {
         Button(toggleAttrs, .{}).id("attrs-toggle").children({
             Text("Toggle").end();
         });
+        TextField(.string)
+            .id("attrs-field")
+            .attribute("inputmode", "numeric")
+            .attribute("autocomplete", if (attrs_on) "one-time-code" else "off")
+            .end();
     });
 }
 

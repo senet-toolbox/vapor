@@ -1,4 +1,4 @@
-//! TextFieldBuilder methods for ids and ARIA attributes.
+//! TextFieldBuilder methods for ids, ARIA and other attributes.
 //! Declared and documented as inline methods on TextFieldBuilder
 //! (text_field.zig), so editors complete their arguments; those call these.
 
@@ -6,6 +6,8 @@ const TextFieldMod = @import("../text_field.zig");
 const Self = TextFieldMod.TextFieldBuilder;
 const Vapor = @import("../vapor.zig");
 const Accessibility = @import("../accessibility.zig").Accessibility;
+const BuilderAttributes = @import("../builder/attributes.zig");
+const types = @import("../types.zig");
 
 pub fn id(self: *const Self, element_id: []const u8) Self {
     var new_self: Self = self.*;
@@ -81,5 +83,22 @@ pub fn tabIndex(self: *const Self, index: i16) Self {
     var acc = new_self._accessibility orelse Accessibility{};
     acc.tab_index = index;
     new_self._accessibility = acc;
+    return new_self;
+}
+
+pub fn attribute(self: *const Self, attribute_name: []const u8, value: []const u8) Self {
+    var new_self: Self = self.*;
+    if (!BuilderAttributes.allowedAttribute(attribute_name)) {
+        Vapor.report.err(".attribute(\"{s}\", ...) is not allowed; see TextFieldBuilder.attribute", .{attribute_name});
+        return new_self;
+    }
+    const previous = new_self._attributes orelse &.{};
+    const list = Vapor.arena(.frame).alloc(types.Attribute, previous.len + 1) catch |err| {
+        Vapor.report.err(".attribute: could not allocate, \"{s}\" skipped: {any}", .{ attribute_name, err });
+        return new_self;
+    };
+    @memcpy(list[0..previous.len], previous);
+    list[previous.len] = .{ .name = attribute_name, .value = value };
+    new_self._attributes = list;
     return new_self;
 }

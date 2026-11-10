@@ -4,6 +4,14 @@ All notable changes to this project are documented here. This project follows
 [Semantic Versioning](https://semver.org/): breaking changes bump the major
 version and are listed with a migration note.
 
+## [3.11.0] — 2026-11-10
+
+### Added
+
+- `TextField(...).attribute(name, value)`, as on the element builders: for
+  `inputmode`, `autocomplete`, `enterkeyhint` and the like, in the page and
+  in a prerendered page.
+
 ## [3.10.0] — 2026-11-10
 
 ### Added
