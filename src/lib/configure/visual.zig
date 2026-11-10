@@ -282,6 +282,16 @@ pub fn checkVisual(visual: *const types.Visual, packet_visual: *types.PackedVisu
         packet_visual.outline_color = outline_color;
     }
 
+    if (visual.outline_width) |width| {
+        packet_visual.has_outline_width = true;
+        packet_visual.outline_width = width;
+    }
+
+    if (visual.outline_offset) |offset| {
+        packet_visual.has_outline_offset = true;
+        packet_visual.outline_offset = offset;
+    }
+
     if (visual.font_style) |font_style| {
         packet_visual.font_style = font_style;
     }

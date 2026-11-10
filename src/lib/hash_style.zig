@@ -157,6 +157,9 @@ fn hashVisual(hasher: *std.hash.XxHash32, v: *const Visual) void {
     if (v.cursor) |c| hasher.update(std.mem.asBytes(&c));
     if (v.blur) |b| hasher.update(std.mem.asBytes(&b));
     if (v.outline) |o| hasher.update(std.mem.asBytes(&o));
+    if (v.outline_color) |c| hashColor(hasher, &c);
+    if (v.outline_width) |w| hasher.update(std.mem.asBytes(&w));
+    if (v.outline_offset) |o| hasher.update(std.mem.asBytes(&o));
     if (v.white_space) |ws| hasher.update(std.mem.asBytes(&ws));
     if (v.resize) |r| hasher.update(std.mem.asBytes(&r));
 
@@ -259,6 +262,7 @@ fn hashInteractive(hasher: *std.hash.XxHash32, interactive: *const Interactive) 
     }
 
     if (interactive.hover) |h| hashVisual(hasher, &h);
+    if (interactive.focus_visible) |f| hashVisual(hasher, &f);
 }
 
 fn hashTransition(hasher: *std.hash.XxHash32, t: *const Transition) void {

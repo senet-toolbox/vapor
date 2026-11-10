@@ -226,6 +226,8 @@ pub export fn getVisualStyle(ptr: ?*UINode, visual_type: u8) ?[*]const u8 {
         if (interactive.has_hover_transform) {
             writePropValue("transform", .{ .tag = .transform_type, .data = .{ .transform_type = interactive.hover_transform } }, &writer);
         }
+    } else if (visual_type == 1) {
+        if (interactive.has_focus_visible) StyleCompiler.generateVisual(&interactive.focus_visible, &writer);
     }
     // Null-terminate the string
     const len: usize = writer.pos;

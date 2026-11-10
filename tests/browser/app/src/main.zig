@@ -35,6 +35,7 @@ pub export fn init() void {
     Vapor.Page(.{ .route = "/users/new" }, newUserPage, null);
     Vapor.Page(.{ .route = "/hide" }, hidePage, null);
     Vapor.Page(.{ .route = "/focus" }, focusPage, null);
+    Vapor.Page(.{ .route = "/focus-ring" }, focusRingPage, null);
     Vapor.Page(.{ .route = "/hooks" }, hooksPage, null);
     Vapor.Page(.{ .route = "/styles" }, stylesPage, null);
     Vapor.Page(.{ .route = "/listeners" }, listenersPage, null);
@@ -355,6 +356,39 @@ fn focusPage() void {
         TextField(.string).id("focus-field").onFocus(fieldFocused).onChange(fieldChanged, .{}).end();
         TextFmt("{d}/{d}", .{ focus_count, blur_count }).id("focus-count").end();
         TextFmt("{d}/{d}", .{ field_focus_count, field_change_count }).id("field-count").end();
+    });
+}
+
+// ── /focus-ring : .focusRing shows under keyboard focus, not a click ───────
+
+/// A style with a hover, which `.focusRing` on the builder adds to.
+const hover_style = Vapor.Style{ .interactive = .{ .hover = .{ .opacity = 0.9 } } };
+
+var late_ring = false;
+
+fn showLateRing() void {
+    late_ring = true;
+}
+
+fn focusRingPage() void {
+    Box().id("focus-ring-page").children({
+        Button(noop, .{}).id("ring-a").focusRing(.hex("#ff0000")).children({
+            Text("A").end();
+        });
+        Button(noop, .{}).id("ring-b").style(&hover_style).focusRing(.hex("#0000ff")).children({
+            Text("B").end();
+        });
+        TextField(.string).id("ring-field").focusVisible(.{ .outline = .dashed, .outline_width = 3, .outline_offset = -1 }).end();
+        Button(showLateRing, .{}).id("show-late").children({
+            Text("Show").end();
+        });
+        // Its class is new after the first render, so the runtime writes
+        // its rules rather than the startup stylesheet.
+        if (late_ring) {
+            Button(noop, .{}).id("ring-late").focusRing(.hex("#00ff00")).children({
+                Text("Late").end();
+            });
+        }
     });
 }
 

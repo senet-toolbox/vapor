@@ -276,6 +276,18 @@ pub fn hover(self: *const Self, value: types.Visual) Self {
     return n;
 }
 
+pub fn focusVisible(self: *const Self, value: types.Visual) Self {
+    var n = self.*;
+    var i = n._interactive orelse types.Interactive{};
+    i.focus_visible = value;
+    n._interactive = i;
+    return n;
+}
+
+pub fn focusRing(self: *const Self, color: types.Color) Self {
+    return focusVisible(self, .ring(color));
+}
+
 pub fn hoverTarget(self: *const Self, target: []const u8, value: types.Visual) Self {
     var n = self.*;
     n._target = target;

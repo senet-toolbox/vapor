@@ -77,6 +77,11 @@ pub const Visual = struct {
     /// Outline configuration (different from border)
     outline: ?types.Outline = null,
     outline_color: ?types.Color = null,
+    /// Outline thickness, in pixels.
+    outline_width: ?u8 = null,
+    /// Gap between the element and its outline, in pixels; negative draws
+    /// it inside.
+    outline_offset: ?i8 = null,
 
     /// White space handling (normal, nowrap, pre, pre-wrap)
     white_space: ?types.WhiteSpace = null,
@@ -91,6 +96,17 @@ pub const Visual = struct {
             .font_size = size,
             .font_weight = weight,
             .text_color = color,
+        };
+    }
+
+    /// A 2px solid outline, 2px out from the element: the ring
+    /// `.focusVisible` shows on the element the keyboard is on.
+    pub fn ring(color: types.Color) Visual {
+        return .{
+            .outline = .solid,
+            .outline_width = 2,
+            .outline_offset = 2,
+            .outline_color = color,
         };
     }
 
@@ -136,6 +152,10 @@ pub const Interactive = struct {
     hover_layout: ?types.Layout = null,
     hover_position: ?types.Position = null,
     hover: ?Visual = null,
+    /// While the element has focus and the browser would show it: reached
+    /// with the keyboard, or a text field however it was reached. CSS
+    /// `:focus-visible`.
+    focus_visible: ?Visual = null,
     cursor: ?types.Cursor = null,
 };
 

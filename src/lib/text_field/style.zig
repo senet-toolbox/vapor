@@ -254,6 +254,18 @@ pub fn noDecoration(self: *const Self) Self {
     return new_self;
 }
 
+pub fn focusVisible(self: *const Self, value: types.Visual) Self {
+    var new_self: Self = self.*;
+    var _interactive = new_self._interactive orelse types.Interactive{};
+    _interactive.focus_visible = value;
+    new_self._interactive = _interactive;
+    return new_self;
+}
+
+pub fn focusRing(self: *const Self, color: types.Color) Self {
+    return focusVisible(self, .ring(color));
+}
+
 pub fn hoverText(self: *const Self, color: types.Color) Self {
     var new_self: Self = self.*;
     var _interactive = new_self._interactive orelse types.Interactive{};

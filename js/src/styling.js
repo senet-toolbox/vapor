@@ -118,11 +118,24 @@ function addGeneratedRule(nodePtr, className, [, read, len, pseudo]) {
     styleRuleCache.set(selector, index);
   } else {
     appendRule(selector + pseudo, `${selector}${pseudo} { ${css} }`);
+    // An interactive class also carries the style its element has under
+    // keyboard focus.
+    if (className.startsWith("intr_")) addFocusVisibleRule(nodePtr, selector);
+  }
+}
+
+/** Writes `selector:focus-visible`, when the node has a focus style, or
+ * clears the one an earlier style of the same class name wrote. */
+function addFocusVisibleRule(nodePtr, selector) {
+  const focus = readCss(wasmInstance.getVisualStyle(nodePtr, 1), () => wasmInstance.getVisualLen());
+  const focusSelector = `${selector}:focus-visible`;
+  if (focus.length > 0 || styleRuleCache.has(focusSelector)) {
+    replaceRule(focusSelector, `${focusSelector} { ${focus} }`);
   }
 }
 
 /** Writes the rules of a class the app named (`style_id`): its style, the
- * rule it gives its children, and its hover style. */
+ * rule it gives its children, its hover style and its focus style. */
 function addNamedRules(nodePtr, className) {
   const selector = `.${className}`;
   appendRule(selector, `${selector} { ${readCss(wasmInstance.getStyle(nodePtr), () => wasmInstance.getStyleLen())} }`);
@@ -138,6 +151,7 @@ function addNamedRules(nodePtr, className) {
   if (hover.length > 0 || styleRuleCache.has(hoverSelector)) {
     replaceRule(hoverSelector, `${hoverSelector} { ${hover} }`);
   }
+  addFocusVisibleRule(nodePtr, selector);
 }
 
 /**

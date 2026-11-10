@@ -229,6 +229,19 @@ pub const TextFieldBuilder = struct {
         return StyleMethods.resize(self, value);
     }
 
+    /// Style applied while the element has keyboard focus: CSS
+    /// `:focus-visible`, so a mouse click on a button does not show it, but
+    /// tabbing to it does. A text field shows it however it gets focus.
+    pub inline fn focusVisible(self: *const Self, value: types.Visual) Self {
+        return StyleMethods.focusVisible(self, value);
+    }
+
+    /// A 2px ring in `color`, 2px out from the element, while it has
+    /// keyboard focus. `.focusVisible(.ring(color))`.
+    pub inline fn focusRing(self: *const Self, color: types.Color) Self {
+        return StyleMethods.focusRing(self, color);
+    }
+
     /// Background colour while hovered.
     pub inline fn hoverBackground(self: *const Self, color: types.Color) Self {
         return StyleMethods.hoverBackground(self, color);

@@ -99,6 +99,19 @@ fn writeCss(_: *Generator, node: *UINode, _: []const u8) void {
     }
 }
 
+/// The `:focus-visible` rule of a named class, after its hover rules.
+fn writeFocusVisible(node: *UINode, selector: []const u8) void {
+    const packed_field_ptrs = node.packed_field_ptrs orelse return;
+    const interactive_ptr = packed_field_ptrs.interactive_ptr orelse return;
+    if (!interactive_ptr.has_focus_visible) return;
+    writer.writeByte('.') catch {};
+    writer.write(selector) catch {};
+    writer.write(":focus-visible{\n") catch {};
+    StyleWriter.generateVisual(&interactive_ptr.focus_visible, &writer);
+    writer.writeByte('}') catch {};
+    writer.writeByte('\n') catch {};
+}
+
 fn writeLayout(layout_ptr: *const Types.PackedLayout) void {
     StyleWriter.generateLayout(layout_ptr, &writer);
 }
@@ -212,6 +225,7 @@ fn writeFullNodeRule(gen: *Generator, node: *UINode, selector: []const u8) void 
     writer.write(selector) catch {};
 
     gen.writeCss(node, selector); // This writes the full { ...styles... } block
+    writeFocusVisible(node, selector);
 
     appendWriterToGenerator(gen);
 }
@@ -235,7 +249,26 @@ pub fn writeAllStyles(gen: *Generator) void {
 
     // Special cases with ":hover"
     writeCommonStyleGroup(gen, allocator, &Packer.interactives, "intr", &key_buf, writeInteractive, ":hover");
+    writeFocusVisibleGroup(gen, &key_buf);
     writeCommonStyleResponsive(gen, &Packer.responsives, "resp", &key_buf);
+}
+
+/// `.intr_x:focus-visible`, for each interactive style that has one.
+fn writeFocusVisibleGroup(gen: *Generator, key_buf: *[128]u8) void {
+    var itr = Packer.interactives.iterator();
+    while (itr.next()) |entry| {
+        const value_ptr = entry.value_ptr.*;
+        if (!value_ptr.has_focus_visible) continue;
+        const common_key = KeyGenerator.generateHashKey(key_buf, entry.key_ptr.*, "intr");
+
+        var local_buffer: [4096]u8 = undefined;
+        writer.init(local_buffer[0..]);
+        writer.writeByte('.') catch {};
+        writer.write(common_key) catch {};
+        writer.write(":focus-visible{\n") catch {};
+        StyleWriter.generateVisual(&value_ptr.focus_visible, &writer);
+        gen.writeToGlobal();
+    }
 }
 
 fn writeCommonStyleResponsive(

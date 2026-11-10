@@ -4,6 +4,23 @@ All notable changes to this project are documented here. This project follows
 [Semantic Versioning](https://semver.org/): breaking changes bump the major
 version and are listed with a migration note.
 
+## [3.10.0] — 2026-11-10
+
+### Added
+
+- `.focusVisible(visual)`: a style for while the element has keyboard
+  focus, written as CSS `:focus-visible`. Tabbing to a button shows it; a
+  mouse click on one does not. A text field shows it however it gets
+  focus. On every element builder and `TextField`.
+- `.focusRing(color)`, short for `.focusVisible(.ring(color))`, and
+  `Visual.ring(color)`: a 2px solid outline, 2px out from the element.
+- `Visual.outline_width` and `Visual.outline_offset`, in pixels.
+
+### Fixed
+
+- A `.hover(...)` on the builder was dropped when `.style(&s)` gave an
+  interactive style with no hover.
+
 ## [3.9.2] — 2026-11-06
 
 ### Fixed

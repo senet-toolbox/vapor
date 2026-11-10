@@ -215,6 +215,18 @@ pub fn generateVisual(visual: *const Types.PackedVisual, writer: writer_t) void 
         writePropValue("outline-color", .{ .tag = .color, .data = .{ .color = outline_color } }, writer);
     }
 
+    if (visual.has_outline_width) {
+        writer.write("outline-width: ") catch {};
+        writer.writeU8Num(visual.outline_width) catch {};
+        writer.write("px;\n") catch {};
+    }
+
+    if (visual.has_outline_offset) {
+        writer.write("outline-offset: ") catch {};
+        writer.writeI16(visual.outline_offset) catch {};
+        writer.write("px;\n") catch {};
+    }
+
     // Shadow
     // if (visual.shadow.blur > 0 or visual.shadow.spread > 0 or
     //     visual.shadow.top != 0 or visual.shadow.left != 0)

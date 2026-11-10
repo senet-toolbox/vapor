@@ -180,6 +180,10 @@ pub const PackedVisual = packed struct {
     outline: types.Outline = .default,
     has_outline_color: bool = false,
     outline_color: types.PackedColor = .{},
+    has_outline_width: bool = false,
+    outline_width: u8 = 0,
+    has_outline_offset: bool = false,
+    outline_offset: i8 = 0,
     shadow: PackedShadow = .{},
     text_shadow: u32 = 0,
     has_white_space: bool = false,
@@ -208,6 +212,8 @@ pub const PackedInteractive = struct {
     hover_position: PackedPosition = .{},
     has_hover_transform: bool = false,
     hover_transform: PackedTransform = .{},
+    has_focus_visible: bool = false,
+    focus_visible: PackedVisual = .{},
 };
 
 pub const PackedAnimations = packed struct {

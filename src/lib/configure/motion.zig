@@ -132,7 +132,7 @@ pub fn configureAnimations(ui_node: *UINode, elem_decl: ElemDecl) u32 {
     return hash_a;
 }
 
-/// Packs a node's hover/focus styles and returns their hash.
+/// Packs a node's hover and focus-visible styles and returns their hash.
 pub fn configureInteractive(ui_node: *UINode, style: *const Vapor.Style) u32 {
     var hash_i: u32 = 0;
     const interactive = style.interactive orelse return hash_i;
@@ -158,6 +158,15 @@ pub fn configureInteractive(ui_node: *UINode, style: *const Vapor.Style) u32 {
         if (hover_position.bottom) |bottom| Configuration.packed_interactive.hover_position.bottom = .{ .type = bottom.type, .value = bottom.value };
         if (hover_position.left) |left| Configuration.packed_interactive.hover_position.left = .{ .type = left.type, .value = left.value };
         if (hover_position.z_index) |z_index| Configuration.packed_interactive.hover_position.z_index = z_index;
+    }
+
+    if (interactive.focus_visible) |focus_visible| {
+        // Only what the focus style sets: a packed visual otherwise writes
+        // `text-decoration: none`, taking a focused link's underline.
+        var packed_focus: types.PackedVisual = .{ .text_decoration = .{ .type = .default } };
+        checkVisual(&focus_visible, &packed_focus);
+        Configuration.packed_interactive.has_focus_visible = true;
+        Configuration.packed_interactive.focus_visible = packed_focus;
     }
 
     hash_i = std.hash.XxHash32.hash(0, std.mem.asBytes(&Configuration.packed_interactive));

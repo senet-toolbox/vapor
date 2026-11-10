@@ -252,6 +252,19 @@ function makePage(cdp, origin) {
       if (!ok) throw new Error(`no element #${id} to type into`);
       await cdp.send("Input.insertText", { text: value });
     },
+    // A real key press, as the keyboard sends it: Tab moves focus.
+    async press(key, code = key, keyCode = 0) {
+      for (const type of ["keyDown", "keyUp"]) {
+        await cdp.send("Input.dispatchKeyEvent", { type, key, code, windowsVirtualKeyCode: keyCode });
+      }
+    },
+    // A real mouse click at the middle of the element.
+    async mouseClick(id) {
+      const box = await evaluate(`(() => { const r = document.getElementById(${JSON.stringify(id)}).getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; })()`);
+      for (const type of ["mousePressed", "mouseReleased"]) {
+        await cdp.send("Input.dispatchMouseEvent", { type, x: box.x, y: box.y, button: "left", clickCount: 1 });
+      }
+    },
     childIds: (id) => evaluate(`[...document.getElementById(${JSON.stringify(id)}).children].map((c) => c.id)`),
     async wasmMemoryBytes() {
       const proto = await cdp.send("Runtime.evaluate", { expression: "WebAssembly.Memory.prototype" });
@@ -461,6 +474,43 @@ const tests = {
     await p.waitFor(`${width} === "107px"`, "width 107");
     const hovers = `${rules}.filter((r) => /^\\.intr_\\w+:hover$/.test(r.selectorText ?? "")).length`;
     assertEqual(await p.evaluate(hovers), 1, "one hover rule");
+  },
+
+  async "a focus style shows under keyboard focus and not after a click"(p) {
+    await p.goto("/focus-ring");
+    const outline = (id) =>
+      p.evaluate(`(() => { const s = getComputedStyle(document.getElementById(${JSON.stringify(id)})); return [s.outlineStyle, s.outlineWidth, s.outlineOffset, s.outlineColor].join(" "); })()`);
+    const tab = () => p.press("Tab", "Tab", 9);
+    const focused = `document.activeElement?.id`;
+
+    await p.evaluate(`document.activeElement?.blur()`);
+    await tab();
+    await p.waitFor(`${focused} === "ring-a"`, "Tab to reach #ring-a");
+    assertEqual(await outline("ring-a"), "solid 2px 2px rgb(255, 0, 0)", "#ring-a's ring under keyboard focus");
+    const focusRules = `[...document.adoptedStyleSheets].flatMap((s) => [...s.cssRules]).map((r) => r.cssText).filter((t) => t.includes(":focus-visible"))`;
+    assertEqual((await p.evaluate(focusRules)).some((t) => t.includes("text-decoration")), false, "a focus rule writes only what it sets");
+
+    // Set alongside a .style() that has only a hover.
+    await tab();
+    await p.waitFor(`${focused} === "ring-b"`, "Tab to reach #ring-b");
+    assertEqual(await outline("ring-b"), "solid 2px 2px rgb(0, 0, 255)", "#ring-b's ring under keyboard focus");
+    assertEqual((await outline("ring-a")).startsWith("solid"), false, "#ring-a's ring gone with its focus");
+
+    await tab();
+    await p.waitFor(`${focused} === "ring-field"`, "Tab to reach #ring-field");
+    assertEqual((await outline("ring-field")).split(" ").slice(0, 3).join(" "), "dashed 3px -1px", "#ring-field's outline under keyboard focus");
+
+    await p.click("show-late");
+    await p.waitFor(`!!document.getElementById("ring-late")`, "#ring-late to render");
+    await p.evaluate(`document.getElementById("show-late").focus()`);
+    await tab();
+    await p.waitFor(`${focused} === "ring-late"`, "Tab to reach #ring-late");
+    assertEqual(await outline("ring-late"), "solid 2px 2px rgb(0, 255, 0)", "#ring-late's ring, written after the first render");
+
+    // A mouse click focuses a button without showing its ring.
+    await p.mouseClick("ring-a");
+    await p.waitFor(`${focused} === "ring-a"`, "the click to focus #ring-a");
+    assertEqual((await outline("ring-a")).startsWith("solid"), false, "no ring on #ring-a after a click");
   },
 
   async "document listeners for one event are removed one at a time"(p) {
