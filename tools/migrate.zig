@@ -245,6 +245,8 @@ const renames = [_]Rename{
     .{ .from = ".Binded", .to = ".Element", .whole = true },
     // Button took over CtxButton's (callback, args) signature in 2.x.
     .{ .from = "Vapor.CtxButton", .to = "Vapor.Button", .whole = true },
+    // Immediate mode never ran a per-frame render, and is gone in 3.12.
+    .{ .from = ".mode = .immediate", .to = ".mode = .atomic", .whole = true },
     .{ .from = ".BorderGrouped", .to = ".Border", .whole = true },
     .{ .from = "Vapor.PureComponentClose", .to = "Vapor.PureComponent", .whole = true },
     .{ .from = "Vapor.BuilderClose", .to = "Vapor.Builder", .whole = true },
@@ -1045,4 +1047,11 @@ test "the inset shadow presets are flagged for a person to check" {
     try std.testing.expectEqualStrings(src, out);
     try std.testing.expectEqual(@as(usize, 2), report.notes.items.len);
     for (report.notes.items) |note| try std.testing.expect(note.manual);
+}
+
+test "immediate mode becomes the default, atomic" {
+    try expectMigrated(
+        "Vapor.init(.{ .mode = .immediate });",
+        "Vapor.init(.{ .mode = .atomic });",
+    );
 }

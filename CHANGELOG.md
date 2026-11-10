@@ -4,6 +4,16 @@ All notable changes to this project are documented here. This project follows
 [Semantic Versioning](https://semver.org/): breaking changes bump the major
 version and are listed with a migration note.
 
+## [3.12.0] — 2026-11-10
+
+### Removed
+
+- `VaporConfig.mode = .immediate`. It was meant to render every frame, but
+  no 3.x runtime ran that loop: an app in it reconciled only when it called
+  `Vapor.cycle()`. Use the default, `.atomic`. `zig build migrate` rewrites
+  `.mode = .immediate` to `.mode = .atomic`. It never did what it named, so
+  this is not counted a breaking change.
+
 ## [3.11.0] — 2026-11-10
 
 ### Added

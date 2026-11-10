@@ -225,8 +225,10 @@ pub const VaporConfig = struct {
     mode: Mode = .atomic,
 };
 
+/// When the UI reconciles. `.atomic`, the default, reconciles after each
+/// event, timeout and fetch result. In the other modes nothing does so on
+/// its own: the UI changes only when the app calls `Vapor.cycle()`.
 const Mode = enum {
-    immediate,
     atomic,
     retained,
     static,
