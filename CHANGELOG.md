@@ -4,6 +4,19 @@ All notable changes to this project are documented here. This project follows
 [Semantic Versioning](https://semver.org/): breaking changes bump the major
 version and are listed with a migration note.
 
+## [3.12.1] — 2026-11-12
+
+### Fixed
+
+- Leaving a page did not run the destroy hooks (`.onDestroy`, `Hooks`'
+  `.destroy`) of the elements the next page reused. Two pages' roots
+  without an `.id` are the same element to the diff, so it is updated, not
+  removed, and only removed elements ran their hooks: a page that stopped
+  a timer in its root's `.onDestroy` kept it running after it was left.
+  Every destroy hook the page registered now runs when another page is
+  shown, once each; a layout's do not, and neither do the page's when only
+  a route parameter changes, as that is the same page.
+
 ## [3.12.0] — 2026-11-10
 
 ### Removed

@@ -37,6 +37,8 @@ pub export fn init() void {
     Vapor.Page(.{ .route = "/focus" }, focusPage, null);
     Vapor.Page(.{ .route = "/focus-ring" }, focusRingPage, null);
     Vapor.Page(.{ .route = "/hooks" }, hooksPage, null);
+    Vapor.Page(.{ .route = "/leave" }, leavePage, null);
+    Vapor.Page(.{ .route = "/left" }, leftPage, null);
     Vapor.Page(.{ .route = "/styles" }, stylesPage, null);
     Vapor.Page(.{ .route = "/listeners" }, listenersPage, null);
     Vapor.Page(.{ .route = "/resize" }, resizePage, null);
@@ -426,6 +428,45 @@ fn hooksPage() void {
             });
         }
         TextFmt("{d}/{d}", .{ hook_mounts, hook_destroys }).id("hooks-count").end();
+    });
+}
+
+// ── /leave, /left : leaving a page runs its destroy hooks ──────────────────
+// The two pages' roots have no id, so /left reuses /leave's root element,
+// which is never removed. The child has one, so it is removed.
+
+var page_destroys: u32 = 0;
+var child_destroys: u32 = 0;
+
+fn pageDestroyed() void {
+    page_destroys += 1;
+}
+
+fn childDestroyed() void {
+    child_destroys += 1;
+}
+
+fn leavePage() void {
+    Box().onDestroy(pageDestroyed, .{}).children({
+        Box().id("leave-child").onDestroy(childDestroyed, .{}).children({
+            Text("Leaving").end();
+        });
+        Link(.{ .url = "/left" }).id("to-left").children({
+            Text("Go").end();
+        });
+    });
+}
+
+fn leftPage() void {
+    Box().children({
+        TextFmt("{d}/{d}", .{ page_destroys, child_destroys }).id("left-count").end();
+        Link(.{ .url = "/leave" }).id("to-leave").children({
+            Text("Back").end();
+        });
+        // The hooks run after the render that left the page.
+        Button(rerenderOnly, .{}).id("left-refresh").children({
+            Text("Refresh").end();
+        });
     });
 }
 

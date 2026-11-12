@@ -383,6 +383,10 @@ fn initCalls(persistent_allocator: std.mem.Allocator) void {
     element_listeners = std.AutoHashMap(u32, ErasedEventCallback).init(persistent_allocator);
     next_global_listener_id = 1;
     resize_callbacks = .init(persistent_allocator);
+    page_hooks_allocator = persistent_allocator;
+    page_destroy_hooks = .{ .empty, .empty };
+    page_hooks_index = 0;
+    left_page_destroy_hooks = &.{};
 }
 
 fn initContextData(persistent_allocator: std.mem.Allocator) void {
@@ -487,12 +491,12 @@ pub fn callNestedLayouts() void {
             const layout_fn = layout.call_fn;
             deepest_reset_layout = null;
             deepest_reset_layout_path = "";
-            layout_fn(render_page);
+            layout_fn(renderPage);
         } else {
             // TODO: This is taking a lot of time we need to create a better hashmap system, currently the hashmap compare
             // with the node is long and slow
             // const time = nowMs();
-            render_page();
+            renderPage();
             // Vapor.println("Render time {any}", .{nowMs() - time});
         }
         return;
@@ -526,6 +530,33 @@ pub var current_route: []const u8 = "";
 var route_buffer: ?[:0]u8 = null;
 var previous_route: []const u8 = "";
 pub var render_page: *const fn () void = undefined;
+
+/// The destroy hooks registered while the page rendered, not its layouts:
+/// this render's and the last's. Leaving a page runs the last render's,
+/// as the next page may reuse its elements, and a reused element is never
+/// removed, so its own destroy hook never runs.
+var page_destroy_hooks: [2]std.ArrayListUnmanaged(u32) = .{ .empty, .empty };
+var page_hooks_index: u1 = 0;
+var page_hooks_allocator: std.mem.Allocator = undefined;
+var rendering_page: bool = false;
+/// The destroy hooks of the page this render left, for the runtime to run;
+/// empty when the same page rendered again (a new route parameter is the
+/// same page).
+pub var left_page_destroy_hooks: []const u32 = &.{};
+
+/// Internal: records a destroy hook, if the page (not a layout) is rendering.
+pub fn notePageDestroyHook(callback_id: u32) void {
+    if (!rendering_page) return;
+    page_destroy_hooks[page_hooks_index].append(page_hooks_allocator, callback_id) catch |err| {
+        report.err("could not record a destroy hook: {any}", .{err});
+    };
+}
+
+fn renderPage() void {
+    rendering_page = true;
+    defer rendering_page = false;
+    render_page();
+}
 pub var generator: CSSGenerator = undefined;
 
 const Status = struct {
@@ -628,6 +659,13 @@ pub fn renderCycle(route_ptr: [*:0]u8) !void {
             frame_arena.beginView();
         }
     }
+    const last_hooks = page_hooks_index;
+    page_hooks_index +%= 1;
+    page_destroy_hooks[page_hooks_index].clearRetainingCapacity();
+    left_page_destroy_hooks = if (shown_page != null and shown_page != render_page)
+        page_destroy_hooks[last_hooks].items
+    else
+        &.{};
     shown_page = render_page;
 
     current_route = route;

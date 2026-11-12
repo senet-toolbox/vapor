@@ -76,9 +76,30 @@ function collectDescendantIds(el) {
   return ids;
 }
 
+// The hooks run for the page this render left, so an element of it that
+// is also removed does not run its hook twice.
+const leftPageHooks = new Set();
+
+/**
+ * Runs the destroy hooks of the page a render left, right after it, while
+ * their closures are alive. The next page may reuse the page's elements,
+ * and a reused element is never removed, so its own hook would not run.
+ */
+export function runLeftPageDestroyHooks() {
+  leftPageHooks.clear();
+  const count = wasmInstance.leftPageDestroyCount();
+  for (let i = 0; i < count; i++) {
+    // A u32 from wasm reads as signed; the registry has it unsigned.
+    const hash = wasmInstance.leftPageDestroyId(i) >>> 0;
+    if (hash === 0 || leftPageHooks.has(hash)) continue;
+    leftPageHooks.add(hash);
+    wasmInstance.invokeHooksErasedCallback(hash);
+  }
+}
+
 function runDestroyHook(id) {
   const entry = domNodeRegistry.get(id);
-  if (entry?.destroy_hash > 0) {
+  if (entry?.destroy_hash > 0 && !leftPageHooks.has(entry.destroy_hash)) {
     wasmInstance.invokeHooksErasedCallback(entry.destroy_hash);
   }
 }

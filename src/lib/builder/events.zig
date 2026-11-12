@@ -176,6 +176,7 @@ pub fn onDestroy(self: *const Self, callback: anytype, args: anytype) *const Sel
         return self;
     };
     ui_node.on_callbacks[2] = callback_id;
+    Vapor.notePageDestroyHook(callback_id);
 
     return self;
 }

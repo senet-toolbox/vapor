@@ -435,6 +435,24 @@ const tests = {
     await p.waitForText("hooks-count", "1/1");
   },
 
+  async "leaving a page runs the destroy hooks on it"(p) {
+    // The root, which the next page reuses, and a child, which it removes;
+    // each once. A timer stopped in a page root's onDestroy kept running
+    // after the page was left.
+    await p.goto("/leave");
+    await p.waitFor(`!!document.getElementById("leave-child")`, "the page to leave");
+    await p.click("to-left");
+    await p.waitFor(`!!document.getElementById("left-refresh")`, "the next page");
+    await p.click("left-refresh");
+    await p.waitForText("left-count", "1/1");
+    await p.click("to-leave");
+    await p.waitFor(`!!document.getElementById("leave-child")`, "the page again");
+    await p.click("to-left");
+    await p.waitFor(`!!document.getElementById("left-refresh")`, "the next page again");
+    await p.click("left-refresh");
+    await p.waitForText("left-count", "2/2");
+  },
+
   async "unused CSS rules are removed and responsive rules insert"(p) {
     await p.goto("/styles");
     await p.waitFor(`!!document.getElementById("styled")`, "styles page");

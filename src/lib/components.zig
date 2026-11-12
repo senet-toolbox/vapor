@@ -125,6 +125,7 @@ fn setNodeHook(ui_node: *UINode, slot: usize, comptime hook_name: []const u8, cb
         return;
     };
     ui_node.on_callbacks[slot] = callback_id;
+    if (slot == 2) Vapor.notePageDestroyHook(callback_id);
 }
 
 pub const LinkOptions = struct {

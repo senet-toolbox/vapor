@@ -34,7 +34,7 @@ import {
   createElementByType,
 } from "./create_element.js";
 
-export { animateExit, clearIntervalsForRoute, recurseDestroy } from "./teardown.js";
+export { animateExit, clearIntervalsForRoute, recurseDestroy, runLeftPageDestroyHooks } from "./teardown.js";
 export { attachElementListeners, createElementByType } from "./create_element.js";
 
 // Component type constants

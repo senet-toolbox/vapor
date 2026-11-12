@@ -24,6 +24,7 @@ import {
   refreshNodePointers,
   animateExit,
   resetTimers,
+  runLeftPageDestroyHooks,
 } from "./traversal.js";
 import { state, beginTraversal } from "./state.js";
 import { styleRuleCache } from "./styling.js";
@@ -821,6 +822,8 @@ export async function render() {
       wasmInstance.renderUI(route_ptr);
 
       const has_dirty = wasmInstance.hasDirty();
+
+      runLeftPageDestroyHooks();
 
       const count = wasmInstance.removalCount();
 

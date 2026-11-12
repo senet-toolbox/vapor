@@ -92,6 +92,17 @@ pub export fn renderUI(route: [*:0]u8) callconv(.c) u32 {
     return 1;
 }
 
+/// How many destroy hooks the page this render left has; see
+/// `Vapor.left_page_destroy_hooks`.
+pub export fn leftPageDestroyCount() callconv(.c) usize {
+    return Vapor.left_page_destroy_hooks.len;
+}
+
+pub export fn leftPageDestroyId(index: usize) callconv(.c) u32 {
+    if (index >= Vapor.left_page_destroy_hooks.len) return 0;
+    return Vapor.left_page_destroy_hooks[index];
+}
+
 pub export fn getRenderTreePtr() callconv(.c) ?*UIContext.CommandsTree {
     const tree_op = Vapor.current_ctx.ui_tree;
     if (tree_op != null) {
