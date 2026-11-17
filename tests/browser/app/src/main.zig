@@ -57,6 +57,8 @@ pub export fn init() void {
     Vapor.Page(.{ .route = "/timeout" }, timeoutPage, null);
     Vapor.Page(.{ .route = "/transition" }, transitionPage, null);
     Vapor.Page(.{ .route = "/transition-b" }, transitionPageB, null);
+    Vapor.Page(.{ .route = "/inline-a" }, inlinePageA, null);
+    Vapor.Page(.{ .route = "/inline-b" }, inlinePageB, null);
     Vapor.Page(.{ .route = "/playground" }, playgroundPage, null);
     Vapor.Page(.{ .route = "/signin" }, signInPage, null);
     Vapor.Page(.{ .route = "/auth/callback" }, callbackPage, null);
@@ -949,6 +951,51 @@ fn transitionPage() void {
         Box().id("all-box").transition(.{ .properties = &.{.all}, .duration = 120 }).end();
         Box().id("look-width-box").transition(.{ .properties = &.{ .look, .transform, .width }, .duration = 120 }).end();
         Box().id("layout-box").transition(.{ .properties = &.{.layout}, .duration = 120 }).end();
+    });
+}
+
+// Two pages whose boxes are one element to the diff. On A each has an
+// inline style; on B none does, or another one. `same-box` keeps its
+// classes across the pages, `wider-box` changes them.
+var inline_swapped = false;
+
+fn swapInline() void {
+    inline_swapped = !inline_swapped;
+}
+
+fn inlinePageA() void {
+    Box().id("inline-page").children({
+        Link(.{ .url = "/inline-b" }).id("inline-to-b").children({
+            Text("To B").end();
+        });
+        Button(swapInline, .{}).id("inline-swap").children({
+            Text("Swap").end();
+        });
+        Box().id("same-box").width(.px(100))
+            .inlineStyle("{s}", .{if (inline_swapped) "outline: 2px solid blue;" else "flex: 1 1 420px; outline: 3px solid red;"})
+            .children({
+            Text("same").end();
+        });
+        Box().id("wider-box").width(.px(100)).inlineStyle("flex: 1 1 420px;", .{}).children({
+            Text("wider").end();
+        });
+    });
+}
+
+fn inlinePageB() void {
+    Box().id("inline-page").children({
+        Link(.{ .url = "/inline-a" }).id("inline-to-b").children({
+            Text("To A").end();
+        });
+        Button(swapInline, .{}).id("inline-swap").children({
+            Text("Swap").end();
+        });
+        Box().id("same-box").width(.px(100)).children({
+            Text("same").end();
+        });
+        Box().id("wider-box").width(.px(200)).children({
+            Text("wider").end();
+        });
     });
 }
 

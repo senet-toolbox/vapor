@@ -757,6 +757,27 @@ const tests = {
     assert(!seen.some((w) => w > 60 && w < 400), `width animated across the navigation: ${seen.join(" ")}`);
   },
 
+  async "an element the next page reuses drops the inline style it no longer has"(p) {
+    // Its classes the same or not, the reused element kept page A's inline
+    // style on page B, where its node has none.
+    await p.goto("/inline-a");
+    await p.waitFor(`!!document.getElementById("same-box")`, "page A's boxes");
+    const styleOf = (id) => p.evaluate(`document.getElementById(${JSON.stringify(id)}).getAttribute("style")`);
+    assertEqual(await styleOf("same-box"), "flex: 1 1 420px; outline: 3px solid red;", "same-box on A");
+    await p.click("inline-to-b");
+    await p.waitFor(`location.pathname === "/inline-b" && document.getElementById("inline-to-b").textContent === "To A"`, "page B");
+    // The runtime holds transitions off inline for a frame after a
+    // navigation; after it, no style attribute is left at all.
+    await p.waitFor(`["same-box", "wider-box"].every((id) => document.getElementById(id).getAttribute("style") === null)`, "page B's boxes without a style attribute");
+    // Back on A, the styles return; a state change swaps one for another.
+    await p.click("inline-to-b");
+    await p.waitFor(`location.pathname === "/inline-a" && document.getElementById("inline-to-b").textContent === "To B"`, "page A again");
+    await p.waitFor(`document.getElementById("wider-box").getAttribute("style") === "flex: 1 1 420px;"`, "wider-box's inline style back on A");
+    await p.click("inline-swap");
+    await p.waitFor(`document.getElementById("same-box").getAttribute("style") === "outline: 2px solid blue;"`, "the swapped inline style");
+    await p.click("inline-swap");
+  },
+
   async "a .morph(true) element animates across a navigation"(p) {
     await p.goto("/transition");
     await p.waitFor(`document.getElementById("morph-box")?.getBoundingClientRect().width === 60`, "the narrow morph box");

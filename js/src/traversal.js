@@ -122,22 +122,38 @@ function keepsSvgAttribute(name) {
   return name === "id" || name === "class" || name === "style" || name === "role" || name === "tabindex" || name.startsWith("data-") || name.startsWith("aria-");
 }
 
+// Writes the element's inline style (`.inlineStyle`) as its node has it now.
+// A node with none removes the one vapor wrote before: an element a new page
+// reuses, or a state change that drops the style, keeps nothing of the old
+// one. `element.vaporInline` is what vapor last wrote, so an unchanged style
+// is not written again, and an element vapor never gave one keeps whatever
+// the runtime set on it. Answers whether the node has one.
+function syncInlineStyle(element, uinode) {
+  const ptr = wasmInstance.getInlineStyle(uinode.offset);
+  const next = ptr !== 0 ? readWasmString(ptr, wasmInstance.getInlineStyleLen(uinode.offset)) : null;
+  if (next === null) {
+    if (element.vaporInline !== undefined) {
+      element.removeAttribute("style");
+      element.vaporInline = undefined;
+      // The transition held for a navigation was the old style's.
+      element.vaporHeldTransition = undefined;
+    }
+    return false;
+  }
+  if (next !== element.vaporInline) {
+    element.setAttribute("style", next);
+    element.vaporInline = next;
+    element.vaporHeldTransition = undefined;
+  }
+  return true;
+}
+
 export function setupElement(element, uinode) {
   if (state.initial_render && uinode.styleId.length > 0) {
-    const inlineStylePtr = wasmInstance.getInlineStyle(uinode.offset);
-    const inlineStyleLen = wasmInstance.getInlineStyleLen(uinode.offset);
-    if (inlineStylePtr !== 0) {
-      const inlineStyle = readWasmString(inlineStylePtr, inlineStyleLen);
-      element.setAttribute("style", inlineStyle);
-    }
+    syncInlineStyle(element, uinode);
     setRuleStyle(uinode.styleId, element);
   } else if (!state.initial_render && uinode.styleId.length > 0) {
-    const inlineStylePtr = wasmInstance.getInlineStyle(uinode.offset);
-    if (inlineStylePtr !== 0) {
-      const inlineStyleLen = wasmInstance.getInlineStyleLen(uinode.offset);
-      const inlineStyle = readWasmString(inlineStylePtr, inlineStyleLen);
-      element.setAttribute("style", inlineStyle);
-    }
+    syncInlineStyle(element, uinode);
 
     // Update styling
     updateComponentStyle(uinode.offset, uinode.styleId, "", element);
@@ -272,9 +288,15 @@ export function updateElement(element, uinode, force = false) {
     // A state change animates with the element's declared transition; a new
     // page reusing this element does not (see state.routeChanged).
     const suppress = state.routeChanged && !uinode.morph;
+    // First, so the transition set below is not written over, and the one
+    // kept to restore is the new inline style's.
+    const hasInline = syncInlineStyle(element, uinode);
     if (isReusedNode) {
-      const prevTransition = element.style.transition;
       if (suppress) {
+        // The element's own transition, held until the next frame. A second
+        // render before then (a navigation renders more than once) keeps the
+        // first's: the "none" below is not the element's.
+        if (element.vaporHeldTransition === undefined) element.vaporHeldTransition = element.style.transition;
         element.style.transition = "none";
       } else if (uinode.morph && element.style.transition === "") {
         element.style.transition = "all 0.3s ease-in-out";
@@ -282,42 +304,38 @@ export function updateElement(element, uinode, force = false) {
 
       updateComponentStyle(uinode.offset, uinode.styleId, "", element);
 
-      const inlineStylePtr = wasmInstance.getInlineStyle(uinode.offset);
-      if (inlineStylePtr !== 0) {
-        const inlineStyleLen = wasmInstance.getInlineStyleLen(uinode.offset);
-        const inlineStyle = readWasmString(inlineStylePtr, inlineStyleLen);
-        element.setAttribute("style", inlineStyle);
-      } else if (uinode.elemType === COMPONENT_TYPES.ICON) {
+      if (!hasInline && uinode.elemType === COMPONENT_TYPES.ICON) {
         const iconName = readWasmString(uinode.hrefPtr, uinode.hrefLen);
         element.className = iconName + " " + uinode.styleId;
         uinode.styleId = iconName + " " + uinode.styleId;
-      } else {
       }
 
       if (suppress) {
         // Force style flush so the new width/etc commits with transition:none
         void element.offsetHeight;
 
-        // Restore on next frame
+        // Restore on next frame, once for however many renders held it.
         requestAnimationFrame(() => {
-          element.style.transition = prevTransition; // usually '' so class rules win
+          const held = element.vaporHeldTransition;
+          if (held === undefined) return;
+          element.vaporHeldTransition = undefined;
+          // Usually '' so class rules win. Setting it unchanged would leave
+          // an empty style attribute on an element that has none.
+          if (element.style.transition !== held) element.style.transition = held;
+          if (element.style.length === 0) element.removeAttribute("style");
         });
       }
     } else {
       updateComponentStyle(uinode.offset, uinode.styleId, "", element);
-      const inlineStylePtr = wasmInstance.getInlineStyle(uinode.offset);
-      if (inlineStylePtr !== 0) {
-        const inlineStyleLen = wasmInstance.getInlineStyleLen(uinode.offset);
-        const inlineStyle = readWasmString(inlineStylePtr, inlineStyleLen);
-        element.setAttribute("style", inlineStyle);
-      } else if (uinode.elemType === COMPONENT_TYPES.ICON) {
+      if (!hasInline && uinode.elemType === COMPONENT_TYPES.ICON) {
         const iconName = readWasmString(uinode.hrefPtr, uinode.hrefLen);
         element.className = iconName + " " + uinode.styleId;
         uinode.styleId = iconName + " " + uinode.styleId;
       }
     }
   } else {
-    const inlineStylePtr = wasmInstance.getInlineStyle(uinode.offset);
+    // Its classes are the same, but its inline style may not be.
+    syncInlineStyle(element, uinode);
   }
 }
 

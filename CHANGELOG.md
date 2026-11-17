@@ -4,6 +4,19 @@ All notable changes to this project are documented here. This project follows
 [Semantic Versioning](https://semver.org/): breaking changes bump the major
 version and are listed with a migration note.
 
+## [3.12.2] — 2026-11-16
+
+### Fixed
+
+- An element the next page reused kept the last page's `.inlineStyle`
+  when its new node had none: the runtime wrote an inline style but never
+  removed one, and did not look at it at all when the element's classes
+  were unchanged. A page whose root set `flex: 1 1 420px` inline left it
+  on the next page's root. The inline style is now synced on every
+  render: written when it changes, removed when the node has none. A
+  style the runtime set itself on an element vapor gave none is left
+  alone.
+
 ## [3.12.1] — 2026-11-12
 
 ### Fixed
