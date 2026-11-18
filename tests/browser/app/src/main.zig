@@ -58,6 +58,7 @@ pub export fn init() void {
     Vapor.Page(.{ .route = "/transition" }, transitionPage, null);
     Vapor.Page(.{ .route = "/transition-b" }, transitionPageB, null);
     Vapor.Page(.{ .route = "/inline-a" }, inlinePageA, null);
+    Vapor.Page(.{ .route = "/measure-gone" }, measureGonePage, null);
     Vapor.Page(.{ .route = "/inline-b" }, inlinePageB, null);
     Vapor.Page(.{ .route = "/playground" }, playgroundPage, null);
     Vapor.Page(.{ .route = "/signin" }, signInPage, null);
@@ -996,6 +997,37 @@ fn inlinePageB() void {
         Box().id("wider-box").width(.px(200)).children({
             Text("wider").end();
         });
+    });
+}
+
+// ── /measure-gone : a layout callback measures an element just removed ──────
+
+var measured_shown = true;
+var measured: Vapor.Element = .{};
+var measured_height: f32 = -1;
+
+/// Removes the box, and measures it on the next layout, as a component
+/// fitting its height to its text does after a keystroke a tab switch
+/// follows within two frames.
+fn removeAndMeasure() void {
+    measured_shown = false;
+    Vapor.onLayout(measureGone, .{});
+}
+
+fn measureGone() void {
+    measured_height = measured.scrollHeight();
+    Vapor.cycle();
+}
+
+fn measureGonePage() void {
+    Box().id("measure-page").children({
+        Button(removeAndMeasure, .{}).id("measure-remove").children({
+            Text("Remove and measure").end();
+        });
+        if (measured_shown) Box().id("measured-box").ref(&measured).height(.px(40)).children({
+            Text("measured").end();
+        });
+        Text(Vapor.fmtln("height {d:.0}", .{measured_height})).id("measured-height").end();
     });
 }
 

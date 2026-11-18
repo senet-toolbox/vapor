@@ -135,6 +135,9 @@ export const domBindings = {
     const id = readWasmString(ptr, len);
     const attribute = readWasmString(attributePtr, attributeLen);
     const element = document.getElementById(id);
+    // Gone since it was asked for (a layout callback after the page
+    // changed): nothing to measure.
+    if (element === null) return 0;
     const value = element[attribute];
     return value;
   },
@@ -375,6 +378,7 @@ export const domBindings = {
       const bounds = new Float32Array(memory.buffer, ptr, 6);
 
       const element = document.getElementById(elementId);
+      if (element === null) return;
       const rectBounds = element.getBoundingClientRect();
       bounds[0] = rectBounds.top;
       bounds[1] = rectBounds.left;
@@ -435,6 +439,7 @@ export const domBindings = {
     const memory = new Uint8Array(wasmInstance.memory.buffer);
     const id = new TextDecoder().decode(memory.subarray(ptr, ptr + len));
     const element = document.getElementById(id);
+    if (element === null) return allocStringFrame("");
     const value = element.value;
     return allocStringFrame(value);
   },
@@ -443,6 +448,7 @@ export const domBindings = {
     const id = readWasmString(ptr, len);
     const text = readWasmString(textPtr, textLen);
     const element = document.getElementById(id);
+    if (element === null) return;
     element.value = text;
   },
   setCursorPositionWasm: (idPtr, idLen, pos) => {

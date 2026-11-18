@@ -778,6 +778,15 @@ const tests = {
     await p.click("inline-swap");
   },
 
+  async "measuring an element just removed answers nothing, not an exception"(p) {
+    // A layout callback measured an element the render had removed: the
+    // runtime read scrollHeight of null and threw.
+    await p.goto("/measure-gone");
+    await p.waitFor(`!!document.getElementById("measured-box")`, "the box");
+    await p.click("measure-remove");
+    await p.waitFor(`document.getElementById("measured-height").textContent === "height 0"`, "a height of 0 for the box that is gone");
+  },
+
   async "a .morph(true) element animates across a navigation"(p) {
     await p.goto("/transition");
     await p.waitFor(`document.getElementById("morph-box")?.getBoundingClientRect().width === 60`, "the narrow morph box");

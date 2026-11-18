@@ -4,6 +4,17 @@ All notable changes to this project are documented here. This project follows
 [Semantic Versioning](https://semver.org/): breaking changes bump the major
 version and are listed with a migration note.
 
+## [3.12.3] — 2026-11-17
+
+### Fixed
+
+- Measuring an element that was no longer on the page threw: the runtime
+  read `scrollHeight` (any `getAttributeNumber`) of a missing element
+  unchecked. A layout callback a render had outrun hit it: an editor that
+  fits its height to its text after a keystroke, when a tab switch within
+  two frames removed it. It answers 0 now. So do reading an input's value
+  (an empty string), setting it, and `getClientPos`, for an element gone.
+
 ## [3.12.2] — 2026-11-16
 
 ### Fixed
